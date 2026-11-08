@@ -1,9 +1,9 @@
 # Architecture
 
-![Belgium Data Desk — target architecture](./architecture.svg)
+![Belgium Data Desk — mobile architecture](./architecture-mobile.svg)
 
-[Edit the drawing in draw.io](./architecture.drawio).
+[Detailed architecture](./architecture.svg) · [Edit the draw.io diagram](./architecture.drawio)
 
-**Maintainer note.** Keep Belgium Data Desk a modular monolith: one public source of truth, one Cloudflare deployment and one stable MCP endpoint shared by Claude and other clients. Each new domain must be independently testable, reuse bounded upstream access and shared identifiers, and produce evidence-backed answers with provenance. Preserve existing tool contracts; ship verified capabilities, not tool sprawl.
+**Maintainer note.** Keep one public application repository, one Cloudflare Worker and one stable `/mcp` endpoint. New domains are independently testable, reuse safe upstream access and shared identifiers, and return source-backed answers. Claude remains a thin client; preserve existing tool contracts.
 
-This is a **target architecture**, not a deployment inventory. DOV, Statbel, air quality and flood risk are implemented; Waterinfo, GIPOD and further domain isolation are planned. Cloudflare uses static assets, edge caching, rate limits and Analytics Engine—no KV or Durable Objects today. Secrets belong outside Git. Retire the old `web-operations` deployment path only after cutover verification.
+**Current:** DOV, Statbel, IRCEL, VMM, static catalogue, scheduled harvesting and deployment workflows. **Planned:** Waterinfo, GIPOD and stricter domain isolation. No KV or Durable Objects today. Secrets stay outside Git; retire legacy deployment jobs only after verifying the new pipeline.
