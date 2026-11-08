@@ -1,0 +1,55 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "belgium-data-desk",
+  "compatibility_date": "2026-09-20",
+  "workers_dev": true,
+  "preview_urls": false,
+  // Workers Logs (free tier: 200k events/day): per-request CPU time, errors and console output in the dashboard.
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "./public",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "binding": "ASSETS"
+  },
+  "main": "./worker.mjs",
+  // The hosted instance. Forks: remove this block (or put your own domain; its zone must be on the same Cloudflare account).
+  "routes": [{ "pattern": "data.vecture.be", "custom_domain": true }],
+  // Address used in links the MCP tools return. Forks: delete it (the request origin is used) or set your own domain.
+  "vars": {
+    "PUBLIC_ORIGIN": "https://data.vecture.be"
+  },
+  "analytics_engine_datasets": [
+    {
+      "binding": "MCP_USAGE",
+      "dataset": "belgium_data_desk_mcp_usage"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "DATASET_FILE_RATE_LIMITER",
+      "namespace_id": "91340721",
+      "simple": {
+        "limit": 60,
+        "period": 60
+      }
+    },
+    {
+      "name": "DATASET_FILE_GLOBAL_RATE_LIMITER",
+      "namespace_id": "91340722",
+      "simple": {
+        "limit": 300,
+        "period": 60
+      }
+    },
+    // MCP subsurface tools: tool calls per minute per Cloudflare location that may reach DOV (each call makes at most 16 requests).
+    {
+      "name": "DOV_RATE_LIMITER",
+      "namespace_id": "91340723",
+      "simple": {
+        "limit": 60,
+        "period": 60
+      }
+    }
+  ]
+}

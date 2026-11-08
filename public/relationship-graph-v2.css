@@ -1,0 +1,79 @@
+.network-shell-v2{grid-template-columns:340px minmax(0,1fr)}
+.graph-panel-v2{min-width:0}
+.graph-toolbar-v2{align-items:flex-start;gap:18px}
+.graph-toolbar-v2>div:first-child{display:grid;gap:4px}
+.graph-toolbar-v2 small{font:700 .66rem ui-monospace,monospace;color:var(--m)}
+.graph-filter-grid{display:grid;grid-template-columns:repeat(3,minmax(135px,1fr));gap:7px;min-width:min(610px,65vw)}
+.graph-filter-grid label{display:grid;gap:4px;font:750 .6rem ui-monospace,monospace;letter-spacing:.06em}
+.graph-filter-grid select{width:100%}
+.graph-legend{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--l);background:var(--p)}
+.graph-legend span{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--l);background:var(--w);padding:4px 6px;font:750 .62rem ui-monospace,monospace}
+.graph-legend i{display:inline-block;width:22px;height:0;border-top:2px solid var(--i)}
+.graph-legend [data-family="semantic"] i{border-top-style:dashed}
+.graph-legend [data-family="spatial"] i{border-top:3px double var(--i)}
+.graph-legend [data-family="aggregate"] i{border-top-style:dotted}
+.graph-legend [data-family="provenance"] i{border-top-style:dashed;opacity:.7}
+.graph-legend [data-family="discovery"] i{border-top:1px dashed var(--m)}
+.graph-legend [data-family="context"] i{border-top:1px dotted var(--m);opacity:.55}.graph-model-note{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;padding:8px 12px;border-bottom:1px solid var(--l);background:#edf2ea}.graph-model-note b{font:850 .6rem ui-monospace,monospace;letter-spacing:.08em;color:var(--b)}.graph-model-note span{font-size:.72rem;line-height:1.35}.graph-model-note small{grid-column:2;color:var(--m);font-size:.66rem;line-height:1.35}
+.graph-stage{display:grid;grid-template-columns:minmax(0,1fr) 330px;min-height:680px}
+.graph-stage .graph-wrap{min-width:0;min-height:680px;border-right:1px solid var(--i)}
+.graph-inspector{padding:14px;background:var(--w);overflow:auto;max-height:820px}
+.inspector-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding-bottom:9px;border-bottom:3px solid var(--i)}
+.inspector-title b{font-size:.85rem;line-height:1.35}
+.inspector-title span{white-space:nowrap;font:800 .62rem ui-monospace,monospace;color:var(--m)}
+.graph-empty-inspector{padding:34px 6px;color:var(--m)}
+.graph-empty-inspector b{color:var(--i)}
+.graph-empty-inspector p{font-size:.82rem;line-height:1.5}
+.edge-contract{padding-top:10px}
+.edge-contract-head{display:grid;gap:7px;margin-bottom:10px}
+.edge-contract-head strong{font:850 .84rem/1.3 ui-monospace,monospace}.edge-type-desc{margin:0 0 10px;color:var(--m);font-size:.76rem;line-height:1.45}
+.edge-family{width:max-content;border:1px solid var(--i);padding:4px 6px;background:var(--p2);font:800 .6rem ui-monospace,monospace;text-transform:uppercase;letter-spacing:.06em}
+.edge-contract dl{display:grid;gap:0;margin:0;border:1px solid var(--l)}
+.edge-contract dl>div{display:grid;grid-template-columns:108px 1fr;gap:7px;padding:7px}
+.edge-contract dl>div+div{border-top:1px solid var(--l)}
+.edge-contract dt{font:800 .58rem ui-monospace,monospace;text-transform:uppercase;color:var(--m)}
+.edge-contract dd{margin:0;font-size:.75rem;line-height:1.35}
+.edge-rules{margin-top:10px;border-top:2px solid var(--i);padding-top:8px}
+.edge-rules.warn{border-top-color:var(--o)}
+.edge-rules b{font-size:.75rem}
+.edge-rules ul{margin:6px 0 0;padding-left:18px;font-size:.74rem;line-height:1.45}
+.edge-caution{margin:10px 0 0;padding:8px;border-left:3px solid var(--o);background:#f2e3d5;font-size:.75rem;line-height:1.45}.edge-evidence{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}.edge-evidence a{border:1px solid var(--l);padding:5px 7px;background:var(--p);color:var(--i);text-decoration:none;font:750 .62rem ui-monospace,monospace}.edge-evidence a:hover{border-color:var(--i);background:var(--a)}
+.path-risk{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--l);border-bottom:1px solid var(--l);padding:6px 0;margin:8px 0;font:750 .62rem ui-monospace,monospace;text-transform:uppercase}
+.path-risk b{font-size:.74rem}
+.path-hop.detailed button{margin-top:6px;border:1px solid var(--l);background:transparent;padding:4px 6px;font:750 .62rem ui-monospace,monospace}
+.graph-v2{min-width:1180px}
+.graph-v2 .graph-band text{font:850 11px ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;fill:var(--m)}
+.graph-v2 .graph-band line{stroke:var(--l);stroke-dasharray:2 7}
+.graph-v2 .graph-edge{stroke:#919993;stroke-width:1.5;cursor:pointer;pointer-events:stroke}
+.graph-v2 .graph-edge.family-identity{stroke-width:3}
+.graph-v2 .graph-edge.family-semantic{stroke-dasharray:7 4}
+.graph-v2 .graph-edge.family-spatial{stroke-width:2;stroke-dasharray:12 3 2 3}
+.graph-v2 .graph-edge.family-aggregate{stroke-width:2;stroke-dasharray:2 4}
+.graph-v2 .graph-edge.family-provenance{stroke-width:2.5;stroke-dasharray:8 4}
+.graph-v2 .graph-edge.family-discovery{stroke-width:1;stroke-dasharray:7 6}
+.graph-v2 .graph-edge.family-context{stroke-width:1;stroke-dasharray:2 6;opacity:.7}
+.graph-v2 .graph-edge:hover,.graph-v2 .graph-edge.selected{stroke:var(--b);stroke-width:5;opacity:1}
+.graph-v2 marker path{fill:#68736e}
+.graph-v2 .graph-node{cursor:pointer}
+.graph-v2 .graph-node rect{fill:var(--w);stroke:var(--i);stroke-width:1.5}
+.graph-v2 .graph-node:hover rect,.graph-v2 .graph-node.hot rect{fill:var(--a);stroke:var(--b);stroke-width:3}
+.graph-v2 .graph-node .node-name{font:800 10.5px Inter,sans-serif}
+.graph-v2 .graph-node .node-type{font:650 7.5px ui-monospace,monospace;fill:var(--m)}
+.graph-v2 .graph-node.dim,.graph-v2 .graph-edge.dim{opacity:.11}
+.graph-v2 .graph-edge.hot{stroke:var(--b);stroke-width:4;opacity:1}
+@media(max-width:1180px){
+  .network-shell-v2{grid-template-columns:1fr}
+  .network-shell-v2 .network-controls{position:relative;top:auto}
+  .graph-toolbar-v2{display:grid}
+  .graph-filter-grid{min-width:0;width:100%;grid-template-columns:repeat(3,1fr)}
+  .graph-stage{grid-template-columns:1fr}
+  .graph-stage .graph-wrap{border-right:0;border-bottom:1px solid var(--i)}
+  .graph-inspector{max-height:none}
+}
+@media(max-width:680px){
+  .graph-filter-grid{grid-template-columns:1fr}
+  .graph-toolbar-v2{gap:10px}
+  .graph-stage .graph-wrap{min-height:560px}
+  .graph-inspector{padding:12px}
+  .edge-contract dl>div{grid-template-columns:92px 1fr}
+}

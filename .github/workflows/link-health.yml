@@ -1,0 +1,51 @@
+name: Link health
+
+# Weekly: request every catalogued file link once (HEAD/ranged GET) and keep the results for the next deploy,
+# which marks records as ready, download-only or broken. Then redeploys so the evidence goes live.
+on:
+  schedule:
+    - cron: '17 2 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: link-health
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: github.repository == 'vecture-be/belgium-data-desk'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Restore catalogue
+        id: catalogue
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            public/harvested-catalog.json
+            public/national-catalog.json
+            public/national-catalog-*.json
+            public/catalogue-manifest.json
+            relay-index.mjs
+          key: catalogue-none
+          restore-keys: catalogue-
+      - name: Use the deployed catalogue when no cached copy exists
+        if: steps.catalogue.outputs.cache-matched-key == ''
+        run: npm run snapshot
+      - name: Probe links
+        run: node scripts/probe-links.mjs --out .cache/link-probe.jsonl
+      - uses: actions/cache/save@v4
+        with:
+          path: .cache/link-probe.jsonl
+          key: link-health-${{ github.run_id }}
+      - name: Redeploy with fresh link health
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --repo "${{ github.repository }}" --ref main

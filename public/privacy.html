@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy — Belgium Data Desk</title>
+<style>
+  :root{--bg:#fbfaf6;--fg:#15171a;--mut:#5c6370;--acc:#245eea}
+  @media (prefers-color-scheme:dark){:root{--bg:#14161a;--fg:#ecebe6;--mut:#a0a6b2;--acc:#8fb0ff}}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,sans-serif}
+  main{max-width:760px;margin:0 auto;padding:32px 16px 64px}h1{font-size:1.8rem}h2{margin:28px 0 6px;font-size:1.15rem}a{color:var(--acc)}.mut{color:var(--mut)}
+</style>
+<main>
+  <p><a href="/">← Belgium Data Desk</a></p>
+  <h1>Privacy</h1>
+  <p class="mut">Last updated 1 November 2026. Belgium Data Desk is operated by Vecture (<a href="https://vecture.be">vecture.be</a>).</p>
+
+  <h2>The website</h2>
+  <p>Belgium Data Desk has no accounts, no advertising and no analytics or tracking scripts. Dataset profiling and SQL analysis run inside your browser; files you choose or drop stay on your device. Your pins and preferences are kept in your browser’s local storage and never sent to us.</p>
+
+  <h2>The AI-assistant connector (MCP)</h2>
+  <p>When an assistant calls the connector, it sends us the words of the search or the dataset id it asks about. We use them only to produce the answer and do not store them. The assistant decides what to send; the connector never reads your conversation, your files or the assistant’s memory. The connector does not require sign-in or set cookies. We keep aggregate service-usage counters such as which MCP tool was called, whether it succeeded, result count, response time and a coarse topic category (for example energy or mobility); these counters do not contain search text, dataset ids, IP addresses, identities or conversation content. We do not build user profiles. The assistant you use (for example ChatGPT or Claude) has its own privacy terms for your conversation.</p>
+
+  <p>When an assistant asks for a file preview (the <code>preview_dataset</code> tool), the connector reads the first 64 KiB of that dataset’s public CSV or TSV file from the publisher’s own server and returns the first rows. Only files already listed in the public catalogue can be read; the request to the publisher carries no information about you, and the file is not stored.</p>
+
+  <p>The subsurface tools (<code>subsurface_at_location</code> and <code>get_subsurface_record</code>) answer from the public services of Databank Ondergrond Vlaanderen (DOV) of the Flemish Government. If the assistant gives an address or a municipality, the connector sends it to the Flemish Government’s geolocation service (Digitaal Vlaanderen) to find its coordinates or official boundary; it then sends only coordinates or a DOV record number to DOV. These requests carry no information about you beyond the address or location the assistant sent, and neither the address nor the answer is stored by us. Answers may be kept for up to a day in Cloudflare’s edge cache, keyed by the service address, so a repeated question is answered without asking DOV again. Usage counters for these tools record the tool name, success and response time only, never the address or coordinates. The air-quality and flood tools work the same way: an address is looked up with Digitaal Vlaanderen's geolocation service or, outside Flanders, the federal BeSt Address service (BOSA); only coordinates then go to IRCEL-CELINE (air quality) or VMM (flood maps). The statistics tool answers from Statbel figures stored with the connector and reads Statbel's public price and labour files; it sends nothing about you. DOV publishes the operator name of every groundwater permit, including private persons; the connector shows names only for registered enterprises and public bodies.</p>
+
+  <h2>Retention</h2>
+  <p>Search words and dataset ids are not kept after the answer is sent. The aggregate usage counters described above are kept for up to three months in Cloudflare’s analytics storage and are then deleted automatically.</p>
+
+  <h2>Sharing</h2>
+  <p>We do not sell, rent or share data with anyone, and there is no advertising. The only third party involved is our hosting provider, below.</p>
+
+  <h2>Our hosting provider</h2>
+  <p>The service runs on Cloudflare Workers. Like any web host, Cloudflare processes standard request information (such as IP address and request time) to deliver the service and keep it secure, under its own privacy terms. We do not receive or keep this information as a log of individual users.</p>
+
+  <h2>Fetching public files</h2>
+  <p>For some publisher files the site offers a bounded relay so your browser can read them. The relay only fetches files that are already listed in the public catalogue, forwards no cookies or personal headers to the publisher, and does not store the files.</p>
+
+  <h2>Personal data in the catalogue</h2>
+  <p>The catalogue contains publisher contact points (for example a department’s email address) exactly as the publishers publish them in open-data catalogues. If you believe a contact detail should not be shown, tell the publisher or contact us and we will remove it from our copy.</p>
+
+  <h2>Contact</h2>
+  <p><a href="mailto:info@vecture.be">info@vecture.be</a></p>
+</main>

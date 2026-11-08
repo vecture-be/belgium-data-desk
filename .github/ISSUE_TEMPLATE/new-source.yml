@@ -1,0 +1,26 @@
+name: Propose a source or answer tool
+description: An official Belgian source that should be searchable, or a question that a live tool should answer.
+labels: ["new-source"]
+body:
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: Publisher and the address of its catalogue, API or service.
+    validations: { required: true }
+  - type: textarea
+    id: questions
+    attributes:
+      label: Questions it would answer
+      description: Two or three real questions, as people would ask them.
+    validations: { required: true }
+  - type: input
+    id: licence
+    attributes:
+      label: Licence
+      description: Under which licence the publisher allows reuse. Sources that need an API key cannot be used by the hosted instance.
+  - type: dropdown
+    id: build
+    attributes:
+      label: Would you build it?
+      options: ["Yes", "With help", "No, just proposing"]

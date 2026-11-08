@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Belgium Data Desk">
+  <rect width="512" height="512" rx="112" fill="#15171a"/>
+  <g transform="translate(96 120)">
+    <rect x="0" y="152" width="72" height="120" rx="14" fill="#ecebe6"/>
+    <rect x="124" y="84" width="72" height="188" rx="14" fill="#f5c400"/>
+    <rect x="248" y="0" width="72" height="272" rx="14" fill="#e3342f"/>
+  </g>
+</svg>

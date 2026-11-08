@@ -1,0 +1,29 @@
+name: Wrong or weak answer
+description: A tool or search returned something wrong, outdated or not the official source.
+labels: ["answer-quality"]
+body:
+  - type: input
+    id: asked
+    attributes:
+      label: What you asked
+      description: The question, or the tool name and arguments.
+      placeholder: "belgian_statistics, places: [Gent], topic: population"
+    validations: { required: true }
+  - type: textarea
+    id: got
+    attributes:
+      label: What came back
+      description: Paste the relevant part of the answer.
+    validations: { required: true }
+  - type: textarea
+    id: right
+    attributes:
+      label: What is right
+      description: The correct answer or the source that should have come first.
+    validations: { required: true }
+  - type: input
+    id: source
+    attributes:
+      label: Official source
+      description: Link to the publisher's own page that shows it.
+    validations: { required: true }

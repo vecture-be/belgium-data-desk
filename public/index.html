@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Find Belgian open data from federal, regional and city portals. See publisher, licence, update cycle and link status, then query it in your browser.">
+  <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large">
+  <meta name="theme-color" content="#0d1714">
+  <link rel="canonical" href="https://data.vecture.be/">
+  <link rel="stylesheet" href="/styles-v6.css"><link rel="stylesheet" href="/quiz-v1.css"><link rel="stylesheet" href="/scenes-v1.css"><link rel="stylesheet" href="/factcheck-v1.css">
+  <link rel="stylesheet" href="/relationship-graph-v2.css"><link rel="stylesheet" href="/datasets-v1.css"><link rel="stylesheet" href="/datasets-v3.css"><link rel="stylesheet" href="/datasets-v4.css"><link rel="stylesheet" href="/datasets-v5.css">
+  <link rel="stylesheet" href="/dataset-knowledge-v1.css">
+  <link rel="stylesheet" href="/dataset-validation-v1.css">\n  <link rel="stylesheet" href="/dataset-feedback-v1.css">
+  <link rel="stylesheet" href="/sql-lab-v1.css"><link rel="stylesheet" href="/visual-data-studio-v1.css">
+  <title>Belgium Data Desk: Belgian open data you can trust</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Belgium Data Desk: Belgian open data you can trust">
+<meta property="og:description" content="Find Belgian open data from federal, regional and city portals. See the publisher, licence, update cycle and whether the download link worked.">
+<meta property="og:url" content="https://data.vecture.be/">
+<meta property="og:image" content="https://data.vecture.be/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Belgium Data Desk: Belgian open data you can trust">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://data.vecture.be/#website","name":"Belgium Data Desk","url":"https://data.vecture.be/","inLanguage":["en","nl","fr"]},{"@type":"DataCatalog","@id":"https://data.vecture.be/#catalog","name":"Belgium Data Desk — Belgian open data catalog","description":"Discovery of Belgian open data from federal, regional and local publishers with source attribution, licenses and access links.","url":"https://data.vecture.be/","publisher":{"@type":"Organization","name":"Vecture BV","url":"https://vecture.be/"},"inLanguage":["en","nl","fr"],"isAccessibleForFree":true}]}</script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/"><span class="brandmark">B</span><span class="brandtext">Belgium Data Desk</span></a>
+  <nav class="mainnav" aria-label="Main">
+    <button class="nav-tab" data-view="datasets">Datasets</button><button class="nav-tab" data-view="explorer">Publishers</button>
+    <button class="nav-tab" data-view="workflows">Workflows</button>
+    <button class="nav-tab" data-view="network">Publisher map</button>
+    <button class="nav-tab" data-view="builder">SQL lab</button>
+    <button class="nav-tab" data-view="compare">Compare</button><button class="nav-tab" data-view="quiz">Quiz</button><a class="nav-tab nav-link" href="/about/">About</a>
+  </nav>
+  <div class="top-actions">
+    <button id="paletteBtn" class="square-btn" title="Command palette">⌘K</button>
+    <button id="stackBtn" class="stack-trigger"><span id="stackCount">0</span> stack</button>
+  </div>
+</header>
+
+<main>
+  <section class="hero hero-cinematic"><div class="hero-scene" data-scene="hero"></div><div class="hero-vignette"></div>
+    
+    <h1>Find Belgian<br><em>open data you can trust</em></h1>
+    <p>Find the right dataset, understand what it contains, and see the evidence behind its freshness, size and usability before you rely on it.</p>
+    <div class="hero-stats">
+      <div><b id="sourceStat">0</b><span id="sourceStatLabel">source systems</span></div>
+      <div><b id="workflowStat">0</b><span id="workflowStatLabel">guided workflows</span></div>
+      <div><b id="identifierStat">0</b><span id="identifierStatLabel">identifier concepts</span></div>
+      <div><b id="bridgeStat">0</b><span id="bridgeStatLabel">typed relationships</span></div>
+    </div>
+    <div id="globalSearchWrap" class="search-wrap">
+      <div class="search"><span>⌕</span><input id="search" type="search" autocomplete="off" placeholder="Search publishers, topics and regions…" title="Search the publisher directory"><kbd>/</kbd></div>
+      <div id="quickRow" class="quick-row"></div>
+    </div>
+  </section>
+
+  <section class="view" data-view="datasets">
+    <div class="dataset-atlas">
+      <div id="dsScope" class="dataset-scope" role="group" aria-label="What to show"></div>
+      <div class="dataset-toolbar">
+        <div class="dataset-search-control"><input id="datasetSearch" type="search" placeholder="Try: population by municipality, ondernemingsnummer, énergie…"><button id="dsSearchBtn" type="button">Search</button></div>
+        <select id="dsSource"></select>
+        <select id="dsTopic" aria-label="Topic"></select>
+        <select id="dsLicence" aria-label="Licence"></select>
+        <select id="dsKind"></select>
+        <select id="dsFormat"></select>
+        <select id="dsDelivery"><option value="">All distribution types</option><option value="inspectable">Previewable data</option><option value="other">No previewable data</option><option value="metadata">Metadata only / no distributions</option></select>
+        <select id="dsAnalysis" title="Filter by browser SQL readiness"><option value="">All analysis readiness</option><option value="ready">SQL ready · verified</option><option value="possible">SQL possible · access unchecked</option><option value="download">Download only</option><option value="not-tabular">Not tabular</option></select>
+        <select id="dsDepth"><option value="">All provenance</option><option value="modelled">Curated / manually reviewed</option><option value="structured">Publisher schema</option><option value="harvested">Harvested metadata</option></select>
+        <button id="dsNational" aria-pressed="false" title="The national catalogue loads automatically. Click to show only datasets also indexed by data.gov.be.">National index</button><button id="dsFamilies" class="active" aria-pressed="true" title="Group yearly/version/distribution records into dataset families">Families grouped</button><button id="dsPinnedOnly" aria-pressed="false" title="Show only pinned datasets">Pinned</button><button id="dsSqlPinned" type="button" disabled title="Analyze pinned datasets that are SQL-ready or SQL-possible">Analyze pinned</button><button id="dsReset">Reset</button>
+        <div id="dsSelectionSummary" class="dataset-selection-summary" hidden></div>
+      </div>
+      <div class="dataset-collections" aria-label="Guided data collections">
+        <span>START WITH</span>
+        <button type="button" data-collection-query="municipality">Municipality starter</button>
+        <button type="button" data-collection-query="enterprise">Company intelligence</button>
+        <button type="button" data-collection-query="energy">Energy</button>
+        <button type="button" data-collection-query="mobility">Mobility</button>
+        <button type="button" data-collection-query="environment">Environment</button>
+        <button type="button" data-collection-query="agriculture">Agriculture</button>
+      </div>
+      <div class="dataset-legend analysis-legend" aria-label="Dataset analysis readiness"><span><b class="analysis-key ready">SQL READY</b> compatible distribution and direct browser access verified</span><span><b class="analysis-key possible">SQL POSSIBLE</b> compatible distribution; browser access not yet verified</span><span><b class="analysis-key download">DOWNLOAD ONLY</b> browser access failed or a conversion/download step is needed</span><span><b class="analysis-key not-tabular">NOT TABULAR</b> no directly queryable table-like distribution</span><span><b>Previewable</b> a small sample can be inspected in-browser; this does not guarantee SQL loading</span><span><b>Other downloads</b> PDFs, archives and unsupported files are kept separate and can be filtered out</span><span><b>Curated</b> manually assembled from official publisher material; evidence links included</span><span><b>Publisher schema</b> machine-harvested field definitions exposed by the publisher</span><span><b>National DCAT</b> discovered through data.gov.be; direct publisher evidence wins when both exist</span><span><b>Harvested</b> catalogue metadata; grain not audited</span><span><b>Record sample</b> actual example rows, never treated as schema</span></div>
+      <div class="dataset-workbench">
+        <aside class="asset-list-panel">
+          <div class="asset-list-head"><b id="dsCount">0 datasets</b><small id="harvestMeta">loading catalogue provenance…</small></div>
+          <div id="assetList" class="asset-list"></div>
+        </aside>
+        <article id="assetInspector" class="asset-inspector"></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" data-view="explorer"><div class="scene-band" data-scene="explorer"></div>
+    <div class="desk">
+      <aside class="filters">
+        <div><label>ACCESS</label><div id="accessFilters" class="filter-list"></div></div>
+        <div><label>REGION</label><div id="regionFilters" class="filter-list"></div></div>
+        <div><label>TOPIC</label><div id="topicFilters" class="filter-list"></div></div>
+        <button id="resetFilters" class="link-btn">Reset filters</button>
+      </aside>
+      <section class="results">
+        <div class="section-toolbar">
+          <div><b id="resultCount">0 sources</b></div>
+          <button id="copyView" class="link-btn">Copy view link</button>
+        </div>
+        <div id="activeFilters" class="active-filters"></div>
+        <div id="cards" class="cards"></div>
+        <div id="empty" class="empty" hidden><b>NO MATCH</b><h2>No source matches this combination.</h2><button id="emptyReset" class="primary">Clear everything</button></div>
+      </section>
+    </div>
+  </section>
+
+  <section class="view" data-view="workflows" hidden><div class="scene-band" data-scene="workflows"></div>
+    <div id="workflowGrid" class="workflow-grid"></div>
+  </section>
+
+  <section class="view" data-view="network" hidden><div class="scene-band" data-scene="network"></div>
+    <p class="view-note">Source-level graph with explicit relationship contracts. An edge can be dataset-scoped, lossy or contextual; connectivity never means universal record-level joinability.</p>
+    <div class="network-shell network-shell-v2">
+      <aside class="network-controls">
+        <label>FROM<select id="pathFrom"></select></label>
+        <label>TO<select id="pathTo"></select></label>
+        <label>PATH STRATEGY<select id="pathMode"><option value="safest">Safest typed path</option><option value="fewest">Fewest hops</option></select></label>
+        <button id="findPath" class="primary">Evaluate path</button>
+        <div id="compatibility" class="score-card"></div>
+        <div id="pathSteps" class="path-steps"></div>
+      </aside>
+      <section class="graph-panel graph-panel-v2">
+        <div class="graph-toolbar graph-toolbar-v2">
+          <div><b>Typed source-relationship graph</b><small id="graphStats">0 relationships</small></div>
+          <div class="graph-filter-grid">
+            <label>Topic<select id="graphTopic"><option value="">All topics</option></select></label>
+            <label>Family<select id="graphFamily"><option value="">All relationship families</option></select></label>
+            <label>Joinability<select id="graphJoinability"><option value="">All relationships</option><option value="record">Record-level only</option><option value="nonlossy">Non-lossy only</option><option value="analytical">Analytical / non-record</option></select></label>
+          </div>
+        </div>
+        <div id="graphLegend" class="graph-legend"></div>
+        <div id="graphModelNote" class="graph-model-note"></div>
+        <div class="graph-stage">
+          <div id="graphWrap" class="graph-wrap"></div>
+          <aside id="graphInspector" class="graph-inspector" aria-live="polite"></aside>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <section class="view" data-view="builder" hidden><div class="scene-band" data-scene="builder"></div>
+    <p class="view-note"><b>Runs in your browser.</b> Load files, query them with DuckDB SQL, test join cardinality and inspect duplicate keys before you trust a merge. Local files are not uploaded.</p>
+    <div class="sql-lab-shell">
+      <section class="sql-panel sql-ingest">
+        <div class="sql-panel-head"><div><span>01 / INGEST</span><h2>Load data</h2></div><div id="sqlEngineStatus" class="sql-engine-status">engine idle</div></div>
+        <label id="sqlDropZone" class="sql-drop-zone">
+          <input id="sqlFiles" type="file" multiple accept=".csv,.tsv,.json,.jsonl,.ndjson,.parquet">
+          <strong>Drop files or choose files</strong>
+          <span>CSV · TSV · JSON/JSONL · Parquet · multiple files supported</span>
+        </label>
+        <div class="sql-remote">
+          <input id="sqlRemoteUrl" type="url" placeholder="https://publisher.be/data.csv">
+          <input id="sqlRemoteName" placeholder="table name (optional)">
+          <select id="sqlRemoteFormat"><option value="auto">Auto format</option><option value="csv">CSV</option><option value="tsv">TSV</option><option value="json">JSON / JSONL</option><option value="parquet">Parquet</option></select>
+          <button id="sqlAddRemote" type="button">Add URL</button>
+        </div>
+        <p class="sql-fineprint">Remote URLs are tried directly first. For catalogue CSV/TSV files blocked by CORS, SQL Lab may fetch the complete file through the approved opaque-ID relay when it fits within 8 MiB. Arbitrary URLs are never relayed.</p>
+        <div id="sqlTables" class="sql-table-list"><div class="sql-empty">No tables loaded yet.</div></div>
+      </section>
+
+      <section class="sql-panel sql-editor-panel">
+        <div class="sql-panel-head"><div><span>02 / QUERY</span><h2>Write a SELECT</h2></div><small>Ctrl / ⌘ + Enter to run</small></div>
+        <textarea id="sqlEditor" spellcheck="false" aria-label="SQL query">SELECT 42 AS answer;</textarea>
+        <div class="sql-actions">
+          <button id="sqlRun" class="primary" type="button">Run SQL</button>
+          <button id="sqlCopy" type="button">Copy SQL</button>
+          <button id="sqlExport" type="button" disabled>Export for Excel (.csv)</button>
+          <button id="sqlVisualize" class="primary" type="button">Visualize SQL · up to 10,000 rows</button>
+          <button id="sqlDemoVisual" type="button">Try visual demo</button>
+          <button id="sqlClearResult" type="button">Clear result</button>
+        </div>
+        <div id="sqlMessage" class="sql-message">The engine loads only when this lab is opened or data is added.</div>
+        <div class="sql-result-head"><b id="sqlResultMeta">No result</b><span>Display is capped at 500 rows.</span></div>
+        <div id="sqlResult" class="sql-result"><div class="sql-empty">Run a SELECT to see rows here.</div></div>
+      </section>
+
+      <section id="visualStudio" class="sql-panel sql-visual-panel" hidden aria-label="Visual Data Studio">
+        <div class="sql-panel-head"><div><span>03 / VISUALIZE</span><h2>Visual Data Studio</h2></div><button id="visualClose" type="button">Close</button></div>
+        <p class="visual-intro">Turn the current SQL query into charts and pivots, right in your browser. Use the demo to explore the controls without loading publisher data.</p>
+        <div class="visual-toolbar"><label for="visualPreset">Starting view</label><select id="visualPreset" disabled><option value="table">Pivot table</option><option value="bar">Bar chart</option><option value="line">Line chart</option><option value="scatter">Scatter chart</option></select><button id="visualExportView" type="button" disabled>Export view settings</button><button id="visualImportView" type="button" disabled>Import view settings</button><input id="visualImportFile" type="file" accept=".json,application/json" hidden></div>
+        <div id="visualStudioStatus" class="visual-status" role="status" aria-live="polite">Run a query or try the visual demo.</div>
+        <p id="visualCaption" class="visual-caption"></p>
+        <div id="visualCanvas" class="visual-canvas"></div>
+        <p class="visual-note">The visualization uses at most 10,000 query rows and warns when capped. Exported view settings contain no dataset. The Perspective engine loads from a third-party CDN only when used.</p>
+      </section>
+      <section class="sql-panel sql-qol">
+        <div class="sql-panel-head"><div><span>04 / JOIN CHECK</span><h2>Build & test a join</h2></div><small>Check cardinality before merging</small></div>
+        <div class="sql-join-grid">
+          <label>LEFT TABLE<select id="sqlJoinLeft"></select></label>
+          <label>LEFT KEY<select id="sqlJoinLeftKey"></select></label>
+          <label>JOIN<select id="sqlJoinType"><option value="LEFT">LEFT</option><option value="INNER">INNER</option><option value="FULL OUTER">FULL OUTER</option></select></label>
+          <label>RIGHT TABLE<select id="sqlJoinRight"></select></label>
+          <label>RIGHT KEY<select id="sqlJoinRightKey"></select></label>
+        </div>
+        <div class="sql-actions">
+          <button id="sqlBuildJoin" type="button">Write join SQL</button>
+          <button id="sqlTestJoin" class="primary" type="button">Test join</button>
+        </div>
+        <div id="sqlJoinDiagnostics" class="sql-diagnostics"><div class="sql-empty">Load two tables to test match rate, null keys, duplicates and row multiplication.</div></div>
+
+        <div class="sql-duplicates">
+          <div><h3>Duplicate explorer</h3><p>Show every row whose selected key occurs more than once.</p></div>
+          <div class="sql-duplicate-controls"><select id="sqlDupTable"></select><select id="sqlDupKey"></select><button id="sqlDupGroups" type="button">Duplicate groups</button><button id="sqlDupRows" type="button">View duplicate rows</button></div>
+        </div>
+      </section>
+
+      <section class="sql-panel sql-notes">
+        <div class="sql-panel-head"><div><span>05 / PRACTICAL LIMITS</span><h2>What stays free</h2></div></div>
+        <div class="sql-note-grid">
+          <article><b>Compute</b><p>SQL executes inside DuckDB-Wasm in the visitor's browser. It does not consume Worker CPU.</p></article>
+          <article><b>Local files</b><p>Files stay local to the browser session. No upload endpoint is involved.</p></article>
+          <article><b>Remote data</b><p>The browser contacts publishers directly first. Catalogue CSV/TSV blocked by CORS can use the complete-file ≤8 MiB relay; larger files stay download/drop only unless direct CORS works.</p></article>
+          <article><b>Engine</b><p>DuckDB-Wasm is loaded from jsDelivr on first use, keeping large WASM binaries out of this GitHub repo and Cloudflare assets.</p></article>
+        </div>
+      </section>
+    </div>
+
+    <div hidden aria-hidden="true" id="legacyBuilderCompatibility">
+    <p class="view-note">Recommendations here identify source families. Select the exact datasets and distributions in the Dataset Atlas before implementing a pipeline.</p>
+    <div class="builder-shell">
+      <section class="builder-config">
+        <div class="control-grid">
+          <label>OBJECTIVE<select id="objective"></select></label>
+          <label>GEOGRAPHY<select id="geography"><option>Belgium</option><option>Flanders</option><option>Wallonia</option><option>Brussels</option></select></label>
+          <label>AUTOMATION<select id="automation"><option value="manual">Manual research</option><option value="notebook">Notebook / analysis</option><option value="production">Production integration</option></select></label>
+          <label>OUTPUT<select id="output"><option>Dataset</option><option>Dashboard</option><option>Map</option><option>Semantic model</option><option>API</option></select></label>
+        </div>
+        <div class="builder-actions"><button id="recommendBtn" class="primary">Build recommendation</button><button id="applyRecommendation">Add recommendation to stack</button></div>
+        <div id="recommendation" class="recommendation"></div>
+      </section>
+
+      <section class="workspace">
+        <div class="workspace-head">
+          <div><h2>Stack checks</h2></div>
+          <div class="readiness"><strong id="readinessScore">0</strong><span>/100 ready</span></div>
+        </div>
+        <div id="diagnostics" class="diagnostics"></div>
+        <div id="recipe" class="recipe"></div>
+      </section>
+
+      <section class="generator">
+        <div class="generator-head">
+          <div><h2>Export project</h2></div>
+          <div class="segmented"><button class="code-tab active" data-code="manifest">Manifest</button><button class="code-tab" data-code="python">Python</button><button class="code-tab" data-code="sql">SQL outline</button><button class="code-tab" data-code="markdown">README</button></div>
+        </div>
+        <pre id="codeOutput"><code></code></pre>
+        <div class="generator-actions"><button id="copyCode">Copy</button><button id="downloadProject" class="primary">Download project JSON</button></div>
+      </section>
+
+      <section class="saved-projects">
+        <div><h2>Saved projects</h2></div>
+        <div class="save-row"><input id="projectName" placeholder="Project name"><button id="saveProject" class="primary">Save snapshot</button></div>
+        <div id="projectList" class="project-list"></div>
+      </section>
+    </div>
+
+    </div>
+  </section>
+
+  <section class="view" data-view="compare" hidden><div class="scene-band" data-scene="compare"></div>
+    <p class="view-note">This compares publishers and access routes; use the Dataset Atlas to inspect individual fields, versions and record-level compatibility.</p>
+    <div class="compare-shell">
+      <div class="compare-pickers"><label>A<select id="cmpA"></select></label><label>B<select id="cmpB"></select></label><label>C<select id="cmpC"></select></label></div>
+      <div id="compareTable" class="compare-table"></div>
+    </div>
+  </section>
+
+  <section class="view" data-view="quiz" hidden><div class="scene-band" data-scene="quiz"></div><div id="quizApp" class="quiz-root"></div></section>
+</main>
+
+<aside id="stackPanel" class="stack-panel" aria-label="Project stack">
+  <div class="stack-head"><div><span>PROJECT STACK</span><h2>Pinned items</h2></div><button id="stackClose" aria-label="Close">×</button></div>
+  <div id="stackItems" class="stack-items"></div>
+  <footer><button id="analyzeDatasetsSql" class="primary">Analyze in SQL lab</button><button id="exportDatasets">Dataset manifest</button><button id="exportStack">Export JSON</button><button id="clearStack">Clear</button></footer>
+</aside>
+<div id="scrim" class="scrim" hidden></div>
+
+<dialog id="detailDialog"><button id="dialogClose" class="dialog-close">×</button><div id="dialogContent"></div></dialog>
+<dialog id="paletteDialog" class="palette-dialog">
+  <div class="palette-search"><span>⌕</span><input id="paletteSearch" placeholder="Search source, workflow or action…"><kbd>esc</kbd></div>
+  <div id="paletteResults" class="palette-results"></div>
+</dialog>
+
+<footer class="page-footer"><div><b>Belgium Data Desk</b><br>Independent public-data project developed and maintained by <a href="https://vecture.be/" rel="noopener">Vecture BV</a>.<br>No account or tracking<p class="site-progress-note">This site is still under construction. Feedback welcome: <a href="mailto:info@vecture.be">info@vecture.be</a>.</p></div><div>Dataset information links to the original publisher; licences and access conditions vary by distribution.<br><span>Social identity: <b>Belgian Open Data</b></span></div><div><a href="/about/">About</a> · <a href="/connect/">Use with ChatGPT or Claude</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a><br><a href="https://www.facebook.com/1322314120971798" rel="me noopener">Facebook</a> · <a href="https://www.threads.com/@belgianopendata" rel="me noopener">Threads</a> · <a href="https://bsky.app/profile/belgianopendata.bsky.social" rel="me noopener">Bluesky</a></div></footer>
+<script type="module" src="/app-v14.mjs"></script><script type="module" src="/sql-lab-v1.mjs"></script><script type="module" src="/datasets-v22.mjs"></script><script type="module" src="/quiz-v4.mjs"></script><script type="module" src="/scene-engine-v3.mjs"></script>
+</body>
+</html>

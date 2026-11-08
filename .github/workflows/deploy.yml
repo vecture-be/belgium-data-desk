@@ -1,0 +1,99 @@
+name: Deploy
+
+# Builds the catalogue, search shards and pages, and deploys the Worker to Cloudflare.
+# Runs on every push to main, weekly to refresh the catalogue, after the link-health probe, and by hand.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**", ".github/ISSUE_TEMPLATE/**"]
+  schedule:
+    - cron: '43 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      fresh_harvest:
+        description: Ignore this week's cached catalogue and harvest again
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.repository == 'vecture-be/belgium-data-desk'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm test
+
+      - name: Catalogue cache key (one harvest per ISO week and harvester version)
+        id: key
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      - name: Restore catalogue
+        id: catalogue
+        if: ${{ !inputs.fresh_harvest }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            public/harvested-catalog.json
+            public/national-catalog.json
+            public/national-catalog-*.json
+            public/catalogue-manifest.json
+            relay-index.mjs
+          key: catalogue-${{ steps.key.outputs.week }}-${{ hashFiles('scripts/harvest.mjs', 'scripts/national-dcat.mjs', 'scripts/curate.mjs', 'scripts/relay-index-lib.mjs', 'public/dataset-atlas*.mjs') }}
+      - name: Harvest
+        if: steps.catalogue.outputs.cache-hit != 'true'
+        run: npm run harvest
+      - name: Save catalogue
+        if: steps.catalogue.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            public/harvested-catalog.json
+            public/national-catalog.json
+            public/national-catalog-*.json
+            public/catalogue-manifest.json
+            relay-index.mjs
+          key: catalogue-${{ steps.key.outputs.week }}-${{ hashFiles('scripts/harvest.mjs', 'scripts/national-dcat.mjs', 'scripts/curate.mjs', 'scripts/relay-index-lib.mjs', 'public/dataset-atlas*.mjs') }}
+
+      - name: Restore link health
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/link-probe.jsonl
+          key: link-health-none
+          restore-keys: link-health-
+
+      - name: Build search index and pages
+        run: npm run build:index
+      - name: Relevance gate
+        run: npm run eval
+
+      - name: Search Console verification tag
+        if: vars.GOOGLE_SITE_VERIFICATION != ''
+        env:
+          TOKEN: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+        run: |
+          node -e 'const fs=require("fs"),f="public/index.html",t=process.env.TOKEN;if(!/^[\w-]{20,80}$/.test(t))throw new Error("bad token");
+          let h=fs.readFileSync(f,"utf8").replace(/\s*<meta\s+name="google-site-verification"[^>]*>/gi,"");
+          fs.writeFileSync(f,h.replace(/<\/head>/i,"<meta name=\"google-site-verification\" content=\""+t+"\">\n</head>"))'
+
+      - name: Deploy to Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
+
+      - name: Smoke test every MCP tool
+        run: node scripts/smoke-mcp.mjs ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}
+      - name: Verify catalogue, relay, MCP and pages
+        continue-on-error: true
+        run: node scripts/verify-live.mjs ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}

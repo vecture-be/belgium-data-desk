@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import {makeVisualQuery,normalizeVisualRows} from "../public/visual-data-studio-v1.mjs";
+assert.equal(makeVisualQuery("SELECT * FROM x",10),"SELECT * FROM (SELECT * FROM x) AS __bdd_visual LIMIT 11");
+assert.throws(()=>makeVisualQuery("SELECT 1",10001));
+assert.throws(()=>makeVisualQuery("SELECT 1",0));
+assert.deepEqual(normalizeVisualRows(["a","b"],[{a:4n,b:"ok"}]),[{a:4,b:"ok"}]);
+assert.equal(normalizeVisualRows(["x"],[{x:9007199254740993n}])[0].x,"9007199254740993");
+assert.equal(normalizeVisualRows(["x"],[{x:Infinity}])[0].x,null);
+assert.throws(()=>normalizeVisualRows(["x","x"],[{x:1}]),/uniquely named/);
+assert.throws(()=>normalizeVisualRows(["x"],[]),/1–10,000/);
+assert.throws(()=>normalizeVisualRows(["x"],Array.from({length:10001},()=>({x:1}))),/1–10,000/);
+console.log(JSON.stringify({ok:true,feature:"visual-data-studio",checks:9}));

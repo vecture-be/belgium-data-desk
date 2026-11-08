@@ -1,0 +1,21 @@
+name: Catalogue correction
+description: A wrong publisher, licence, contact, topic, broken link or missing official source.
+labels: ["catalogue"]
+body:
+  - type: input
+    id: record
+    attributes:
+      label: Record
+      description: Dataset id from get_dataset or the page address on data.vecture.be.
+    validations: { required: true }
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What is wrong, and what it should be
+    validations: { required: true }
+  - type: input
+    id: source
+    attributes:
+      label: Evidence
+      description: Link to the publisher's page that confirms the correction.
+    validations: { required: true }
