@@ -49,7 +49,7 @@ Requirements for a live tool:
 
 - The upstream is the official publisher (or its official service), with a licence that allows reuse, and needs **no API key**: the hosted instance must work without secrets.
 - No tool accepts a URL. Inputs are validated before any request is made.
-- A call stays within a few upstream requests and a few milliseconds of CPU (the Workers free plan allows 10 ms).
+- A call stays within bounded upstream-request, response-size and execution-time budgets.
 - No personal data in answers: name enterprises and public bodies, not private persons.
 
 ## Development
