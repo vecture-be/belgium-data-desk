@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="1490" viewBox="0 0 640 1490" role="img" aria-labelledby="title desc">
+<title id="title">Belgium Data Desk — mobile architecture</title>
+<desc id="desc">Readable vertical diagram of the Cloudflare-hosted open source platform, client integrations, MCP contracts, domain modules, shared services, official data, and GitHub operations. Waterinfo and GIPOD are planned.</desc>
+<defs>
+ <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#647a91"/></marker>
+</defs>
+<rect width="640" height="1490" fill="#fff"/>
+<rect x="24" y="20" width="16" height="48" fill="#111c29"/><rect x="40" y="20" width="10" height="48" fill="#f3d83d"/><rect x="50" y="20" width="10" height="48" fill="#ef4444"/>
+<text x="77" y="43" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="29" fill="#142c43">Belgium Data Desk</text>
+<text x="77" y="66" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#587089">Architecture · mobile overview</text>
+<!-- Client layer -->
+<rect x="24" y="95" width="592" height="117" rx="16" fill="#f4f0ff" stroke="#8673bc" stroke-width="2"/>
+<text x="46" y="126" font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="700" fill="#20364c">Clients</text>
+<rect x="43" y="143" width="263" height="51" rx="9" fill="#fff" stroke="#b9a8df"/>
+<rect x="326" y="143" width="270" height="51" rx="9" fill="#fff" stroke="#b9a8df"/>
+<text x="174" y="174" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#25364a">Website visitors</text>
+<text x="462" y="174" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#25364a">Claude &amp; other AI clients</text>
+<path d="M320 213 V255" stroke="#647a91" stroke-width="3" marker-end="url(#arrow)" fill="none"/>
+<!-- Cloudflare -->
+<rect x="24" y="266" width="592" height="182" rx="16" fill="#fff1e2" stroke="#e68b3b" stroke-width="2"/>
+<text x="46" y="300" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="#20364c">Cloudflare · data.vecture.be</text>
+<text x="46" y="328" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#53677e">One Worker, one public endpoint</text>
+<rect x="44" y="347" width="259" height="58" rx="9" fill="#fff" stroke="#e5ad76"/>
+<rect x="318" y="347" width="278" height="58" rx="9" fill="#fff" stroke="#e5ad76"/>
+<text x="173" y="372" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="700" fill="#26384e">Website</text>
+<text x="173" y="393" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="16" fill="#64758a">Static pages · browser SQL</text>
+<text x="457" y="372" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="700" fill="#26384e">MCP gateway</text>
+<text x="457" y="393" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="16" fill="#64758a">/mcp · read-only tools</text>
+<text x="320" y="432" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="16" fill="#53677e">Edge cache · rate limits · usage telemetry</text>
+<path d="M320 449 V493" stroke="#647a91" stroke-width="3" marker-end="url(#arrow)" fill="none"/>
+<!-- Public contract -->
+<rect x="24" y="505" width="592" height="111" rx="16" fill="#eaf4ff" stroke="#5e94c3" stroke-width="2"/>
+<text x="46" y="536" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="#20364c">Stable MCP contract</text>
+<text x="46" y="568" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#364f69">Catalogue search · dataset preview</text>
+<text x="46" y="594" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#364f69">Expert answer tools · consistent evidence</text>
+<path d="M320 617 V661" stroke="#647a91" stroke-width="3" marker-end="url(#arrow)" fill="none"/>
+<!-- Domain modules -->
+<rect x="24" y="674" width="592" height="274" rx="16" fill="#eafaed" stroke="#5b9e6c" stroke-width="2"/>
+<text x="46" y="707" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="#20364c">Domain modules</text>
+<text x="46" y="732" font-family="Arial,Helvetica,sans-serif" font-size="16" fill="#526d5b">Self-contained logic and tests · planned items dashed</text>
+<rect x="44" y="746" width="260" height="55" rx="9" fill="#fff" stroke="#6aa679" stroke-width="2"/>
+<rect x="319" y="746" width="277" height="55" rx="9" fill="#fff" stroke="#6aa679" stroke-width="2"/>
+<text x="174" y="780" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="19" fill="#253a2c">DOV · subsurface</text>
+<text x="458" y="780" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="19" fill="#253a2c">Statbel · statistics</text>
+<rect x="44" y="812" width="260" height="55" rx="9" fill="#fff" stroke="#6aa679" stroke-width="2"/>
+<rect x="319" y="812" width="277" height="55" rx="9" fill="#fff" stroke="#6aa679" stroke-width="2"/>
+<text x="174" y="846" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="19" fill="#253a2c">IRCEL · air quality</text>
+<text x="458" y="846" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="19" fill="#253a2c">VMM · flood risk</text>
+<rect x="44" y="878" width="260" height="51" rx="9" fill="#fff" stroke="#83909d" stroke-width="2" stroke-dasharray="7 6"/>
+<rect x="319" y="878" width="277" height="51" rx="9" fill="#fff" stroke="#83909d" stroke-width="2" stroke-dasharray="7 6"/>
+<text x="174" y="908" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#50627b">Waterinfo · planned</text>
+<text x="458" y="908" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#50627b">GIPOD · planned</text>
+<path d="M320 950 V990" stroke="#647a91" stroke-width="3" marker-end="url(#arrow)" fill="none"/>
+<!-- Shared -->
+<rect x="24" y="1002" width="592" height="113" rx="16" fill="#f1edff" stroke="#8d79c2" stroke-width="2"/>
+<text x="46" y="1035" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="#20364c">Shared foundations</text>
+<text x="46" y="1066" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#364f69">Locations · NIS IDs · provenance</text>
+<text x="46" y="1092" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#364f69">Data quality · safe API clients · caching</text>
+<path d="M320 1116 V1158" stroke="#647a91" stroke-width="3" marker-end="url(#arrow)" fill="none"/>
+<!-- Official data -->
+<rect x="24" y="1170" width="592" height="108" rx="16" fill="#e9faf0" stroke="#56a373" stroke-width="2"/>
+<text x="46" y="1203" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="#20364c">Official public-data sources</text>
+<text x="46" y="1235" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#364f69">data.gov.be · DOV · Statbel · IRCEL · VMM</text>
+<text x="46" y="1260" font-family="Arial,Helvetica,sans-serif" font-size="17" fill="#364f69">Regional APIs · CKAN · ODS · OGC · CSW</text>
+<!-- Operations at bottom -->
+<rect x="24" y="1310" width="592" height="144" rx="16" fill="#f2f6fa" stroke="#879bad" stroke-width="2"/>
+<text x="46" y="1345" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="#20364c">GitHub · open-source operations</text>
+<text x="46" y="1376" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#364f69">vecture-be/belgium-data-desk</text>
+<text x="46" y="1402" font-family="Arial,Helvetica,sans-serif" font-size="17" fill="#364f69">CI · harvest · verify · deploy · monitor</text>
+<text x="46" y="1428" font-family="Arial,Helvetica,sans-serif" font-size="17" fill="#364f69">Claude integration: separate thin public repo</text>
+<text x="27" y="1478" font-family="Arial,Helvetica,sans-serif" font-size="13" fill="#637487">Current components shown with solid borders; planned modules shown with dashed borders.</text>
+</svg>
