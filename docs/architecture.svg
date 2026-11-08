@@ -1,79 +1,123 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1015" viewBox="0 0 1600 1015" role="img" aria-labelledby="title desc">
-<title id="title">Belgium Data Desk — Scalable architecture</title>
-<desc id="desc">Clients connect to one Cloudflare Worker and read-only MCP gateway. Modular domain tools use shared safeguards and official Belgian public-data sources. GitHub CI/CD and a thin Claude plugin support the open-source product. Dashed boxes are planned.</desc>
-<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto"><path d="M0 0 L8 3.5 L0 7 Z" fill="#69819a"/></marker></defs>
-<rect width="1600" height="1015" fill="#ffffff"/>
-<text x="28" y="42" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="31" font-weight="800" fill="#1d3551">Belgium Data Desk · Scalable Architecture</text>
-<text x="28" y="67" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" fill="#536c86">Target modular monolith · Public code · One hosted MCP endpoint · Verified official sources</text>
-<rect x="20" y="80" width="1076" height="157" rx="16" fill="#f3eeff" stroke="#7f6eac" stroke-width="1.8" />
-<rect x="20" y="255" width="1076" height="189" rx="16" fill="#fff0df" stroke="#df8c40" stroke-width="1.8" />
-<rect x="20" y="466" width="1076" height="355" rx="16" fill="#eaf4fd" stroke="#548dc5" stroke-width="1.8" />
-<rect x="90" y="592" width="923" height="110" rx="16" fill="#eaf9e9" stroke="#5d9b61" stroke-width="1.8" />
-<rect x="20" y="843" width="1076" height="140" rx="16" fill="#eaf9f0" stroke="#3f9365" stroke-width="1.8" />
-<rect x="1120" y="80" width="454" height="190" rx="9" fill="#f3f6fa" stroke="#788da3" stroke-width="2" />
-<rect x="1120" y="288" width="454" height="192" rx="9" fill="#eff6ff" stroke="#568cc2" stroke-width="2" />
-<rect x="1120" y="498" width="454" height="174" rx="9" fill="#f3eeff" stroke="#8b74bc" stroke-width="2" />
-<rect x="1120" y="690" width="454" height="196" rx="9" fill="#f5f7fa" stroke="#7b8a99" stroke-width="2" />
-<rect x="1120" y="903" width="454" height="80" rx="9" fill="#ffffff" stroke="#7b8a99" stroke-width="2" />
-<rect x="64" y="128" width="231" height="76" rx="9" fill="#fff" stroke="#7f6eac" stroke-width="2" />
-<rect x="310" y="128" width="231" height="76" rx="9" fill="#fff" stroke="#7f6eac" stroke-width="2" />
-<rect x="556" y="128" width="231" height="76" rx="9" fill="#fff" stroke="#7f6eac" stroke-width="2" />
-<rect x="802" y="128" width="250" height="76" rx="9" fill="#fff" stroke="#7f6eac" stroke-width="2" />
-<rect x="170" y="302" width="770" height="45" rx="9" fill="#fff" stroke="#dd8b2e" stroke-width="2" />
-<rect x="92" y="365" width="273" height="55" rx="9" fill="#fff" stroke="#dd8b2e" stroke-width="2" />
-<rect x="387" y="365" width="331" height="55" rx="9" fill="#fff" stroke="#dd8b2e" stroke-width="2" />
-<rect x="741" y="365" width="270" height="55" rx="9" fill="#fff" stroke="#dd8b2e" stroke-width="2" />
-<rect x="90" y="514" width="923" height="56" rx="9" fill="#fff" stroke="#548dc5" stroke-width="2" />
-<rect x="110" y="627" width="143" height="55" rx="9" fill="#fff" stroke="#5d9b61" stroke-width="2" />
-<rect x="270" y="627" width="143" height="55" rx="9" fill="#fff" stroke="#5d9b61" stroke-width="2" />
-<rect x="430" y="627" width="143" height="55" rx="9" fill="#fff" stroke="#5d9b61" stroke-width="2" />
-<rect x="590" y="627" width="143" height="55" rx="9" fill="#fff" stroke="#5d9b61" stroke-width="2" />
-<rect x="750" y="627" width="113" height="55" rx="9" fill="#fff" stroke="#8794a2" stroke-width="2" stroke-dasharray="7 5"/>
-<rect x="880" y="627" width="113" height="55" rx="9" fill="#fff" stroke="#8794a2" stroke-width="2" stroke-dasharray="7 5"/>
-<rect x="90" y="730" width="923" height="67" rx="9" fill="#fff" stroke="#548dc5" stroke-width="2" />
-<rect x="65" y="890" width="234" height="68" rx="9" fill="#fff" stroke="#3f9365" stroke-width="2" />
-<rect x="319" y="890" width="234" height="68" rx="9" fill="#fff" stroke="#3f9365" stroke-width="2" />
-<rect x="573" y="890" width="234" height="68" rx="9" fill="#fff" stroke="#3f9365" stroke-width="2" />
-<rect x="827" y="890" width="234" height="68" rx="9" fill="#fff" stroke="#3f9365" stroke-width="2" />
-<path d="M179.5,204 V253 H555 V302" fill="none" stroke="#69819a" stroke-width="2" marker-end="url(#arrow)" />
-<path d="M425.5,204 V253 H555 V302" fill="none" stroke="#69819a" stroke-width="2" marker-end="url(#arrow)" />
-<path d="M556,166 H940" fill="none" stroke="#69819a" stroke-width="2" marker-end="url(#arrow)" />
-<path d="M802,166 H940" fill="none" stroke="#69819a" stroke-width="2" marker-end="url(#arrow)" />
-<path d="M552.5,420 V467 H551.5 V514" fill="none" stroke="#69819a" stroke-width="2" marker-end="url(#arrow)" />
-<path d="M551.5,570 V581 H551.5 V592" fill="none" stroke="#69819a" stroke-width="2" marker-end="url(#arrow)" />
-<path d="M551.5,702 V716 H551.5 V730" fill="none" stroke="#69819a" stroke-width="2" marker-end="url(#arrow)" />
-<path d="M551.5,797 V820 H558 V843" fill="none" stroke="#69819a" stroke-width="2" marker-end="url(#arrow)" />
-<path d="M1120,384 H718" fill="none" stroke="#69819a" stroke-width="2" marker-end="url(#arrow)" />
-<path d="M1120,585 H940" fill="none" stroke="#69819a" stroke-width="2" marker-end="url(#arrow)" />
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="17" text-anchor="start"><tspan x="38" y="110" font-weight="700">CLIENTS · WEB AND AI</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="16" text-anchor="middle"><tspan x="179.5" y="161" font-weight="700">Web UI</tspan><tspan x="179.5" y="183" font-weight="400">Public catalogue and SQL Lab</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="16" text-anchor="middle"><tspan x="425.5" y="161" font-weight="700">Claude</tspan><tspan x="425.5" y="183" font-weight="400">Thin MCP plugin and skill</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="16" text-anchor="middle"><tspan x="671.5" y="161" font-weight="700">Other AI clients</tspan><tspan x="671.5" y="183" font-weight="400">Standard MCP</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="16" text-anchor="middle"><tspan x="927" y="161" font-weight="700">Developers and public</tspan><tspan x="927" y="183" font-weight="400">Open-data access</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="17" text-anchor="start"><tspan x="38" y="285" font-weight="700">CLOUDFLARE · SINGLE HOSTED APPLICATION</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="15" text-anchor="middle"><tspan x="555" y="329.5" font-weight="700">data.vecture.be  ·  stable public origin</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="15" text-anchor="middle"><tspan x="228.5" y="397.5" font-weight="700">Static website · browser SQL</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="15" text-anchor="middle"><tspan x="552.5" y="397.5" font-weight="700">Worker · stateless /mcp gateway</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="15" text-anchor="middle"><tspan x="876" y="397.5" font-weight="700">Caching · rate limits · observability</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="17" text-anchor="start"><tspan x="38" y="496" font-weight="700">APPLICATION CORE · PUBLIC REPOSITORY</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="15" text-anchor="middle"><tspan x="551.5" y="547" font-weight="700">Stable MCP contracts · catalogue search · dataset preview · answer tools</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="17" text-anchor="start"><tspan x="108" y="622" font-weight="700">DOMAIN CAPABILITIES</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="13" text-anchor="middle"><tspan x="181.5" y="649.5" font-weight="700">DOV</tspan><tspan x="181.5" y="671.5" font-weight="400">Live subsurface</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="13" text-anchor="middle"><tspan x="341.5" y="649.5" font-weight="700">Statbel</tspan><tspan x="341.5" y="671.5" font-weight="400">Stats + snapshots</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="13" text-anchor="middle"><tspan x="501.5" y="649.5" font-weight="700">IRCEL</tspan><tspan x="501.5" y="671.5" font-weight="400">Live air</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="13" text-anchor="middle"><tspan x="661.5" y="649.5" font-weight="700">VMM</tspan><tspan x="661.5" y="671.5" font-weight="400">Flood maps</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="13" text-anchor="middle"><tspan x="806.5" y="649.5" font-weight="700">Waterinfo</tspan><tspan x="806.5" y="671.5" font-weight="400">PLANNED</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="13" text-anchor="middle"><tspan x="936.5" y="649.5" font-weight="700">GIPOD</tspan><tspan x="936.5" y="671.5" font-weight="400">PLANNED</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="16" text-anchor="middle"><tspan x="551.5" y="758.5" font-weight="700">Shared foundations · identifiers · geography · data quality</tspan><tspan x="551.5" y="780.5" font-weight="400">provenance · bounded upstream client · budget-aware caching</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="17" text-anchor="start"><tspan x="38" y="873" font-weight="700">OFFICIAL DATA SOURCES</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="16" text-anchor="middle"><tspan x="182" y="919" font-weight="700">data.gov.be</tspan><tspan x="182" y="941" font-weight="400">National DCAT</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="16" text-anchor="middle"><tspan x="436" y="919" font-weight="700">DOV · VMM</tspan><tspan x="436" y="941" font-weight="400">Regional APIs</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="16" text-anchor="middle"><tspan x="690" y="919" font-weight="700">Statbel · IRCEL</tspan><tspan x="690" y="941" font-weight="400">Federal / interregional</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="16" text-anchor="middle"><tspan x="944" y="919" font-weight="700">CKAN · ODS · OGC</tspan><tspan x="944" y="941" font-weight="400">Additional publishers</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="17" text-anchor="middle"><tspan x="1347" y="150" font-weight="700">GITHUB · SOURCE OF TRUTH</tspan><tspan x="1347" y="172" font-weight="400">vecture-be/belgium-data-desk</tspan><tspan x="1347" y="194" font-weight="400">MIT · Contributions · Tests</tspan><tspan x="1347" y="216" font-weight="400">One owned deployment definition</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="17" text-anchor="middle"><tspan x="1347" y="359" font-weight="700">AUTOMATED DELIVERY</tspan><tspan x="1347" y="381" font-weight="400">CI: unit + relevance checks</tspan><tspan x="1347" y="403" font-weight="400">Weekly: harvesting and link probing</tspan><tspan x="1347" y="425" font-weight="400">Staging verification → production</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="17" text-anchor="middle"><tspan x="1347" y="560" font-weight="700">CLAUDE CONNECTOR</tspan><tspan x="1347" y="582" font-weight="400">mhatipog/belgium-data-desk-claude</tspan><tspan x="1347" y="604" font-weight="400">MCP URL + usage instructions only</tspan><tspan x="1347" y="626" font-weight="400">No duplicated domain logic</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="17" text-anchor="middle"><tspan x="1347" y="753" font-weight="700">OPERATIONS · GUARDRAILS</tspan><tspan x="1347" y="775" font-weight="400">GitHub and Cloudflare secrets outside code</tspan><tspan x="1347" y="797" font-weight="400">Source-health and version monitoring</tspan><tspan x="1347" y="819" font-weight="400">Retire legacy web-operations deploy</tspan><tspan x="1347" y="841" font-weight="400">No KV or Durable Objects deployed</tspan></text>
-<text font-family="Inter,Segoe UI,Arial,sans-serif" fill="#21354e" font-size="16" text-anchor="middle"><tspan x="1347" y="938" font-weight="700">STATUS KEY</tspan><tspan x="1347" y="960" font-weight="400">Solid = implemented · Dashed = planned</tspan></text>
-<text x="27" y="1005" fill="#61758b" font-family="Arial,sans-serif" font-size="12">Current: static assets, Cloudflare Worker, DOV, Statbel, IRCEL, VMM, GitHub Actions. Proposed: Waterinfo, GIPOD and further modularization.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="1312" viewBox="0 0 1900 1312" role="img" aria-labelledby="ttl dsc">
+<title id="ttl">Belgium Data Desk · Logical Platform Architecture</title>
+<desc id="dsc">Advanced logical diagram showing access channels, public service interfaces, MCP and discovery tools, domain capabilities, shared evidence and security foundations, official data sources, offline harvesting pipeline, CI and release governance. Not a physical deployment inventory.</desc>
+<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#607d98"/></marker></defs>
+<rect width="1900" height="1312" fill="#ffffff"/>
+<rect x="28" y="17" width="12" height="54" rx="2" fill="#171e2e"/><rect x="40" y="17" width="11" height="54" fill="#f8d93d"/><rect x="51" y="17" width="12" height="54" rx="1" fill="#ef4545"/>
+<text x="84" y="47" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="34" font-weight="800" fill="#152e48">Belgium Data Desk · Logical Architecture</text>
+<text x="86" y="77" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17" fill="#5e7287">Evidence-first public data platform · Domain extensibility · Standard MCP · Controlled release engineering</text>
+<rect x="28" y="108" width="1320" height="127" rx="17" fill="#f2eeff" stroke="#8770bf" stroke-width="1.8" />
+<rect x="50" y="166" width="305.5" height="48" rx="11" fill="#ffffff" stroke="#8770bf" stroke-width="2" />
+<rect x="373.5" y="166" width="305.5" height="48" rx="11" fill="#ffffff" stroke="#8770bf" stroke-width="2" />
+<rect x="697" y="166" width="305.5" height="48" rx="11" fill="#ffffff" stroke="#8770bf" stroke-width="2" />
+<rect x="1020.5" y="166" width="305.5" height="48" rx="11" fill="#ffffff" stroke="#8770bf" stroke-width="2" />
+<rect x="28" y="253" width="1320" height="149" rx="17" fill="#fff2e4" stroke="#d7964d" stroke-width="1.8" />
+<rect x="50" y="311" width="413.3333333333333" height="69" rx="11" fill="#ffffff" stroke="#d7964d" stroke-width="2" />
+<rect x="481.3333333333333" y="311" width="413.3333333333333" height="69" rx="11" fill="#ffffff" stroke="#d7964d" stroke-width="2" />
+<rect x="912.6666666666666" y="311" width="413.3333333333333" height="69" rx="11" fill="#ffffff" stroke="#d7964d" stroke-width="2" />
+<rect x="28" y="421" width="1320" height="134" rx="17" fill="#eaf4ff" stroke="#5e95c6" stroke-width="1.8" />
+<rect x="50" y="479" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#5e95c6" stroke-width="2" />
+<rect x="373.5" y="479" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#5e95c6" stroke-width="2" />
+<rect x="697" y="479" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#5e95c6" stroke-width="2" />
+<rect x="1020.5" y="479" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#5e95c6" stroke-width="2" />
+<rect x="28" y="577" width="1320" height="166" rx="17" fill="#e9f7ed" stroke="#53a16e" stroke-width="1.8" />
+<rect x="50" y="635" width="203.5" height="79" rx="11" fill="#ffffff" stroke="#53a16e" stroke-width="2" />
+<rect x="264.5" y="635" width="203.5" height="79" rx="11" fill="#ffffff" stroke="#53a16e" stroke-width="2" />
+<rect x="479" y="635" width="203.5" height="79" rx="11" fill="#ffffff" stroke="#53a16e" stroke-width="2" />
+<rect x="693.5" y="635" width="203.5" height="79" rx="11" fill="#ffffff" stroke="#53a16e" stroke-width="2" />
+<rect x="908" y="635" width="203.5" height="79" rx="11" fill="#ffffff" stroke="#99a6b6" stroke-width="2" stroke-dasharray="8 6"/>
+<rect x="1122.5" y="635" width="203.5" height="79" rx="11" fill="#ffffff" stroke="#99a6b6" stroke-width="2" stroke-dasharray="8 6"/>
+<rect x="28" y="764" width="1320" height="139" rx="17" fill="#f3efff" stroke="#8d7abf" stroke-width="1.8" />
+<rect x="50" y="822" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#8d7abf" stroke-width="2" />
+<rect x="373.5" y="822" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#8d7abf" stroke-width="2" />
+<rect x="697" y="822" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#8d7abf" stroke-width="2" />
+<rect x="1020.5" y="822" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#8d7abf" stroke-width="2" />
+<rect x="28" y="925" width="1320" height="132" rx="17" fill="#e8f9ef" stroke="#4d9a73" stroke-width="1.8" />
+<rect x="50" y="983" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#4d9a73" stroke-width="2" />
+<rect x="373.5" y="983" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#4d9a73" stroke-width="2" />
+<rect x="697" y="983" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#4d9a73" stroke-width="2" />
+<rect x="1020.5" y="983" width="305.5" height="61" rx="11" fill="#ffffff" stroke="#4d9a73" stroke-width="2" />
+<rect x="28" y="1079" width="1320" height="193" rx="17" fill="#eaf7ff" stroke="#6496b4" stroke-width="1.8" />
+<rect x="50" y="1155" width="305.5" height="78" rx="11" fill="#ffffff" stroke="#6496b4" stroke-width="2" />
+<rect x="373.5" y="1155" width="305.5" height="78" rx="11" fill="#ffffff" stroke="#6496b4" stroke-width="2" />
+<rect x="697" y="1155" width="305.5" height="78" rx="11" fill="#ffffff" stroke="#6496b4" stroke-width="2" />
+<rect x="1020.5" y="1155" width="305.5" height="78" rx="11" fill="#ffffff" stroke="#6496b4" stroke-width="2" />
+<rect x="1370" y="108" width="500" height="201" rx="17" fill="#f5f7fa" stroke="#8091a7" stroke-width="1.8" />
+<rect x="1370" y="329" width="500" height="215" rx="17" fill="#eff7ff" stroke="#5e95c6" stroke-width="1.8" />
+<rect x="1370" y="566" width="500" height="157" rx="17" fill="#f3edff" stroke="#8873bd" stroke-width="1.8" />
+<rect x="1370" y="745" width="500" height="180" rx="17" fill="#f6f8fb" stroke="#8393a4" stroke-width="1.8" />
+<rect x="1370" y="945" width="500" height="172" rx="17" fill="#eef8f0" stroke="#65a679" stroke-width="1.8" />
+<rect x="1370" y="1137" width="500" height="135" rx="17" fill="#fff" stroke="#a3b0c0" stroke-width="1.8" />
+<path d="M 688 236 L 688 250" stroke="#607d98" stroke-width="3" fill="none" marker-end="url(#arr)"/>
+<path d="M 688 403 L 688 418" stroke="#607d98" stroke-width="3" fill="none" marker-end="url(#arr)"/>
+<path d="M 688 556 L 688 574" stroke="#607d98" stroke-width="3" fill="none" marker-end="url(#arr)"/>
+<path d="M 688 744 L 688 761" stroke="#607d98" stroke-width="3" fill="none" marker-end="url(#arr)"/>
+<path d="M 688 904 L 688 922" stroke="#607d98" stroke-width="3" fill="none" marker-end="url(#arr)"/>
+<path d="M 688 1058 L 688 1076" stroke="#607d98" stroke-width="3" fill="none" marker-end="url(#arr)"/>
+<text x="50" y="145" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="1" fill="#1b3450">01  ACCESS CHANNELS</text>
+<text x="202.75" y="185.5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="202.75" font-size="18.5" font-weight="700">Website &amp; explorer</tspan><tspan x="202.75" dy="25" font-size="15.5" fill="#586d80">Catalogues · browser SQL</tspan></text>
+<text x="526.25" y="185.5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="526.25" font-size="18.5" font-weight="700">Claude</tspan><tspan x="526.25" dy="25" font-size="15.5" fill="#586d80">Thin MCP skill</tspan></text>
+<text x="849.75" y="185.5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="849.75" font-size="18.5" font-weight="700">Other AI assistants</tspan><tspan x="849.75" dy="25" font-size="15.5" fill="#586d80">MCP-compatible clients</tspan></text>
+<text x="1173.25" y="185.5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="1173.25" font-size="18.5" font-weight="700">Developers &amp; analysts</tspan><tspan x="1173.25" dy="25" font-size="15.5" fill="#586d80">Open-data discovery</tspan></text>
+<text x="50" y="290" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="1" fill="#1b3450">02  PUBLIC SERVICE INTERFACES</text>
+<text x="256.66666666666663" y="341" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="256.66666666666663" font-size="18.5" font-weight="700">data.vecture.be</tspan><tspan x="256.66666666666663" dy="25" font-size="15.5" fill="#586d80">Stable public origin</tspan></text>
+<text x="688" y="341" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="688" font-size="18.5" font-weight="700">Web experience</tspan><tspan x="688" dy="25" font-size="15.5" fill="#586d80">Search · visualise · inspect</tspan></text>
+<text x="1119.3333333333333" y="341" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="1119.3333333333333" font-size="18.5" font-weight="700">MCP endpoint · /mcp</tspan><tspan x="1119.3333333333333" dy="25" font-size="15.5" fill="#586d80">Read-only tool contract</tspan></text>
+<text x="50" y="458" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="1" fill="#1b3450">03  ANSWER &amp; DISCOVERY SERVICES</text>
+<text x="202.75" y="505" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="202.75" font-size="18.5" font-weight="700">Catalogue discovery</tspan><tspan x="202.75" dy="25" font-size="15.5" fill="#586d80">Search · fetch · overview</tspan></text>
+<text x="526.25" y="505" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="526.25" font-size="18.5" font-weight="700">Dataset inspection</tspan><tspan x="526.25" dy="25" font-size="15.5" fill="#586d80">Metadata · sample preview</tspan></text>
+<text x="849.75" y="505" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="849.75" font-size="18.5" font-weight="700">Expert answers</tspan><tspan x="849.75" dy="25" font-size="15.5" fill="#586d80">Location · statistics · risk</tspan></text>
+<text x="1173.25" y="505" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="1173.25" font-size="18.5" font-weight="700">Evidence contract</tspan><tspan x="1173.25" dy="25" font-size="15.5" fill="#586d80">Sources · dates · caveats</tspan></text>
+<text x="50" y="614" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="1" fill="#1b3450">04  DOMAIN CAPABILITIES</text>
+<text x="151.75" y="670" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="151.75" font-size="18.5" font-weight="700">DOV</tspan><tspan x="151.75" dy="25" font-size="15.5" fill="#586d80">Geology / groundwater</tspan></text>
+<text x="366.25" y="670" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="366.25" font-size="18.5" font-weight="700">Statbel</tspan><tspan x="366.25" dy="25" font-size="15.5" fill="#586d80">Demographics / prices</tspan></text>
+<text x="580.75" y="670" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="580.75" font-size="18.5" font-weight="700">IRCEL</tspan><tspan x="580.75" dy="25" font-size="15.5" fill="#586d80">Air quality</tspan></text>
+<text x="795.25" y="670" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="795.25" font-size="18.5" font-weight="700">VMM</tspan><tspan x="795.25" dy="25" font-size="15.5" fill="#586d80">Flood mapping</tspan></text>
+<text x="1009.75" y="670" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="1009.75" font-size="18.5" font-weight="700">Waterinfo</tspan><tspan x="1009.75" dy="25" font-size="15.5" fill="#586d80">PLANNED</tspan></text>
+<text x="1224.25" y="670" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="1224.25" font-size="18.5" font-weight="700">GIPOD</tspan><tspan x="1224.25" dy="25" font-size="15.5" fill="#586d80">PLANNED</tspan></text>
+<text x="50" y="801" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="1" fill="#1b3450">05  SHARED EVIDENCE &amp; SAFETY</text>
+<text x="202.75" y="848" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="202.75" font-size="18.5" font-weight="700">Geography</tspan><tspan x="202.75" dy="25" font-size="15.5" fill="#586d80">Coordinates · NIS IDs</tspan></text>
+<text x="526.25" y="848" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="526.25" font-size="18.5" font-weight="700">Data semantics</tspan><tspan x="526.25" dy="25" font-size="15.5" fill="#586d80">Units · dates · boundaries</tspan></text>
+<text x="849.75" y="848" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="849.75" font-size="18.5" font-weight="700">Quality &amp; provenance</tspan><tspan x="849.75" dy="25" font-size="15.5" fill="#586d80">Publisher · licence · freshness</tspan></text>
+<text x="1173.25" y="848" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="1173.25" font-size="18.5" font-weight="700">Safe upstream access</tspan><tspan x="1173.25" dy="25" font-size="15.5" fill="#586d80">Allowlist · limits · cache</tspan></text>
+<text x="50" y="962" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="1" fill="#1b3450">06  AUTHORITATIVE PUBLIC DATA</text>
+<text x="202.75" y="1009" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="202.75" font-size="18.5" font-weight="700">Federal</tspan><tspan x="202.75" dy="25" font-size="15.5" fill="#586d80">Statbel · national DCAT</tspan></text>
+<text x="526.25" y="1009" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="526.25" font-size="18.5" font-weight="700">Flanders</tspan><tspan x="526.25" dy="25" font-size="15.5" fill="#586d80">DOV · VMM · regional APIs</tspan></text>
+<text x="849.75" y="1009" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="849.75" font-size="18.5" font-weight="700">Interregional</tspan><tspan x="849.75" dy="25" font-size="15.5" fill="#586d80">IRCEL and partners</tspan></text>
+<text x="1173.25" y="1009" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="1173.25" font-size="18.5" font-weight="700">Other publishers</tspan><tspan x="1173.25" dy="25" font-size="15.5" fill="#586d80">CKAN · ODS · OGC · CSW</tspan></text>
+<text x="50" y="1116" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="1" fill="#1b3450">07  INDEXED DISCOVERY PIPELINE · SCHEDULED / OFFLINE</text>
+<text x="202.75" y="1189.5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="202.75" font-size="18.5" font-weight="700">Harvest adapters</tspan><tspan x="202.75" dy="25" font-size="15.5" fill="#586d80">Official data catalogues</tspan></text>
+<text x="526.25" y="1189.5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="526.25" font-size="18.5" font-weight="700">Normalize &amp; curate</tspan><tspan x="526.25" dy="25" font-size="15.5" fill="#586d80">Identity · licence · topic</tspan></text>
+<text x="849.75" y="1189.5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="849.75" font-size="18.5" font-weight="700">Validate &amp; probe</tspan><tspan x="849.75" dy="25" font-size="15.5" fill="#586d80">Link health · source status</tspan></text>
+<text x="1173.25" y="1189.5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" fill="#233d52"><tspan x="1173.25" font-size="18.5" font-weight="700">Publish artifacts</tspan><tspan x="1173.25" dy="25" font-size="15.5" fill="#586d80">Search shards · SEO pages</tspan></text>
+<text x="1392" y="145" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#1b3450">OPEN-SOURCE OWNERSHIP</text>
+<text x="1393" y="185" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">vecture-be/belgium-data-desk</text>
+<text x="1393" y="212" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Public implementation and contribution model</text>
+<text x="1393" y="239" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Versioned releases and documentation</text>
+<text x="1393" y="266" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Domain rules reviewed with source evidence</text>
+<text x="1392" y="366" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#1b3450">DELIVERY &amp; QUALITY GATES</text>
+<text x="1393" y="406" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Pull request → automated tests</text>
+<text x="1393" y="433" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Relevance evaluation → source fixtures</text>
+<text x="1393" y="460" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Catalogue rebuilds and link checks</text>
+<text x="1393" y="487" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Deployment → post-release verification</text>
+<text x="1393" y="514" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Staging / rollback hardening: planned</text>
+<text x="1392" y="603" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#1b3450">CLAUDE CONNECTOR</text>
+<text x="1393" y="643" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">mhatipog/belgium-data-desk-claude</text>
+<text x="1393" y="670" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Skills and MCP configuration only</text>
+<text x="1393" y="697" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Uses the same public /mcp contract</text>
+<text x="1392" y="782" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#1b3450">TRUST &amp; GOVERNANCE</text>
+<text x="1393" y="822" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Read-only tools · no arbitrary URLs</text>
+<text x="1393" y="849" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Bounded upstream calls and responses</text>
+<text x="1393" y="876" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Per-source freshness and uncertainty</text>
+<text x="1393" y="903" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Secret material outside source control</text>
+<text x="1392" y="982" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#1b3450">DOMAIN EXTENSION MODEL</text>
+<text x="1393" y="1022" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Source adapter + expert answer logic</text>
+<text x="1393" y="1049" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Typed outputs + provenance + fixtures</text>
+<text x="1393" y="1076" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Promotion only after real-source tests</text>
+<text x="1393" y="1103" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Pluggable registry: proposed</text>
+<text x="1392" y="1174" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#1b3450">DIAGRAM STATUS</text>
+<text x="1393" y="1214" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Solid cards = present capabilities</text>
+<text x="1393" y="1241" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Dashed cards = planned integrations</text>
+<text x="1393" y="1268" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17.5" fill="#334e68">Logical view; not deployment topology</text>
+<text x="30" y="1301" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" fill="#53697d">Logical responsibilities and data flows are shown independently of the hosting footprint. Planned capabilities are explicitly marked.</text>
 </svg>
