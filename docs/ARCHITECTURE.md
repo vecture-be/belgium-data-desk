@@ -1,9 +1,9 @@
 # Architecture
 
-![Belgium Data Desk — mobile architecture](./architecture-mobile.svg)
+![Belgium Data Desk — mobile-friendly logical architecture](./architecture-mobile.svg)
 
-[Detailed architecture](./architecture.svg) · [Edit the draw.io diagram](./architecture.drawio)
+[Detailed architecture](./architecture.svg) · [Editable draw.io source](./architecture.drawio)
 
-**Maintainer note.** Keep one public application repository, one Cloudflare Worker and one stable `/mcp` endpoint. New domains are independently testable, reuse safe upstream access and shared identifiers, and return source-backed answers. Claude remains a thin client; preserve existing tool contracts.
+**Maintainer principle.** Keep one authoritative open-source product and a stable public MCP contract. Separate indexed discovery from live, source-backed answers. Every domain must preserve bounded upstream access, identifiers, units, freshness and provenance, with reproducible tests before release. Claude stays a thin client; capabilities belong in the shared platform.
 
-**Current:** DOV, Statbel, IRCEL, VMM, static catalogue, scheduled harvesting and deployment workflows. **Planned:** Waterinfo, GIPOD and stricter domain isolation. No KV or Durable Objects today. Secrets stay outside Git; retire legacy deployment jobs only after verifying the new pipeline.
+**Status.** DOV, Statbel, IRCEL, VMM and catalogue indexing are implemented. Waterinfo, GIPOD, a formal domain registry and stronger release gates are future extensions. This is a **logical architecture**, not an inventory of deployed infrastructure.

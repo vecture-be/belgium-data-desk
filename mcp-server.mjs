@@ -1,7 +1,6 @@
 // Read-only MCP (Model Context Protocol) server for the Belgium Data Desk catalogue, served by the same Worker at POST /mcp.
 // Stateless Streamable-HTTP JSON-RPC. It answers only from pre-built static shards (public/mcp/**), never fetches a user-supplied URL,
-// and keeps each request inside the Workers free-tier budgets: at most MAX_ASSET_READS asset reads (the free plan allows 50
-// subrequests) and a few hundred KiB of JSON to parse (10 ms CPU). The shard format is produced by scripts/build-mcp-index.mjs.
+// and bounds asset reads and parsed JSON per request. The shard format is produced by scripts/build-mcp-index.mjs.
 
 import { expandWord } from "./public/dataset-synonyms-v1.mjs";
 import { AUTHORITIES, authoritiesFor } from "./public/dataset-authority-v1.mjs";

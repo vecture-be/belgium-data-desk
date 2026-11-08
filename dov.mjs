@@ -21,7 +21,7 @@ const PATH_ONLY={"statbel.fgov.be":"/sites/default/files/files/opendata/"};
 const WFS=DOV_ORIGIN+"/geoserver/wfs",WMS=DOV_ORIGIN+"/geoserver/wms",EXPORT=DOV_ORIGIN+"/xdov/proxy/export",XSD=DOV_ORIGIN+"/xdov/schema/latest/xsd/kern/interpretatie/";
 const TIMEOUT_MS=12000,MAX_UPSTREAM=20,MAX_POINTS=500,NEAREST=5,DEEPEST=3,MAX_LAYERS=80,MAX_TEXT=240;
 const DAY=86400,HOUR=3600;
-// max 500 m: a 1 km radius in central Antwerp returns ~360 KiB from DOV and ~10 ms CPU, the whole free-plan budget; 500 m costs ~4 ms.
+// Maximum radius is bounded to avoid unexpectedly large WFS responses in dense areas.
 export const RADIUS={default:250,min:25,max:500};
 // Lambert 72 box that holds the Flemish Region (with margin); DOV has no data outside Flanders.
 const L72={minX:15000,maxX:265000,minY:150000,maxY:250000};
