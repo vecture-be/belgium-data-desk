@@ -4,7 +4,7 @@
   "compatibility_date": "2026-09-20",
   "workers_dev": true,
   "preview_urls": false,
-  // Workers Logs (free tier: 200k events/day): per-request CPU time, errors and console output in the dashboard.
+  // Runtime observability: performance and error diagnostics.
   "observability": { "enabled": true },
   "assets": {
     "directory": "./public",
