@@ -48,20 +48,11 @@ node scripts/smoke-mcp.mjs http://localhost:8787     # every MCP tool once
 node scripts/verify-live.mjs http://localhost:8787   # catalogue, relay, MCP and page integrity
 ```
 
-## How it fits together
+## Architecture
 
-```
-scripts/harvest.mjs ─┐                     public/harvested-catalog.json, national-catalog-*.json, relay-index.mjs
-scripts/snapshot.mjs ┘  (one or the other)        │
-                                                  ▼
-scripts/apply-link-health.mjs → scripts/build-mcp-index.mjs → public/mcp/  (search shards)
-                                scripts/build-seo-pages.mjs → public/**    (static pages, sitemaps)
-                                                  │
-worker.mjs ── /mcp ──────────▶ mcp-server.mjs ── catalogue tools read public/mcp/ shards
-          │                         └── live tools: statbel.mjs, air.mjs, flood.mjs, dov*.mjs (fixed upstream hosts, budgets, caching)
-          ├── /api/dataset-file/<id> ── relay for catalogued CSV/TSV files (opaque ids only, never a URL)
-          └── everything else ── static assets (the website)
-```
+[Logical architecture and editable diagrams](docs/ARCHITECTURE.md) describe the public interfaces, the indexed catalogue pipeline, live-source answer tools, shared evidence controls, and the release process.
+
+The catalogue path harvests and checks source metadata before publishing search artifacts. Live answer tools query authoritative services with validated inputs, bounded upstream access, and source attribution. Both paths share consistent identifiers and provenance.
 
 | Where | What |
 | --- | --- |
