@@ -10,7 +10,7 @@ Hosted instance: **https://data.vecture.be** · MCP endpoint: `https://data.vect
 claude mcp add --transport http belgium-open-data https://data.vecture.be/mcp
 ```
 
-Everything here runs on one Cloudflare Worker with static assets, within the Workers free plan. There is no database, no account system and no tracking.
+The public service combines a searchable catalogue, browser-based analysis and read-only MCP tools. No account is required, and the website does not use tracking scripts.
 
 ## What the MCP server offers
 
@@ -79,7 +79,7 @@ You do not need to write code to help. The most useful contributions are a wrong
 
 ## Hosting your own
 
-`wrangler.jsonc` is the whole deployment. On your own Cloudflare account: delete or change `PUBLIC_ORIGIN` (it sets the address used in links the tools return), delete the `analytics_engine_datasets` block unless you enable Workers Analytics Engine, then `npx wrangler deploy`. The free plan is enough: static assets do not count as requests, and an MCP search uses a few milliseconds of CPU.
+Deployment configuration lives in `wrangler.jsonc`. For your own installation, configure `PUBLIC_ORIGIN` and the bindings for your account, then run `npx wrangler deploy`. Keep credentials in deployment secrets, not source control.
 
 ## Licence
 
