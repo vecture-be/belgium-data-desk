@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { accessTier, interpretProbe } from "./curate.mjs";
+import { accessTier, interpretProbe, probeIsConclusive } from "./curate.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url)),pub=path.resolve(__dirname,"../public");
 
@@ -15,7 +15,7 @@ export function loadProbes(file){
   for(const line of fs.readFileSync(file,"utf8").split("\n")){
     if(!line.trim())continue;
     let r;try{r=JSON.parse(line)}catch{continue}
-    if(!r.url)continue;
+    if(!r.url||!probeIsConclusive(r))continue;
     const h=r.ok!==undefined&&"formatMatch" in r?{ok:r.ok,formatMatch:r.formatMatch,cors:!!r.cors,range:!!r.range,total:r.total??null}:interpretProbe(r);
     byUrl.set(r.url,{...h,at:(r.checkedAt||"").slice(0,10)});
     if(r.checkedAt&&r.checkedAt>newest)newest=r.checkedAt;

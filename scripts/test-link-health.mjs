@@ -16,6 +16,20 @@ assert.equal(byUrl.size,3);assert.equal(at,"2026-10-02");
 assert.equal(byUrl.get("https://a.example/ok.csv").ok,true);
 assert.equal(byUrl.get("https://a.example/page.csv").formatMatch,false);
 assert.equal(loadProbes(path.join(dir,"missing.jsonl")).byUrl.size,0);
+// Only answers about the link itself count: a probe that was blocked, throttled or timed out says nothing about the file.
+const file2=path.join(dir,"p2.jsonl");
+fs.writeFileSync(file2,[
+  {url:"https://b.example/timeout.csv",fmt:"CSV",error:"TimeoutError"},
+  {url:"https://b.example/reset.csv",fmt:"CSV",error:"ECONNRESET"},
+  {url:"https://b.example/forbidden.csv",fmt:"CSV",status:403},
+  {url:"https://b.example/throttled.csv",fmt:"CSV",status:429},
+  {url:"https://b.example/down.csv",fmt:"CSV",status:503},
+  {url:"https://b.example/gone.csv",fmt:"CSV",status:410},
+  {url:"https://nohost.example/x.csv",fmt:"CSV",error:"ENOTFOUND"},
+  // a line already interpreted by probe-links.mjs keeps its raw status and error, so the rule still applies
+  {url:"https://b.example/interpreted-timeout.csv",fmt:"CSV",error:"TimeoutError",ok:false,formatMatch:null}
+].map(r=>JSON.stringify(r)).join("\n")+"\n");
+assert.deepEqual([...loadProbes(file2).byUrl.keys()].sort(),["https://b.example/gone.csv","https://nohost.example/x.csv"],"inconclusive probes are left out");
 
 const d=(url,format="CSV")=>({url,format});
 const items=[

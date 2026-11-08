@@ -109,3 +109,13 @@ export function interpretProbe(p){
   const expected=SNIFF_OK[p.fmt];
   return{ok,status:p.status||null,error:p.error||null,formatMatch:ok&&expected?expected.includes(p.sniff):null,sniff:p.sniff||null,total:p.total??null,cors:!!p.cors,range:!!p.range,lastModified:p.lastModified||null};
 }
+/** Whether a probe result says something about the link itself, not about where the probe ran. A success, a definitive "gone"
+ *  (404, 410), a host that does not exist or a malformed URL are conclusive. Timeouts, refused or reset connections, 401/403/429
+ *  and 5xx are not: some Belgian government hosts block or slow down foreign or cloud IP ranges, and a link that answers from
+ *  Belgium must not be labelled broken because the probe ran in a US data centre. Inconclusive results are left out of health. */
+const GONE=new Set([404,410]),NO_HOST=new Set(["ENOTFOUND","ERR_INVALID_URL","ERR_TLS_CERT_ALTNAME_INVALID","CERT_HAS_EXPIRED"]);
+export function probeIsConclusive(p){
+  if(!p.error&&p.status>=200&&p.status<300)return true;
+  if(p.error)return NO_HOST.has(p.error);
+  return GONE.has(p.status);
+}
