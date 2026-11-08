@@ -3,9 +3,9 @@
 <desc id="dsc">Mobile-friendly logical architecture showing public web and MCP access, indexed search and live expert tools, source-backed domain answers, trust controls, ingestion pipelines, Claude integration and governance.</desc>
 <defs><marker id="arr" markerWidth="11" markerHeight="11" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#677f95"/></marker></defs>
 <rect width="700" height="1810" fill="#ffffff"/>
-<rect x="25" y="21" width="14" height="56" fill="#171e2e"/><rect x="39" y="21" width="12" height="56" fill="#f8d93d"/><rect x="51" y="21" width="12" height="56" fill="#e94445"/>
-<text x="85" y="49" font-family="Inter,Arial,sans-serif" font-weight="800" font-size="32" fill="#162f49">Belgium Data Desk</text>
-<text x="85" y="80" font-family="Inter,Arial,sans-serif" font-size="21" fill="#62778c">Logical platform architecture</text>
+
+<text x="25" y="49" font-family="Inter,Arial,sans-serif" font-weight="800" font-size="32" fill="#162f49">Belgium Data Desk</text>
+<text x="25" y="80" font-family="Inter,Arial,sans-serif" font-size="21" fill="#62778c">Logical platform architecture</text>
 <!-- Clients -->
 <rect x="25" y="113" width="650" height="126" rx="16" fill="#f2eeff" stroke="#8877bc" stroke-width="2"/>
 <text x="48" y="147" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="700" fill="#21374c">Access channels</text>
