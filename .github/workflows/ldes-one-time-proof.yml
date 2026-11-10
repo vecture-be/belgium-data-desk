@@ -1,8 +1,8 @@
 name: One-time GIPOD LDES research proof
 
 on:
-  push:
-    branches: [research/ldes-change-intelligence-20261110]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
