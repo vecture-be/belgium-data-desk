@@ -127,14 +127,20 @@ export function freshness(record,{fileLastModified=null,dataTo=null,now=new Date
   return{...out,age_days:age,status:age>limit?"overdue":"current",...(age>limit?{overdue_days:age-limit}:{})};
 }
 
+// Columns whose dates describe the record or a thing, not the period the data is about.
+const NOT_PERIOD=/creat|cré|gemaakt|aangemaakt|update|bijgewerkt|mise.?[àa].?jour|changed|modif|timestamp|last_?seen|export|dob|naiss|geboort|birth|bouw|constr|ordening|order|aanleg|oprich|fond[ée]|built|load|ingest|insert|apic/i;
+const PERIOD=/periode|period|jaar|year|ann[ée]e|maand|month|mois|trimest|kwarta|quarter|peildatum|referen|ref_?|rapporter|reporting|date.?d.?(?:es|onn)|date_data|exercice|exercise|semaine|week/i;
+const periodRank=name=>PERIOD.test(name)?0:1;
+
 // ---------- the card ----------
 const fmtInt=n=>Number(n).toLocaleString("en-GB");
 const num=n=>Number.isInteger(n)?fmtInt(n):Number(n).toLocaleString("en-GB",{maximumFractionDigits:2});
 export function buildCard(record,profile,{previous=null,now=new Date().toISOString(),file={}}={}){
   const facts=[],add=(text,evidence)=>facts.push({text,evidence});
   const cols=profile?.columns||[];
-  // time coverage: the widest date or year column
-  const timeCols=cols.filter(c=>c.from&&c.to).sort((a,b)=>(b.filled_pct-a.filled_pct)||String(a.from).localeCompare(String(b.from)));
+  // time coverage: the period the data describes, so never a record-keeping timestamp, a birth date or a construction year;
+  // reporting-period names first, then generic dates, best filled first
+  const timeCols=cols.filter(c=>c.from&&c.to&&!NOT_PERIOD.test(c.name)).sort((a,b)=>(periodRank(a.name)-periodRank(b.name))||(b.filled_pct-a.filled_pct)||String(a.from).localeCompare(String(b.from)));
   const time=timeCols[0]?{from:timeCols[0].from,to:timeCols[0].to,column:timeCols[0].name}:null;
   const fresh=freshness(record,{fileLastModified:file.lastModified,dataTo:time?.to,now});
   const keys=cols.filter(c=>c.key).map(c=>({column:c.name,...c.key}));

@@ -63,3 +63,13 @@ const card3=buildCard(rec,p1,{previous:card,now:"2026-11-17T09:00:00Z",file:{}})
 assert.equal(card3.schema.stable_since,"2026-11-10");
 
 console.log(JSON.stringify({ok:true,cards:"profile/keys/freshness/facts/drift",facts:card.facts.length}));
+
+// time coverage is the period the data describes: a record timestamp or a birth date never wins over a reporting year
+{
+  const csv="datecreation;jaar;dob;waarde\n2020-01-05;2015;1950-03-01;1\n2026-02-01;2023;1999-12-31;2\n";
+  const card=buildCard({id:"t"},profileColumns(csv,{bytesRead:csv.length,totalBytes:csv.length}),{now:"2026-11-10T00:00:00Z",file:{}});
+  assert.deepEqual(card.coverage.time,{from:"2015",to:"2023",column:"jaar"});
+  const only="created_at;x\n2024-01-01;1\n2024-02-01;2\n";
+  assert.equal(buildCard({id:"u"},profileColumns(only,{bytesRead:only.length,totalBytes:only.length}),{now:"2026-11-10T00:00:00Z",file:{}}).coverage.time,null,"a creation timestamp alone gives no coverage");
+}
+console.log(JSON.stringify({ok:true,coverage:"reporting periods only"}));
