@@ -1,0 +1,34 @@
+name: One-time GIPOD LDES research proof
+
+on:
+  push:
+    branches: [research/ldes-change-intelligence-20261110]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-public-gipod:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check interpreter using publisher-shaped fixture
+        run: node scripts/ldes-gipod-events.mjs --self-test
+      - name: Install separate optional LDES client
+        run: npm install --no-save --package-lock=false @treecg/actor-init-ldes-client@4.0.9
+      - name: Inspect a bounded public production stream sample
+        run: node scripts/ldes-gipod-collect.mjs --since 2026-11-05T00:00:00Z --limit 12 --out .cache/ldes-proof
+      - name: Prove real member mapping without publishing private or synthetic data
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const r=JSON.parse(fs.readFileSync(".cache/ldes-proof/change-evidence.json","utf8"));
+            if(r.counts.unique_valid<1)throw Error("No real members normalized");
+            console.log(JSON.stringify({source:r.source,valid:r.counts.unique_valid,invalid:r.counts.invalid,
+              sample:r.events.slice(0,3).map(e=>({kind:e.kind,member:e.member_id,published:e.published_at,
+                status:e.observed_status,planned_periods:e.planned_periods?.length}))}));
+          '
