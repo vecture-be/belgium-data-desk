@@ -107,7 +107,58 @@ function headline(id,changes){
 }
 
 /** Interpret only supplied versions; never assert complete history, first creation or physical impact. */
-export function analyseGipodVersions(members,{maxMembers=2000}={}){
+// One editorial candidate per entity, never one per event-store version.
+// Compare the last version in the requested window with the closest observed baseline.
+// The input is still a partial sample: no publication or real-world event is inferred.
+export function buildReviewQueue(versions,{sincePublishedAt=null,blockedEntities=[]}={}){
+  const since=sincePublishedAt?iso(sincePublishedAt):null;
+  if(sincePublishedAt&&!since)throw Error("Invalid sincePublishedAt timestamp");
+  const blocked=new Set(blockedEntities),byEntity=new Map();
+  for(const v of versions){
+    if(!v.entity_id||blocked.has(v.entity_id))continue;
+    const list=byEntity.get(v.entity_id)||[];list.push(v);byEntity.set(v.entity_id,list);
+  }
+  const queue=[];
+  for(const [entityId,list] of byEntity){
+    const chronological=[...list].sort((a,b)=>{
+      if(a.version_position&&b.version_position)
+        return comparePosition(a.version_position,b.version_position);
+      return a.published_at.localeCompare(b.published_at)||a.member_id.localeCompare(b.member_id);
+    });
+    const recent=chronological.filter(v=>!since||v.published_at>=since);
+    if(!recent.length)continue;
+    const first=recent[0],latest=recent.at(-1),firstIndex=chronological.indexOf(first);
+    const baseline=firstIndex?chronological[firstIndex-1]:first;
+    if(baseline===latest)continue;
+    const diff=changes(baseline.snapshot,latest.snapshot),p=priority(diff);
+    // We publish research/evidence candidates, not raw administrative revision chatter.
+    if(p!=="review_first"&&p!=="review")continue;
+    queue.push({
+      kind:"evidence_review_candidate",entity_id:entityId,title:headline(entityId,diff),
+      review_priority:p,published_at:latest.published_at,
+      first_evidence_member:baseline.member_id,last_evidence_member:latest.member_id,
+      first_evidence_published_at:baseline.published_at,
+      versions_in_sample:chronological.length,versions_in_requested_window:recent.length,
+      before_after:diff,changed_fields:diff.map(x=>x.field),
+      published_status:latest.snapshot.status,
+      planned_periods:latest.snapshot.periods,
+      zones:latest.snapshot.zones.map(z=>({id:z.id,consequences:z.consequences,
+        geometry_envelope_31370:z.geometry_envelope_31370})),
+      source_url:SOURCE,
+      evidence_limitations:[
+        "This is the net difference between observed versions; intermediate changes may be absent",
+        "The first version in the sample may not be the initial version ever published",
+        "Publication events and planned periods do not verify an actual road closure",
+        "Bounding envelopes are not exact geometric intersections"
+      ]
+    });
+  }
+  const rank={review_first:0,review:1};
+  return queue.sort((a,b)=>rank[a.review_priority]-rank[b.review_priority]||
+    b.published_at.localeCompare(a.published_at)||a.entity_id.localeCompare(b.entity_id));
+}
+
+export function analyseGipodVersions(members,{maxMembers=2000,sincePublishedAt=null}={}){
   if(!Array.isArray(members)||members.length>maxMembers)
     throw Error("Expected a bounded array of parsed LDES client members");
   const errors=[],seen=new Map(),versions=[];let duplicates=0;
@@ -185,7 +236,9 @@ export function analyseGipodVersions(members,{maxMembers=2000}={}){
         "First observed version is NOT evidence the roadwork was newly created"});
     last.set(v.entity_id,v);
   }
+  const review_queue=buildReviewQueue(versions,{sincePublishedAt,blockedEntities:[...blocked]});
   return{kind:"ldes_change_evidence",source:SOURCE,history_complete:false,
+    review_queue,review_queue_count:review_queue.length,requested_since:sincePublishedAt||null,
     coordinate_system:"EPSG:31370",
     limitations:["Only the supplied LDES members were processed; no complete historical coverage",
       "generatedAtTime is publication time, not planned work time",
@@ -225,6 +278,10 @@ function selfTest(){
   assert.equal(r.events[1].review_priority,"review_first");
   assert.deepEqual(r.events[1].zones[0].geometry_envelope_31370,[105000,191000,106000,192000]);
   assert.equal(r.counts.duplicates,1);
+  const q=analyseGipodVersions([a,b],{sincePublishedAt:"2026-11-09T00:00:00Z"}).review_queue;
+  assert.equal(q.length,1);
+  assert.equal(q[0].entity_id,"10031313");
+  assert.deepEqual(q[0].changed_fields,["periods","mobility_consequences"]);
   assert.equal(r.events[0].member_id,"https://gipod.api.vlaanderen.be/api/v1/mobility-hindrances/10031313/1");
   assert.equal(analyseGipodVersions([version("3","2026-11-11T11:00:00Z",
     {gipodId:null,isVersionOf:null})]).events[0].kind,"identity_unverified");
@@ -236,7 +293,7 @@ function selfTest(){
     {gipodId:{value:"99"}})]).counts.invalid,1);
   assert.throws(()=>analyseGipodVersions([a,{object:{...a.object,description:"conflict"}}]),
     /Conflicting immutable member/);
-  console.log("GIPOD LDES: 10 publisher-shape contract checks passed");
+  console.log("GIPOD LDES: 13 publisher-shape and net-change checks passed");
 }
 
 if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
