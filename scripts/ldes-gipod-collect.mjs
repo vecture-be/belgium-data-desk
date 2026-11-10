@@ -53,7 +53,7 @@ async function main(){
     try{checkpoint=stream.exportState()}catch(e){console.warn("No checkpoint: "+e.message)}
     // Write members BEFORE checkpoint: a crash cannot advance the cursor past unpersisted data.
     atomic(membersFile,buffered);
-    const report=analyseGipodVersions(buffered);
+    const report=analyseGipodVersions(buffered,{sincePublishedAt:since});
     atomic(reportFile,report);
     // Never advance the cursor when the data cap forced us to discard a member.
     if(checkpoint&&!bufferOverflow)atomic(stateFile,checkpoint);
@@ -67,6 +67,7 @@ async function main(){
       before_requested_since:report.events.filter(e=>e.published_at&&e.published_at<since).length,
       byKind,revisions:report.counts.revisions,review_first:report.counts.actionable_revisions,
       timestamp_ties_resolved:report.counts.timestamp_ties_resolved,
+      net_review_candidates:report.review_queue_count,
       checkpointed:!!checkpoint&&!bufferOverflow,buffer_overflow:bufferOverflow,
       history_complete:false}));
     if(bufferOverflow)throw Error("Bounded buffer overflow: checkpoint withheld to avoid losing events");
