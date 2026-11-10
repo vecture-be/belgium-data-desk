@@ -16,118 +16,192 @@ const stable=x=>JSON.stringify(x,(k,v)=>v&&!Array.isArray(v)&&typeof v==="object
 const hash=x=>createHash("sha256").update(stable(x)).digest("hex").slice(0,20);
 const periods=x=>arr(x).filter(v=>v&&typeof v==="object").map(v=>({start:iso(val(v.start)),end:iso(val(v.end))}))
   .filter(v=>v.start||v.end).sort((a,b)=>stable(a).localeCompare(stable(b)));
-const zones=x=>arr(x).filter(v=>v&&typeof v==="object").map(z=>({
-  id:str(val(z.id))||null,
-  consequences:arr(z.consequence).map(c=>str(val(c?.id))||str(c?.prefLabel)||"").filter(Boolean).sort(),
-  geometry_hash:z.geometry?.wkt?hash(z.geometry.wkt):null
-})).sort((a,b)=>stable(a).localeCompare(stable(b)));
+const term=v=>({id:str(val(v?.id))||null,label:str(val(v?.prefLabel))||null});
+const memberIRI=raw=>{
+  const id=str(raw);
+  if(/^https?:\/\//i.test(id))return id;
+  if(/^\/?api\/v1\/mobility-hindrances\/\d+(?:\/\d+)?$/.test(id))
+    return "https://gipod.api.vlaanderen.be/"+id.replace(/^\//,"");
+  return null;
+};
+const versionIdentity=raw=>str(val(raw)).match(/(?:^|\/)api\/v1\/mobility-hindrances\/(\d+)\/?$/)?.[1]||null;
+// The publisher documents EPSG:31370. This is a conservative envelope, not a polygon-intersection claim.
+const envelope=wkt=>{
+  const text=str(val(wkt));
+  if(!/^(?:<[^>]+>\s*)?(?:POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON)\s*\(/i.test(text))return null;
+  const pairs=[...text.matchAll(/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?=[,\s)])/g)].map(m=>[+m[1],+m[2]]);
+  if(!pairs.length||pairs.length>25000||pairs.some(([x,y])=>x<0||x>310000||y<0||y>300000))return null;
+  return [Math.min(...pairs.map(p=>p[0])),Math.min(...pairs.map(p=>p[1])),
+    Math.max(...pairs.map(p=>p[0])),Math.max(...pairs.map(p=>p[1]))].map(n=>Math.round(n*100)/100);
+};
+const zones=x=>arr(x).filter(v=>v&&typeof v==="object").map(z=>{
+  const wkt=str(val(z.geometry?.wkt));
+  return{id:str(val(z.id))||null,
+    consequences:arr(z.consequence).filter(Boolean).map(term).filter(c=>c.id||c.label)
+      .sort((a,b)=>stable(a).localeCompare(stable(b))),
+    geometry_hash:wkt?hash(wkt):null,geometry_envelope_31370:wkt?envelope(wkt):null};
+}).sort((a,b)=>stable(a).localeCompare(stable(b)));
 
 export function normalizeGipodMember(member){
-  const o=member?.object,memberId=str(member?.id),published=iso(val(o?.generatedAtTime));
-  if(!/^https?:\/\//.test(memberId))return{error:"missing_immutable_member_iri",member_id:memberId||null};
+  const o=member?.object||member,memberId=memberIRI(member?.id||o?.id),published=iso(val(o?.generatedAtTime));
+  if(!memberId)return{error:"unrecognized_member_iri",member_id:str(member?.id||o?.id)||null};
   if(!published)return{error:"missing_generated_at_time",member_id:memberId};
-  const businessId=String(val(o?.gipodId)??"").trim();
+  const explicit=String(val(o?.gipodId)??"").trim();
+  const entityFromId=/^\d+$/.test(explicit)?explicit:null;
+  const entityFromVersion=versionIdentity(o?.isVersionOf);
+  if(entityFromId&&entityFromVersion&&entityFromId!==entityFromVersion)
+    return{error:"conflicting_publisher_entity_identity",member_id:memberId,
+      identifiers:[entityFromId,entityFromVersion]};
   return{
-    member_id:memberId,entity_id:/^\d+$/.test(businessId)?businessId:null,
-    published_at:published,source_event_name:str(val(o?.eventName))||null,
-    source_url:SOURCE,
-    snapshot:{
-      status:str(val(o?.status?.id))||str(o?.status?.prefLabel)||null,
-      description:str(val(o?.description))||null,
-      periods:periods(o?.period),
-      schedule_hash:o?.timeSchedule?hash(o.timeSchedule):null,
-      zones:zones(o?.zone)
-    }
+    member_id:memberId,entity_id:entityFromId||entityFromVersion||null,
+    version_of:str(val(o?.isVersionOf))||null,published_at:published,
+    created_at:iso(val(o?.createdOn)),last_modified_at:iso(val(o?.lastModifiedOn)),
+    source_event_name:str(val(o?.eventName))||null,source_url:SOURCE,
+    snapshot:{status:term(o?.status),description:str(val(o?.description))||null,
+      periods:periods(o?.period),schedule_hash:o?.timeSchedule?hash(o.timeSchedule):null,
+      zones:zones(o?.zone)}
   };
 }
-function changed(a,b){
-  const keys=["status","description","periods","schedule_hash","zones"];
-  const keysChanged=keys.filter(k=>stable(a[k])!==stable(b[k]));
-  if(!keysChanged.includes("zones"))return keysChanged;
-  const details=keysChanged.filter(k=>k!=="zones");
-  if(stable(a.zones.map(z=>z.consequences))!==stable(b.zones.map(z=>z.consequences)))details.push("zone_consequences");
-  if(stable(a.zones.map(z=>z.geometry_hash))!==stable(b.zones.map(z=>z.geometry_hash)))details.push("zone_geometry");
-  if(!details.includes("zone_consequences")&&!details.includes("zone_geometry"))details.push("zone_structure");
-  return details;
+
+function changes(previous,current){
+  const result=[];
+  for(const field of ["status","description","periods","schedule_hash"]){
+    if(stable(previous[field])!==stable(current[field]))
+      result.push({field,before:previous[field],after:current[field]});
+  }
+  if(stable(previous.zones)!==stable(current.zones)){
+    const cs=zs=>zs.flatMap(z=>z.consequences.map(c=>({zone_id:z.id,...c}))).sort((a,b)=>stable(a).localeCompare(stable(b)));
+    if(stable(cs(previous.zones))!==stable(cs(current.zones)))
+      result.push({field:"mobility_consequences",before:cs(previous.zones),after:cs(current.zones)});
+    const gs=zs=>zs.map(z=>({zone_id:z.id,geometry_hash:z.geometry_hash,geometry_envelope_31370:z.geometry_envelope_31370}));
+    if(stable(gs(previous.zones))!==stable(gs(current.zones)))
+      result.push({field:"zone_geometry",before:gs(previous.zones),after:gs(current.zones)});
+    if(!result.some(r=>r.field==="mobility_consequences"||r.field==="zone_geometry"))
+      result.push({field:"zone_structure",before:previous.zones.map(z=>z.id),after:current.zones.map(z=>z.id)});
+  }
+  return result;
+}
+function priority(changes){
+  const f=new Set(changes.map(c=>c.field));
+  if(["mobility_consequences","periods","schedule_hash"].some(x=>f.has(x)))return"review_first";
+  if(["status","zone_geometry","zone_structure"].some(x=>f.has(x)))return"review";
+  return changes.length?"minor":"none";
+}
+function headline(id,changes){
+  const f=new Set(changes.map(c=>c.field));
+  if(f.has("mobility_consequences"))return"GIPOD "+id+": published mobility consequence revised";
+  if(f.has("periods")||f.has("schedule_hash"))return"GIPOD "+id+": planned timetable revised";
+  if(f.has("status"))return"GIPOD "+id+": published status changed";
+  if(f.has("zone_geometry"))return"GIPOD "+id+": hindrance geometry revised";
+  return"GIPOD "+id+": version updated";
 }
 
 /** Interpret only supplied versions; never assert complete history, first creation or physical impact. */
 export function analyseGipodVersions(members,{maxMembers=2000}={}){
-  if(!Array.isArray(members)||members.length>maxMembers)throw Error("Expected a bounded array of parsed LDES client members");
-  const errors=[],seen=new Map(),versions=[];
-  let duplicates=0;
-  for(let i=0;i<members.length;i++){
-    const v=normalizeGipodMember(members[i]);
-    if(v.error){errors.push({index:i,member_id:v.member_id,reason:v.error});continue;}
-    const old=seen.get(v.member_id),fingerprint=hash(v);
-    if(old){
-      if(old!==fingerprint)throw Error("Conflicting immutable member: "+v.member_id);
+  if(!Array.isArray(members)||members.length>maxMembers)
+    throw Error("Expected a bounded array of parsed LDES client members");
+  const errors=[],seen=new Map(),versions=[];let duplicates=0;
+  for(const [index,member] of members.entries()){
+    const n=normalizeGipodMember(member);
+    if(n.error){errors.push({index,reason:n.error,member_id:n.member_id,identifiers:n.identifiers});continue;}
+    const fingerprint=hash(n);
+    if(seen.has(n.member_id)){
+      if(seen.get(n.member_id)!==fingerprint)throw Error("Conflicting immutable member: "+n.member_id);
       duplicates++;continue;
     }
-    seen.set(v.member_id,fingerprint);versions.push(v);
+    seen.set(n.member_id,fingerprint);versions.push(n);
   }
   versions.sort((a,b)=>a.published_at.localeCompare(b.published_at)||a.member_id.localeCompare(b.member_id));
-  const last=new Map(),events=[];
+  const byEntity=new Map();
+  for(const v of versions)if(v.entity_id){
+    const list=byEntity.get(v.entity_id)||[];list.push(v);byEntity.set(v.entity_id,list);
+  }
+  const last=new Map(),blocked=new Set(),events=[];
   for(const v of versions){
+    const base={entity_id:v.entity_id,member_id:v.member_id,published_at:v.published_at,
+      source_url:v.source_url,source_event_name:v.source_event_name,
+      source_created_at:v.created_at,source_modified_at:v.last_modified_at};
     if(!v.entity_id){
-      events.push({kind:"identity_unverified",member_id:v.member_id,entity_id:null,published_at:v.published_at,
-        source_url:v.source_url,note:"No publisher-defined numeric GIPOD ID; cannot link versions"});
+      events.push({...base,kind:"identity_unverified",note:"Publisher-defined ID missing; no version join inferred"});
       continue;
     }
-    const prior=last.get(v.entity_id);
-    if(prior&&prior.published_at===v.published_at){
-      events.push({kind:"ordering_unverified",member_id:v.member_id,entity_id:v.entity_id,
-        published_at:v.published_at,previous_member_id:prior.member_id,source_url:v.source_url});
-      errors.push({member_id:v.member_id,reason:"same_publication_timestamp_for_entity"});
-      last.delete(v.entity_id);continue;
+    if(blocked.has(v.entity_id)){
+      events.push({...base,kind:"ordering_unverified",note:"Ambiguous timestamp history; no later revision inferred"});
+      continue;
     }
-    const differences=prior?changed(prior.snapshot,v.snapshot):[];
-    events.push({
-      kind:prior?"observed_revision":"first_observed_version",
-      member_id:v.member_id,previous_member_id:prior?.member_id||null,entity_id:v.entity_id,
-      published_at:v.published_at,source_url:v.source_url,source_event_name:v.source_event_name,
-      changed_fields:differences,observed_status:v.snapshot.status,observed_periods:v.snapshot.periods,
-      interpretation:prior?(differences.length?"selected_published_fields_changed":"no_change_in_selected_fields"):
-        "First supplied version, not proof of a newly created real-world entity"
-    });
+    const sameTime=byEntity.get(v.entity_id).filter(n=>n.published_at===v.published_at);
+    if(sameTime.length>1){
+      errors.push({entity_id:v.entity_id,reason:"equal_publication_timestamps",
+        member_ids:sameTime.map(n=>n.member_id)});
+      blocked.add(v.entity_id);last.delete(v.entity_id);
+      events.push({...base,kind:"ordering_unverified",
+        note:"Two distinct versions share a publication timestamp; cannot order them"});
+      continue;
+    }
+    const previous=last.get(v.entity_id),diff=previous?changes(previous.snapshot,v.snapshot):[];
+    events.push({...base,kind:previous?"observed_revision":"first_observed_version",
+      previous_member_id:previous?.member_id||null,changed_fields:diff.map(x=>x.field),
+      before_after:diff,review_priority:previous?priority(diff):"not_a_change_claim",
+      title:previous?headline(v.entity_id,diff):"GIPOD "+v.entity_id+": first version observed in sample",
+      observed_status:v.snapshot.status,planned_periods:v.snapshot.periods,
+      zones:v.snapshot.zones.map(z=>({id:z.id,consequences:z.consequences,
+        geometry_envelope_31370:z.geometry_envelope_31370})),
+      interpretation:previous?
+        "Comparison of two observed published versions; intermediate versions may be missing":
+        "First observed version is NOT evidence the roadwork was newly created"});
     last.set(v.entity_id,v);
   }
-  return{
-    kind:"ldes_change_evidence",source:SOURCE,history_complete:false,
-    limitations:[
-      "Only the versions supplied by the external LDES client were examined",
-      "Publication time generatedAtTime differs from real-world activity periods",
-      "Recurring schedules were fingerprinted, not expanded into occurrences",
-      "Selected data-field changes do not prove physical impact or road closure",
-      "First observed version does not prove creation; there may be older versions",
-      "Names, descriptions and locations are never used as invented entity identifiers"
-    ],
+  return{kind:"ldes_change_evidence",source:SOURCE,history_complete:false,
+    coordinate_system:"EPSG:31370",
+    limitations:["Only the supplied LDES members were processed; no complete historical coverage",
+      "generatedAtTime is publication time, not planned work time",
+      "First observed version is not proof of entity creation",
+      "A published mobility consequence is not confirmation of actual traffic conditions",
+      "Coordinates are Lambert 72; bounding envelopes are not exact spatial intersections",
+      "Recurring schedules are fingerprinted, not expanded into occurrences",
+      "Review priority ranks the changed published fields, not severity of actual impact"],
     counts:{input:members.length,unique_valid:versions.length,duplicates,
       revisions:events.filter(e=>e.kind==="observed_revision").length,
-      unlinked:events.filter(e=>e.kind==="identity_unverified").length},
-    errors,events
-  };
+      actionable_revisions:events.filter(e=>e.kind==="observed_revision"&&e.review_priority==="review_first").length,
+      unlinked:events.filter(e=>e.kind==="identity_unverified").length,
+      invalid:errors.filter(e=>e.index!==undefined).length},
+    errors,events};
 }
+
 function selfTest(){
-  const version=(name,time,extra={})=>({
-    id:"https://example.org/stream/"+name,object:{
-      gipodId:{value:"123"},generatedAtTime:time,eventName:"MobilityHindranceWasCreated",
-      status:{id:"planned"},period:[{start:"2026-12-01T08:00:00Z",end:"2026-12-01T17:00:00Z"}],
-      ...extra
-    }
-  });
-  const a=version("a","2026-11-08T10:00:00Z");
-  const b=version("b","2026-11-09T10:00:00Z",{status:{id:"changed"}});
-  const report=analyseGipodVersions([b,a,a]);
-  assert.deepEqual(report.events.map(x=>x.kind),["first_observed_version","observed_revision"]);
-  assert.deepEqual(report.events[1].changed_fields,["status"]);
-  assert.equal(report.counts.duplicates,1);
-  assert.match(report.events[0].interpretation,/not proof/);
-  assert.equal(analyseGipodVersions([version("c","2026-11-10T10:00:00Z",{gipodId:null})]).events[0].kind,"identity_unverified");
-  assert.equal(analyseGipodVersions([a,version("d","2026-11-08T10:00:00Z")]).events[1].kind,"ordering_unverified");
-  assert.throws(()=>analyseGipodVersions([a,{...a,object:{...a.object,description:"other"}}]),/Conflicting immutable member/);
-  console.log("GIPOD LDES pilot: 6 offline checks passed");
+  // Publisher-example shape: relative id, explicit isVersionOf, numeric object ID, single consequence and WKT.
+  const version=(id,time,extra={})=>({object:{
+    id:"api/v1/mobility-hindrances/10031313/"+id,
+    isVersionOf:"api/v1/mobility-hindrances/10031313",
+    gipodId:{type:"xsd:integer",value:"10031313"},generatedAtTime:time,
+    createdOn:"2026-11-01T09:00:00Z",period:[{start:"2026-12-01T08:00:00Z",end:"2026-12-02T17:00:00Z"}],
+    status:{id:"api/v1/taxonomies/statuses/1",prefLabel:"Gepland"},
+    zone:[{id:"api/v1/mobility-hindrances/10031313/zones/1",
+      geometry:{wkt:"POLYGON ((105000 191000, 106000 191000, 106000 192000, 105000 191000))"},
+      consequence:{id:"api/v1/taxonomies/consequencetypes/a",prefLabel:"Geen doorgang"}}],
+    ...extra}});
+  const a=version("1","2026-11-08T10:00:00Z");
+  const b=version("2","2026-11-09T11:00:00Z",{
+    period:[{start:"2026-12-02T08:00:00Z",end:"2026-12-02T17:00:00Z"}],
+    zone:[{...a.object.zone[0],consequence:{id:"api/v1/taxonomies/consequencetypes/b",prefLabel:"Fietspad afgesloten"}}]});
+  const r=analyseGipodVersions([b,a,a]);
+  assert.deepEqual(r.events.map(e=>e.kind),["first_observed_version","observed_revision"]);
+  assert.deepEqual(r.events[1].changed_fields,["periods","mobility_consequences"]);
+  assert.equal(r.events[1].review_priority,"review_first");
+  assert.deepEqual(r.events[1].zones[0].geometry_envelope_31370,[105000,191000,106000,192000]);
+  assert.equal(r.counts.duplicates,1);
+  assert.equal(r.events[0].member_id,"https://gipod.api.vlaanderen.be/api/v1/mobility-hindrances/10031313/1");
+  assert.equal(analyseGipodVersions([version("3","2026-11-11T11:00:00Z",
+    {gipodId:null,isVersionOf:null})]).events[0].kind,"identity_unverified");
+  assert.equal(analyseGipodVersions([a,version("2","2026-11-08T10:00:00Z"),
+    version("3","2026-11-09T11:00:00Z")]).events.at(-1).kind,"ordering_unverified");
+  assert.equal(analyseGipodVersions([version("4","2026-11-12T11:00:00Z",
+    {gipodId:{value:"99"}})]).counts.invalid,1);
+  assert.throws(()=>analyseGipodVersions([a,{object:{...a.object,description:"conflict"}}]),
+    /Conflicting immutable member/);
+  console.log("GIPOD LDES: 10 publisher-shape contract checks passed");
 }
+
 if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
   if(process.argv[2]==="--self-test")selfTest();
   else if(process.argv.length===3){
