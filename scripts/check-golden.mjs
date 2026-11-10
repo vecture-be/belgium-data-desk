@@ -24,7 +24,7 @@ export function checkExpect(answer,expect){
 }
 
 async function main(){
-  let failed=0;
+  let failed=0,warned=0;
   for(const f of facts){
     let answer;
     try{
@@ -32,11 +32,13 @@ async function main(){
         body:JSON.stringify({jsonrpc:"2.0",id:1,method:"tools/call",params:{name:f.tool,arguments:f.args}})});
       answer=JSON.parse((await r.json()).result.content[0].text);
     }catch(e){answer={error:"no answer: "+e.message}}
-    const problems=answer.error?["answered an error: "+answer.error]:checkExpect(answer,f.expect);
-    console.log((problems.length?"FAIL ":"PASS ")+f.question+(problems.length?"\n     "+problems.join("\n     ")+"\n     source: "+f.source:""));
-    if(problems.length)failed++;
+    // The official service being down (or only partly answering, complete: false) says nothing about our answer: warn, don't fail.
+    const upstream=(answer.error&&/did not answer|could not be reached|try again in a minute|answered HTTP 5\d\d/i.test(answer.error))||answer.complete===false;
+    const problems=upstream?[]:answer.error?["answered an error: "+answer.error]:checkExpect(answer,f.expect);
+    console.log((upstream?"WARN ":problems.length?"FAIL ":"PASS ")+f.question+(upstream?" (the source did not answer in full; not checked)":"")+(problems.length?"\n     "+problems.join("\n     ")+"\n     source: "+f.source:""));
+    if(upstream)warned++;else if(problems.length)failed++;
   }
-  console.log(facts.length-failed+"/"+facts.length+" golden facts hold on "+origin);
+  console.log(facts.length-failed-warned+"/"+facts.length+" golden facts hold on "+origin+(warned?"; "+warned+" not checked (source down)":""));
   process.exit(failed?1:0);
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))main();
