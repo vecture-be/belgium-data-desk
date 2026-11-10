@@ -36,7 +36,7 @@ async function main(){
   const existing=fs.existsSync(membersFile)?JSON.parse(fs.readFileSync(membersFile,"utf8")):[];
   if(!Array.isArray(existing)||existing.length>1800)throw Error("Sample already too large; use a new --out directory");
   const buffered=[...existing],seen=new Set(existing.map(m=>String(m.id||m.object?.id||"")));
-  let received=0,invalid=0,bytes=Buffer.byteLength(JSON.stringify(buffered));
+  let received=0,invalid=0,bufferOverflow=false,bytes=Buffer.byteLength(JSON.stringify(buffered));
   const url=new URL(SOURCE);url.searchParams.set("generatedAtTime",since);
   const engine=new lib.newEngine();
   const stream=engine.createReadStream(url.toString(),{
@@ -55,15 +55,21 @@ async function main(){
     atomic(membersFile,buffered);
     const report=analyseGipodVersions(buffered);
     atomic(reportFile,report);
-    if(checkpoint)atomic(stateFile,checkpoint);
-    atomic(manifestFile,{source:SOURCE,since,checkpointed:!!checkpoint,
-      stop_reason:reason,history_complete:false,members:buffered.length});
+    // Never advance the cursor when the data cap forced us to discard a member.
+    if(checkpoint&&!bufferOverflow)atomic(stateFile,checkpoint);
+    atomic(manifestFile,{source:SOURCE,since,checkpointed:!!checkpoint&&!bufferOverflow,
+      stop_reason:reason,history_complete:false,members:buffered.length,
+      buffer_overflow:bufferOverflow});
     const byKind=Object.fromEntries([...new Set(report.events.map(e=>e.kind))]
       .map(k=>[k,report.events.filter(e=>e.kind===k).length]));
     console.log(JSON.stringify({kind:"bounded_ldes_sample",since,received,
-      retained:buffered.length,parsing_issues:invalid,report_errors:report.errors.length,
+      target_limit:limit,retained:buffered.length,parsing_issues:invalid,report_errors:report.errors.length,
+      before_requested_since:report.events.filter(e=>e.published_at&&e.published_at<since).length,
       byKind,revisions:report.counts.revisions,review_first:report.counts.actionable_revisions,
-      checkpointed:!!checkpoint,history_complete:false}));
+      timestamp_ties_resolved:report.counts.timestamp_ties_resolved,
+      checkpointed:!!checkpoint&&!bufferOverflow,buffer_overflow:bufferOverflow,
+      history_complete:false}));
+    if(bufferOverflow)throw Error("Bounded buffer overflow: checkpoint withheld to avoid losing events");
   };
   let timer;
   const done=new Promise((resolve,reject)=>{
@@ -76,7 +82,7 @@ async function main(){
       if(!seen.has(key)){
         const encoded=JSON.stringify(member),size=Buffer.byteLength(encoded);
         if(bytes+size<=7*1024*1024){seen.add(key);buffered.push(member);bytes+=size}
-        else{stop();return}
+        else{bufferOverflow=true;stop();return}
       }
       if(received>=limit)stop();
     });
