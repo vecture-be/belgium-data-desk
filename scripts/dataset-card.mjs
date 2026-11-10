@@ -128,7 +128,7 @@ export function freshness(record,{fileLastModified=null,dataTo=null,now=new Date
 }
 
 // Columns whose dates describe the record or a thing, not the period the data is about.
-const NOT_PERIOD=/creat|cré|gemaakt|aangemaakt|update|bijgewerkt|mise.?[àa].?jour|changed|modif|timestamp|last_?seen|export|dob|naiss|geboort|birth|bouw|constr|ordening|order|aanleg|oprich|fond[ée]|built|load|ingest|insert|apic/i;
+const NOT_PERIOD=/creat|cré|gemaakt|aangemaakt|update|bijgewerkt|mise.?[àa].?jour|changed|modif|timestamp|last_?seen|export|dob|naiss|geboort|birth|bouw|build|constr|anciennet|ordening|order|aanleg|oprich|fond[ée]|built|load|ingest|insert|apic/i;
 const PERIOD=/periode|period|jaar|year|ann[ée]e|maand|month|mois|trimest|kwarta|quarter|peildatum|referen|ref_?|rapporter|reporting|date.?d.?(?:es|onn)|date_data|exercice|exercise|semaine|week/i;
 const periodRank=name=>PERIOD.test(name)?0:1;
 
