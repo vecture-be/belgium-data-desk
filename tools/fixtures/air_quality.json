@@ -1,0 +1,75 @@
+{
+ "tool": "air_quality",
+ "args": {
+  "address": "Rue Neuve 1, 1000 Bruxelles"
+ },
+ "recordedAt": "2026-11-10T08:15:30.239Z",
+ "calls": [
+  {
+   "url": "https://geo.api.vlaanderen.be/geolocation/v4/Location?q=Rue+Neuve+1%2C+1000+Bruxelles&c=1",
+   "status": 200,
+   "contentType": "application/json; charset=utf-8",
+   "body": "H4sIAAAAAAAACqtW8slPTizJzM8LSi0uzSlRsoqOrQUAd8SHKRUAAAA="
+  },
+  {
+   "url": "https://best.pr.fedservices.be/api/opendata/best/v1/belgianAddress/v2/addresses?streetName=Rue+Neuve&houseNumber=1&postCode=1000",
+   "status": 200,
+   "contentType": "application/json",
+   "body": "H4sIAAAAAAAACr1Uy2rbQBT9lXJBWSmeh54eCCUpqASaB3HopnQxtq7sKdJIzIycuMH/XkayYzebOl0EtJB0H+feM+fMC1isKxBAZKdI26EupZNkjtaRNSNzrJdK6suyNGgtWXMix1e0n60ziO5WNnjx0GPA6S32azxbtb3F276Zo7lgZ11r3Ze2xAtGKT3r5BIvGISgHDYWxI8XUCUIWDnXWUGIx56b3lqs7WSORJV7PMLSaR5NiS/2w6kStVOVQgPiBbRscNbJBZ7UC0Jo579w4a6PmsAIACGs0VjV6r+DsA1hJe3sdWcP+6/ZR4b8cCROGRuGXxl8D91jC0sGlCC6DHgR8OINVsALVQa8OOAFvPCIAS88pt7Nq2sQcKuwf7LOSOkghMpv99Djp+Hw/JaHY33cdJ7QQ9cdCTe9VgvVyVq5zSk0NEf5hDNKY5K9n4mjLgpPJOQYOeDFgB3wwqNrZb0uQcDw9y1LV2OzPUNXpn/GukYL25GD+9Y6WV/rqj2FgW7IVrpqiffB/wihewU8cfcDplcBpXQnhr0jvaoppYfF95tJ4+6qN2fsQwdfD4bwSpGutyBg0RuD2stpLWtVFqZtPK+U03PKzil7pFQMz2DepdLfVOX9qr+PVhuTk3OanfPokU5FxESUQgg7w963Vrkh7wVq6SdwGfcfzyBYnE9TPsl5PmUpj+MoD2EDgmWMRfEkznJO4yyJWb4N97U039WmY23Mxpp0rMmzbBvC09Lm8QjoQCR0kic0ZUkWR3yaTJMQ6lYvQcSTKIlpFNE4o5xGMU+3A8XDvF+xbdCZzQ26VeslIq1VS43l1eaybJRW3oauNXAomXW4UJVayHFfz7Euve+UvasqtVCyrjeXuzYgnOlx+zME1zpZ38slWhAsBH/PztRvBMETuosOgUoZ6z78tq/lh4Nu/wDENwhR2QYAAA=="
+  },
+  {
+   "url": "https://geo.irceline.be/sos/api/v1/stations?near=%7B%22center%22%3A%7B%22type%22%3A%22Point%22%2C%22coordinates%22%3A%5B4.354033%2C50.850616%5D%7D%2C%22radius%22%3A30%7D",
+   "status": 200,
+   "contentType": "application/json;charset=UTF-8",
+   "body": "H4sIAAAAAAAACq2X3WobVxDHX2XRVQpWmO+Z47s4uE6K7Qa7TktCLjbWwRaWd92VnI+GPFCfoy9WjtYUSTWsYQNCaC+0/Jgz85v/ef9tcte1d7lbzfNysv9tMp9N9tFN9iaL+mNeTPYnAufvQKtpdb7KuWlvbnL3V86Lyfe9yVVub/Oq+1r+eNm23Wze1KvynvfyXFEx0JM6qAPtKTxPaCYhoGwpfG9yWp9OPuxNVl/v8mR/8qadN6vy1ofnn3O9uu/y5Pveo4wIaYMRDwCwmlYvutVyetzOh+jYwgKJWAwlkRa8EHVUBEgcMhoPYQdPqml10N1/yYtFXlbPzut5s8rTl/XqOnfzJv80iCyh4eJCzhGyJlYILOUMkPEFRdohtm3iN3W3yLe5WVUXh8O0LhxBwazk7GtaDmPEcBMhkJG4jriDGz3ucpkX1bODvJjX3Wy56up69QTa0gZgySUBY98N4BFqpghEo2vL27BYmvUgd5fX+Xb60AovrkovDKFSBLOxGYMm6AurAeWJKSzp2LrqduNeHONWXRezanZfncxn8yd0LAYhAKoqyUMPeIJEmgjR01hU2erYl69ebKEe1c3yuu1yMwwKhhqeIAITxBrUgU2Lscpn9PHbJujJ4UUBPcn3s7YZZEvk6JZczVD7IqZiKTUCIRo/9r7JdgrC1bR6VXd5GC0oGZNiADGnNVqwagpETkRio9lik+2sd/xJu8jNx5xv+sGZ/pLrYVTmwOTgjgT4oPtkphIBHjC+immHlKpp9bpX53AdxTFC0FLSB7OTInk4JXMaO9JItA2HBe7i8nIxaBvWUC4aZEVbD4YnM0bjsnsgRk/wlsTPDo8ek83ZP39f5eYJFjcHUA8tP/zB4qxmBkxlTY5W42YswrcHf2zRnt3naparo65uZtXrxVM2ukECDiZH5F47YhBoKGyOY7eOq+7w0v95l9VvddPk+275FN5gZHXnYOCHLUnBCslBfwCv7fDyI/U9rvPNU5yuJBLGLAkx9ROvChiYwlOYj16UvCknOvh1LaeDtrnO89mwPBVNgh0dgNB1T/E5kIMhiKl5CQzjhn4b7xQESoYvwnwzz6vcLafHOd9/rp7x7WAxiRSTkJiLOa4N5RbIrshkqjhaUbIZkOgM8D/a81X+lJvl9Pd2cf95UFhCIeSlJw0JeweUCOcRLCo+OsmJbYNSAX07X3wqIMN4bE7gxsrSh7ckyOHlvcAxeoK2bh10Fry+dbTt7fAOAgRWkQiSZOt2TAQAUA5ZgEbLU2QbTWidgS6v8yI31bNXuZl185vq/C7nyz8/5eWw7yWYVJkFkytAD03ALiLC5Gn0VvdNZj4FK0J62XZd+3V6nKdr1Q9RmgWFly8S61OSqQonBBaEGJ2CLe1AljM/m3/JzbLuVoNFTMJG7M7o1g+ME0QEuxoKjM2+xJsr3g8B/FEPDSpIyShEKZzCes6klMLILAXpWAUR0w5ouVAedfPbj7m7ekIaTloGBgXZ++WYyCApoiFg/AA+3uFL1bR6l2+Xw2fMWsJlSCL3/iKWVMrlJjyJ8A9gk202LIPytu2G2ZiCQ9bXbCyWKcLGshUjCTDE0/fgh38BfGQ7mc0SAAA="
+  },
+  {
+   "url": "https://geo.irceline.be/wms?service=WMS&version=1.3.0&request=GetFeatureInfo&layers=forecast%3Abelaqi_d0%2Cforecast%3Abelaqi_d1%2Cforecast%3Abelaqi_d2%2Cforecast%3Abelaqi_d3&query_layers=forecast%3Abelaqi_d0%2Cforecast%3Abelaqi_d1%2Cforecast%3Abelaqi_d2%2Cforecast%3Abelaqi_d3&styles=&crs=EPSG%3A31370&bbox=148958%2C171129%2C148968%2C171139&width=1&height=1&i=0&j=0&info_format=application%2Fjson&feature_count=4",
+   "status": 200,
+   "contentType": "application/json;charset=UTF-8",
+   "body": "H4sIAAAAAAAACt2QuwrCQBRE/2XqVZIYH9xO1IiNhVr4QCTGqwQ3u2FzF5Gw/y4iWPgJtsPMGTgt5FkzCBnn4h1PrNZcSGkNFK6frAEd2p8eFMoLCFC4sa1Y3BNkvNYKtbM1Oynfuxbz1Xh3Wiynsy0oDUH9KagXwlFBrOQ6+1qDN3djH2+VxldndisW7wxfQKmClBWvJa9qEJIoGXTiuBNHm2hEcZ96aTdJhnsoFK753IcXbJSKxawBAAA="
+  },
+  {
+   "url": "https://geo.irceline.be/sos/api/v1/timeseries?station=1754&expanded=true",
+   "status": 200,
+   "contentType": "application/json;charset=UTF-8",
+   "body": "H4sIAAAAAAAACu2V327aMBTGX8U6u+mkwGwnTiB3A5UNqaNTO1WVEBcZHFikJI6c0LWqeKppL9AnmxygzHb6V1qvxl2Czy/fd3zsb3oL6QJiYIxyBh5kyXfMIIZJWiu5woIsUnmdLpA0C0iHfPs8PicBH5IOKZWc42Kt0CMBuxhc6r8Hal1VmJGjszWSBZJPKikWZJzhe/AAr2uVVBBPIUvnWFQIHlR1Uq+rcVGjukqyCmYerGUOMdz9Xn3I737tlqSygPgWSiVLVHWKlX7SylkkgoPs5+jYeLBCmWOtbjRkLqVapEVSa+Y06PpBSPvU7/k8YszveYJ2e0FIeyxkgR9GjHswSSZaZ31TIsTwVaZFram75xEm9VqhfqNwiQqLOV4k2brhzzxYpqqqmxf683WaY1UneQkxC0PWp1FI9c+Dq+0SJrp0ox0+UBQJX/S3NYeiqCs2HpSJSnKsUTXdqlBdpXPcNw7+3u7x2fD4hHTI8PhkPDmOSfMBVClWnaRMydH56TnhXdo0Ty6XqNJidQBZs/PYqGjActeg+/pIBPDiPTwgX6uj/IGFzLHYjlaD6D1yBHTJPKlxJbeD84yCjTvf8fQWMvkTFcQQiS4FD9Zl2TwyvYXNmyLJ9SRFIemQLx8vyeSUgwdzmUm97l2/T2m/DxvvgAqpgdqRd5xQdyESNmY41B80MMLEhIYcoTEhtTGjkYMJTGPCwATalWjBhKGNMdUEhqlAqwkcU6PRYGBhfAtjqPEbTIsabcvAcBPjG5hm0HwHQ6mDYWZvuIFhuje8BaO33MSYapjRG6bVMKc3GjMaGZiOzTHkUI1pUaNtwWamQfcnj7adhFwWh/ig/+Pj7ePDf0V68LdOD2rd2g9Nyr9Oj5foaEkPvzUN9megNT+eKnkiQXxqH18rQnzK7jPkiQjhwr7gzBtObK84apFaUoRbqrgZALzRxIVNagkS1rNIpibWa0iOppYsYZa7PXlPatyxnkty4oRx++o1SXx7+bokJwoiC2RmQdRwuM1piRTLWuSmduRSnESxbAk33xxPzwgU7gRKi6N9nsz+ALaece+PDAAA"
+  },
+  {
+   "url": "https://geo.irceline.be/sos/api/v1/timeseries?station=1110&expanded=true",
+   "status": 200,
+   "contentType": "application/json;charset=UTF-8",
+   "body": "H4sIAAAAAAAACu2X32rjRhSHX2WY3mRBduevNHavNiaGwMYuDZRCyIViT7yilmRGcjbb4KcqfYF9sjKSnXjOzFppwCbQ9Z3Gmk860pn59Lt5wtkcD3EsSYwjvEzv9BIP8Sg1d2WBrsqifMzmGtm/UQ+Npj1Kr9DZRfGQmbIodK6L+sMv6G6d1bpAX7T5MysWqF5XlS4QIyQmnFBU69weKMJpgnpoZcqZnq+NjpCg54QI1EPnZv2ol0tdobPrNCtq3Rul9WdtskJ/wBHWj7VJKzy8wctspotK4whXdVqvq8ui1uYhXVb4NsLrMsdDnC9+zr/9vT0jKws8fMIrU660qTNd2SNbMqWUvBT8uhvZRHihy1zX5qvFzMrSzLMirS31RvS5UFIlIhEs4UqJSJK+kkRRInmsiFBJhCfpxN5o/XWl8RD/WmZFbanb47FO67XRdsToe210MdO/p8t1w7+N8H1mqroZsJevs1xXdZqv8JByrpjkjNhfhB/aU0ifqY2t8TuT4kRxGRM4KRGbCK9Sk+a61qZ5YJU2D9lM754dpnu9cvnb6OKTbY6LT5eTiyFqrqBNpqteusrQ2fX0GrE+aZ5eeX9vH+XiGQT67jh9Zq98v320zxVQSvAb3v8L9OQlrD7rosx10XZ0WwX5/qK1U2ZprRdl262vmLDxV9Xw5gkvyy/a4CG27dW3gPVq1QzQpnWaoSLNdXsKRT109fEPNJriCM/KZWnP/GkwIGQwwJvoBUclwDEAo7KB2WFAG43shV2ad3MS0Npbs8OANh57NBWodB+mWpZ/Z+NxHANWDFjKRcUNSgVI5+eAJAApdkmiIcUBkq3QIXFAEi6JNyThkQjxSAyQOGwIS+IBku0I+AZhO7jvb9sMAdJ47JB61Ht7+yTSvjqPY6vDm1tL2q1stbdcJlltyoUu0Dx7tqJCPfRx1OPv34rf/vkfapENuBI8dg0nWV8e0mIyEGwggBaZaiadTovKdcoRGu3oWjxNCQEtHlq1QS0entChxUT6UtzfbpJ4a8TJlHUoMXb3rS15Jwq7/yUSYgIulFAT+xjZSgJiAhIUbmHSlY2tSgYwnv8EUI1TlGhE4xUVkB+HxnKE1frKxwR8BXTl2KqVFcQEtEclcJWjqrgxlY8JOA98sziY9nslhOkUnu87HxPwXRJaCPleDEx+CO89Cy+YA3mf/GffUXFi3yWuLI7QZ0f33WlKCPiOB/2VHwqCXVM6nAfzgyc9/pwDJ105kMnDCULuEsSkKwPCLMJkIIswCUkB9VF1OIuoXRaBJM9+FFS3Iz9n3GaTVz7JEyBlUBYuiW3jrUfy5JUAkGuvpOEwyAlIEJSW+N8ZiU/xHAjKkr6RvZpeoUDmKTBQUcCAg711Mf2rLBrrDexSHiPxw3rv0nrBmEf54ZgXJ7FScJJoXXk67Q1cZxyh0Y6uvdOUENBeApdq0HSBs7rkBjdaT25sJ7cp75IbEAl39yXWiIQzAkghuYEcxVyRsCZJMQVJr5GbCMlN+CRfbvFhucU7uUFSt9zikNxin/RWubmct8oNUny5HcrQbJuhfUqX3KQnN+lRdnK7/RcBZjVA5RsAAA=="
+  },
+  {
+   "url": "https://geo.irceline.be/sos/api/v1/timeseries?station=1756&expanded=true",
+   "status": 200,
+   "contentType": "application/json;charset=UTF-8",
+   "body": "H4sIAAAAAAAACu2V327TMBTGX8U63AwpLbZj598drVYxaXRoQwhp2kVoT0tEE0dOOpimPhXiBfZkyGm7YjujgARX5C6R/fP3HZ+c7/oeijlkwBjlEgJY5R9wBRlMi1arJVZkXqgvxRxJt4AMyNtXZ1dE8DEZkFqrGc7XGgMi2LvR+5AMyEivmwZX5ORyjWSO5DzHT1g9hwDwS6vzBrJrWBUzrBqEAJo2b9fNWdWivs1XDdwEsFYlZPDwbfmifPi6W1KoCrJ7qLWqUbcFNubNyGaxjA6aj4rYBLBEVWKr7wxhppSeF1XeGuC1GIaSC5FEYShSxlIZSDpMpKQsYWkSp0kUywCm+dSobO9qhAzeqKJqDXb3PsG8XWs0XzQuUGM1w3f5at0dcBPAotBN230w57dFiU2blzVkLIpoKmNOzRPA7XYJY0O5Mf6e2BQnUZwIYW/ibEg3AdS5zktsUXfFalDfFjPc1w3YD1d9djk+PScDMj49P5ueZqQ7AXWBzSCvC3JydXFF+JB25VOLBeqiWh5ATt/8rE0MYLGr0OP+WEbwe1d44P2piPojVqrEattWHSL5Se+bLbO8xaXa9s0vbNj4vZ1d38NKfUYNGcRySCGAdV13r8xcYPelykvTR3FEBuT1y/dkesEhgJlaKbPuWZpSmqawCQ6oiFqoHXnHiRgZkFi6mPHYHGhhpI2JLDnSYCLqYiYTDyNsY9LCCONK9mCiyMXYaoRlShg1wjM1mYxGDiZ0MJaasMP0qDG2LAy3MaGF4QYTehhKPQyza8MtDDO14T0Yc+U2xlbDrNowo4Z5tTGYycTCDFyOJYcaTI8aYws2Nwb0+OeJvj+hVNUhN8T/3PinuSH+IDbCf50awhnYTzXJX02N3xHRkxphbwrse783N45tOZIcIXV/Wyc6Qsoes+NIdHDpDjZ7ssntaKMOqSc9uKOK24Ofd5q4dEk9AcISh2RrYklH8jT1ZAhz3O3Je1LnjiU+yYsRxt2Ra5P4duj6JC8CYgdkZ0DccbjL6YkSx1rsp3XsU7wkcWxJP9c8T78QJNwLkh5H+xy5+Q5gMe5TgAwAAA=="
+  },
+  {
+   "url": "https://geo.irceline.be/wms?service=WMS&version=1.3.0&request=GetFeatureInfo&layers=rio%3Ano2_anmean_be%2Crio%3Apm25_anmean_be%2Crio%3Apm10_anmean_be&query_layers=rio%3Ano2_anmean_be%2Crio%3Apm25_anmean_be%2Crio%3Apm10_anmean_be&styles=&crs=EPSG%3A31370&bbox=148958%2C171129%2C148968%2C171139&width=1&height=1&i=0&j=0&info_format=application%2Fjson&feature_count=3",
+   "status": 200,
+   "contentType": "application/json;charset=UTF-8",
+   "body": "H4sIAAAAAAAACt2TzWrDMBCEX6XsWTaS/L/X0vRUCE1PDcao9iaY2pKR5YQQ/O7FTkhLaCGHnqLbiEEz84GO4A4dAcKClBssPZqmodLVRgODzemuB1wfr3zAoK4AQRtZKN2S0sUH+Zu68iQPExkEYSGUKMNUqiiShSdUVAKDLZmWnD0AXh58GRpXL01z2M6ZpTG2qrVyc+x6vRZhzDlnIk455zm76ESedcR/1df+k87zfPyuUWjVTh0mDQw6azqyrp6ij/O+RGYMDqQsIEguI09ILxDvwGCnmoEAReYnDGxtih3ZfsKGsJucD9OZF++pd4ByHNlfELtWRrdSjO+RYuaH/wBR8FshhvcIUaR+divFnIEzTjWLyw+HQX9qs59266H9IPtKbrCaKsCAgatbWjnVdqfw2BPCE/yNpygiDEI/luHUpLT9D5zzousp55mD1Wi2JVa0wdL2+LRcPSMGIkg4jOP4Bf+yoV2XBAAA"
+  },
+  {
+   "url": "https://geo.irceline.be/wms?service=WMS&version=1.3.0&request=GetFeatureInfo&layers=rio%3Apm25_24hmean%2Crio%3Apm10_24hmean&query_layers=rio%3Apm25_24hmean%2Crio%3Apm10_24hmean&styles=&crs=EPSG%3A31370&bbox=148958%2C171129%2C148968%2C171139&width=1&height=1&i=0&j=0&info_format=application%2Fjson&feature_count=2",
+   "status": 200,
+   "contentType": "application/json;charset=UTF-8",
+   "body": "H4sIAAAAAAAACt2SQWvCQBCF/8ucV5ndJCbOsaX2KrWnSgjbZNRgshs2m4pI/ntJFC1ioefO7Q3Dvvc+9gT+2DAQLFj7zvGzrSrOfWkNCNicdy3Q+nR3BwLKAgiaWkWZCnc1azPdlMVEYRirIAgzqWUeJkpHkcomUkcJCNiyrdm7I9D1vaWtjtvRLbfWFaXRfjRcr2U4Q0QhZwkipuKqY3XRET7U9/dnnab9zT8zuh7M/Y6zYQcCGmcbdr4czE9jt1jNBfiy5tbrugEChWo2kXIi8R1jQiTEDxDwpauOgRROk7mc3UYJMOwP1u2B4Ml1bctVC30vfmcp8W8s5X9nOZ9iEtwmDH5hmQrw1utqcf2p0Jm9sYcBgunqT3Zv7DtnuABS5wirBxESkhEF4TROwiFG7tofWMeC960urTtnyG5zKnhDuWvpZbl6JQpkECP0ff8NGB3UB18DAAA="
+  },
+  {
+   "url": "https://geo.irceline.be/wms?service=WMS&version=1.3.0&request=GetFeatureInfo&layers=rioifdm%3Ano2_anmean_2025_atmostreet_vl%2Crioifdm%3Apm25_anmean_2025_atmostreet_vl%2Crioifdm%3Apm10_anmean_2025_atmostreet_vl&query_layers=rioifdm%3Ano2_anmean_2025_atmostreet_vl%2Crioifdm%3Apm25_anmean_2025_atmostreet_vl%2Crioifdm%3Apm10_anmean_2025_atmostreet_vl&styles=&crs=EPSG%3A31370&bbox=148958%2C171129%2C148968%2C171139&width=1&height=1&i=0&j=0&info_format=application%2Fjson&feature_count=3",
+   "status": 200,
+   "contentType": "application/json;charset=UTF-8",
+   "body": "H4sIAAAAAAAACs2QuwrCQBRE/2XqjSQGJbmd+MLGQi18IBLjVYKb3bC5i4SQf5cgWPgFtsPMYWZaSFMxCAvOxDueWq05l8IaKNw/Wg06tT8+KBQ3EKDwYFuyuAZkvNYKlbMVOyn6XIvlZnK4rNaz+R4UpGmadp36W9hZQaxkevEdDm+exr76N4wvr+w2LN4ZvoFiBSlK3kpWViAMw+E4iKIgCndhQtGI4tEgTOIjFHJXfyp0b3jZwKRvAQAA"
+  },
+  {
+   "url": "https://geo.irceline.be/wms?service=WMS&version=1.3.0&request=GetFeatureInfo&layers=rio%3Ano2_hmean%2Crio%3Apm25_hmean%2Crio%3Apm10_hmean%2Crio%3Ao3_hmean%2Crio%3Abc_hmean&query_layers=rio%3Ano2_hmean%2Crio%3Apm25_hmean%2Crio%3Apm10_hmean%2Crio%3Ao3_hmean%2Crio%3Abc_hmean&styles=&crs=EPSG%3A31370&bbox=148958%2C171129%2C148968%2C171139&width=1&height=1&i=0&j=0&info_format=application%2Fjson&feature_count=5",
+   "status": 200,
+   "contentType": "application/json;charset=UTF-8",
+   "body": "H4sIAAAAAAAACt2VwWrCQBCG32XOa5jdZI2dY0vba2l7qkhYk1GDyW7YbFpE8u4lKraIBe3R4z8M8/F/l9lC2DQMBE9sQuf5wVUV56F0FgQs9rMWaLo92QMBZQEE1qlsVbOx0aIsRgqTVMVxkkkj82SijNYqG0mj5yBgya7m4DdAx2Mvrtosd6jcOV+U1oQdbTqVyRgRhRxPEHEmjjlVh6zxbD7d3+fZrP/hZ9bUAzysOBtmIKDxrmEfygG+3RVL1Z2AUNbcBlM3QKBQjUdSjiS+Y0qIhPgBAj5N1TFQLCMlwHL4cn4NBPe+a1uuWuh78Ze6plb6EnfxjbuT+j/uJF7iDm/cnVLXu3PxBeYSvnFzOpLXipvnl4jLb1wcRijl5A93MwHBBVM9HT8HdHZt3ddQ3Hb1nP0rh85bLoD0Hvt2BjshqSnWkcLxgM59+0vlrtRpk0PTzltyy5wKXlDuW3p8eXsmimWcIvR9/w1fPpI87wYAAA=="
+  }
+ ]
+}

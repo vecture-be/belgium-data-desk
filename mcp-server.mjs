@@ -5,11 +5,9 @@
 import { expandWord } from "./public/dataset-synonyms-v1.mjs";
 import { AUTHORITIES, authoritiesFor } from "./public/dataset-authority-v1.mjs";
 import { detectDelimiter, encodingFor, parseDelimitedText } from "./scripts/tabular-profile.mjs";
-import { MODEL_DEPTH, RADIUS, getSubsurfaceRecord, makeDovClient, subsurfaceAtLocation } from "./dov.mjs";
-import { SEARCH_LIMIT, SEARCH_RADIUS, TYPES as SEARCH_TYPES, searchSubsurface } from "./dov-search.mjs";
-import { belgianStatistics } from "./statbel.mjs";
-import { airQuality } from "./air.mjs";
-import { floodRisk } from "./flood.mjs";
+import { makeDovClient } from "./dov.mjs";
+import { LIVE_TOOLS, ROUTING, liveTool } from "./tools/index.mjs";
+import { toMcpTool } from "./lib/tool-contract.mjs";
 
 export const MCP_VERSION="0.5.0";
 const SUPPORTED_PROTOCOLS=["2025-06-18","2025-03-26","2024-11-05"];
@@ -18,14 +16,8 @@ const MAX_LIMIT=20,MAX_QUERY_TOKENS=5,MAX_ASSET_READS=30,MAX_GROUP_WORDS=12,MAX_
 // Ranking weights, tuned against eval-relevance/queries.json (scripts/eval-mcp-relevance.mjs).
 const RELATED_WEIGHT=0.6,CURATED_BONUS=30,LOCAL_PENALTY=20,COVERAGE_WEIGHT=60,MAX_IDF=5,TITLE_FACTOR=30,BODY_FACTOR=10;
 const MAX_PREVIEW_ROWS=20,PREVIEW_BYTES=64*1024,MAX_PREVIEW_COLUMNS=40,MAX_CELL_CHARS=160,MAX_PREVIEW_TEXT=14000;
-// Query words (tokenized: lower case, no accents) that ask about the subsurface: search then points to the live DOV tool.
-// A search whose words ask for figures or conditions, not files, is pointed at the live tool that answers it (first match wins).
-const LIVE_TOOLS=[
-  [/^(overstroming|overstromingen|overstromingsgevoelig|flood|floods|flooding|inondation|inondations|wateroverlast|informatieplicht)/,"flood_risk","For whether a place in Flanders is flood-prone, flood_risk reads VMM's official maps (classes A-D) for the address."],
-  [/^(luchtkwaliteit|lucht|air|fijnstof|pm10|pm25|no2|ozon|ozone|belaqi|smog|pollution|vervuiling)/,"air_quality","For air quality at a place now, forecast or as an annual mean, air_quality reads IRCEL-CELINE live for the address."],
-  [/^(bevolking|inwoners|population|habitants|inhabitants|inkomen|income|revenus|inflatie|inflation|cpi|gezondheidsindex|consumptieprijs|werkloosheid|unemployment|chomage|tewerkstelling|employment)/,"belgian_statistics","For the figures themselves (population, income, inflation, unemployment) by municipality, province or region, belgian_statistics answers with Statbel's official numbers."],
-  [/^(boring|boringen|boorgat|borehole|boreholes|forage|forages|sondering|sonderingen|cpt|grondwater|groundwater|nappe|phreatic|freatisch|aquifer|aquifers|bodem|bodemkaart|soil|soils|geolog|geology|geologie|geologique|ondergrond|subsurface|stratigrafie|stratigraphy|lithologie|lithology|dov|geothermie|geothermal)/,"subsurface_at_location","For soil, geology, boreholes or groundwater at a specific place in Flanders, this tool reads Databank Ondergrond Vlaanderen live instead of listing its map layers."]
-];
+// A search whose words ask for figures or conditions, not files, is pointed at the live tool that answers it. The words come from
+// each tool's `routing` in tools/; a query word may match only one tool (scripts/test-tools.mjs checks that).
 const LOCAL_PUBLISHER=/\b(city of|stad|ville de|gemeente|commune|province|provincie)\b/i;
 
 const STOP=new Set(["the","de","het","een","van","voor","en","et","du","des","le","la","les","of","and","for","in","op","au","aux","par","sur","per","by","a","an","to","with","dans","om","te","is","are"]);
@@ -116,81 +108,8 @@ const TOOLS=[
     description:"Counts of the catalogue by scope and topic, the date it was built, and when file links were last checked: what is available and how fresh the evidence is.",
     inputSchema:{type:"object",properties:{}},annotations:{title:"Catalogue overview",readOnlyHint:true,destructiveHint:false,openWorldHint:false}
   },
-  {
-    name:"subsurface_at_location",title:"Soil, geology and groundwater at a place in Flanders",
-    description:"What is under a location in Flanders, read live from Databank Ondergrond Vlaanderen (DOV), the Flemish Government's subsurface database: the soil-map unit, the Tertiary and Quaternary geological map units and the groundwater bodies at the point, whether it lies in a drinking-water protection zone, the modelled column of geological and hydrogeological (aquifer) units with depths from DOV's 3D models (an answer even where no borehole exists), the boreholes, cone penetration tests (CPT) and groundwater monitoring wells within radius_m (counts plus the nearest and deepest, with ids), groundwater abstraction permits and described soil profiles within at least 1 km (licensed volume per aquifer; names of private persons withheld), and the current shallow groundwater status at the nearest status well. Starts with key_facts: the answer in a few sentences. Give an address in Flanders, or latitude/longitude, or Lambert 72 x/y. Use get_subsurface_record with a returned id for layer-by-layer borehole logs, CPT profiles or groundwater levels and quality. Map units and the model column are map- and model-scale information, not a site investigation.",
-    inputSchema:{type:"object",properties:{
-      address:{type:"string",description:"Address in Flanders, e.g. 'Grote Markt 1, 3000 Leuven'. Looked up in the Flemish address register."},
-      latitude:{type:"number",description:"WGS84 latitude, e.g. 51.0453 (use with longitude instead of address)."},
-      longitude:{type:"number",description:"WGS84 longitude, e.g. 3.7275."},
-      x_lambert72:{type:"number",description:"Belgian Lambert 72 (EPSG:31370) x in metres, as an alternative to latitude/longitude."},
-      y_lambert72:{type:"number",description:"Belgian Lambert 72 (EPSG:31370) y in metres."},
-      radius_m:{type:"integer",minimum:RADIUS.min,maximum:RADIUS.max,description:"Search radius for boreholes, CPTs and wells in metres, default "+RADIUS.default+"."},
-      max_depth_m:{type:"integer",minimum:MODEL_DEPTH.min,maximum:MODEL_DEPTH.max,description:"Deepest unit start listed in the modelled column, default "+MODEL_DEPTH.default+" m; deeper units are counted. Raise it for deep geothermal or deep aquifer questions."}
-    }},annotations:{title:"Soil, geology and groundwater at a place in Flanders",readOnlyHint:true,destructiveHint:false,openWorldHint:true}
-  },
-  {
-    name:"get_subsurface_record",title:"Borehole, CPT or groundwater-well details from DOV",
-    description:"Details of one DOV record by id from subsurface_at_location: for a borehole ('boring/…') its depth, purpose and layer-by-layer interpretations (formal stratigraphy with formation names, the logged lithological description, hydrogeological units) plus ids of further interpretations; for a groundwater screen ('filter/…') the aquifer, screen depth, water levels (latest, lowest, highest, last 12 readings, yearly means) and groundwater quality (every result of the latest lab sample, and trends of nitrate, chloride, sulphate, ammonium, conductivity and pH); for a CPT ('sondering/…') cone resistance and sleeve friction per metre with the Robertson soil behaviour type; for a soil profile ('bodemlocatie/…') its classification, site (water table, drainage, land use, parent material) and per horizon the Munsell colour, texture, organic carbon, pH and lime; or one interpretation ('interpretatie/…'). Codes are decoded with DOV's published code lists; every answer starts with key_facts.",
-    inputSchema:{type:"object",properties:{id:{type:"string",description:"Record id such as 'boring/2016-140688', 'filter/1978-006372', 'sondering/1984-065526', 'bodemlocatie/1964-007478' or 'interpretatie/1993-088861' (a DOV URL for the record also works)."}},required:["id"]},
-    annotations:{title:"Borehole, CPT or groundwater-well details from DOV",readOnlyHint:true,destructiveHint:false,openWorldHint:true}
-  },
-  {
-    name:"search_subsurface",title:"Find boreholes, wells, CPTs, soil profiles or groundwater permits in Flanders",
-    description:"Find DOV records by area and attributes, e.g. the deepest boreholes in a municipality, geothermal boreholes since 2020, groundwater wells in the Brussel sand with quality data, electric CPTs near an address, soil profiles with lab data, or the largest groundwater abstraction permits in a municipality (with the licensed total per aquifer). Area: a municipality (official 2025 boundary; old pre-merger names work), or an address/coordinates with radius_m, or nothing for all of Flanders. Filtering and sorting run on DOV's server, so counts cover every matching record. Use get_subsurface_record with a result id for details.",
-    inputSchema:{type:"object",properties:{
-      record_type:{type:"string",enum:Object.keys(SEARCH_TYPES),description:"What to find."},
-      municipality:{type:"string",description:"Municipality in Flanders, e.g. 'Leuven' or 'Merelbeke-Melle'."},
-      address:{type:"string",description:"Address in Flanders, as an alternative to municipality (then radius_m applies)."},
-      latitude:{type:"number"},longitude:{type:"number"},x_lambert72:{type:"number"},y_lambert72:{type:"number"},
-      radius_m:{type:"integer",minimum:SEARCH_RADIUS.min,maximum:SEARCH_RADIUS.max,description:"Radius around the address or coordinates, default "+SEARCH_RADIUS.default+" m."},
-      min_depth_m:{type:"number",description:"Minimum depth (borehole or CPT depth, well screen bottom, permitted well depth)."},
-      max_depth_m:{type:"number",description:"Maximum depth, same fields."},
-      date_from:{type:"string",description:"YYYY, YYYY-MM or YYYY-MM-DD: drilling/test date, last water-level date for wells, permit start, survey date."},
-      date_to:{type:"string",description:"Same formats as date_from."},
-      purpose:{type:"string",enum:["geological","geotechnical","groundwater_abstraction","dewatering","hydrogeological","geothermal","groundwater_monitoring","energy_exploration","contaminated_site_monitoring"],description:"Boreholes: why it was drilled."},
-      with_stratigraphy:{type:"boolean",description:"Boreholes: only those with a formal, hydrogeological or Quaternary stratigraphy."},
-      cpt_method:{type:"string",enum:["electric","mechanical"],description:"CPTs: electric CPTs also measure sleeve friction."},
-      aquifer:{type:"string",description:"Wells and permits: HCOV code (A0620, or A06 for the whole system) or words from the unit name ('Brussel', 'Krijt')."},
-      with_quality_data:{type:"boolean",description:"Wells: only screens with groundwater quality samples."},
-      with_lab_data:{type:"boolean",description:"Soil profiles: only those with lab samples."},
-      min_annual_m3:{type:"number",description:"Permits: minimum licensed annual volume in m³."},
-      sort:{type:"string",enum:["nearest","deepest","newest","oldest","largest","most_described"],description:"Default: nearest with a location; otherwise deepest (boreholes, CPTs), newest (wells), largest (permits), most_described (soil profiles)."},
-      limit:{type:"integer",minimum:1,maximum:SEARCH_LIMIT.max,description:"Results to list, default "+SEARCH_LIMIT.default+"."}
-    },required:["record_type"]},
-    annotations:{title:"Find boreholes, wells, CPTs, soil profiles or groundwater permits in Flanders",readOnlyHint:true,destructiveHint:false,openWorldHint:true}
-  },
-  {
-    name:"belgian_statistics",title:"Official Belgian statistics: population, income, prices, labour market",
-    description:"Answers with Statbel's official figures (not dataset links). Places: any of the 565 municipalities (2025 boundaries; Dutch, French or pre-merger names such as Melle work; NIS codes too), the provinces, the three regions or Belgium. topic 'profile' (default) gives population on 1 January (total, sex, age bands, non-Belgian nationality, change since 2019) and average net taxable income per inhabitant and per declaration (income years up to the latest published); a single municipality comes with its province, region and Belgium for comparison. rank_by ranks municipalities within a province, region or Belgium (e.g. highest income per inhabitant in Limburg, oldest population). topic 'prices' gives the latest CPI, inflation and (smoothed) health index read live from Statbel; topic 'labour' gives the latest quarterly employment, unemployment and activity rates for Belgium and the regions (Labour Force Survey). Each answer starts with key_facts and states reference dates, definitions and the Statbel citation (CC BY 4.0).",
-    inputSchema:{type:"object",properties:{
-      places:{type:"array",items:{type:"string"},maxItems:6,description:"Up to 6 places to compare, e.g. ['Leuven','Gent'], ['Limburg','Wallonia','Belgium'] or ['44088']. A bare 'Brussels' means the region; use 'City of Brussels' for the municipality."},
-      topic:{type:"string",enum:["profile","population","income","prices","labour"],description:"Default 'profile' (population and income)."},
-      year:{type:"integer",description:"Population year (1 January), 2019 to the latest; default latest."},
-      income_year:{type:"integer",description:"Income year, default the latest published."},
-      rank_by:{type:"string",enum:["population","population_growth_pct","share_65_plus_pct","share_0_17_pct","non_belgian_nationality_pct","income_per_inhabitant","income_per_declaration"],description:"Rank municipalities by this indicator instead of listing places."},
-      within:{type:"string",description:"With rank_by: a province, region or 'Belgium' (default)."},
-      order:{type:"string",enum:["highest","lowest"],description:"With rank_by; default highest."},
-      limit:{type:"integer",minimum:1,maximum:25,description:"With rank_by; default 10."},
-      with_context:{type:"boolean",description:"Default true: one municipality is shown with its province, region and Belgium."}
-    }},annotations:{title:"Official Belgian statistics: population, income, prices, labour market",readOnlyHint:true,destructiveHint:false,openWorldHint:true}
-  },
-  {
-    name:"air_quality",title:"Air quality at a place in Belgium (now, forecast, annual)",
-    description:"Air quality at an address or point anywhere in Belgium from IRCEL-CELINE, read live: this hour's modelled NO2, PM2.5, PM10, ozone and black carbon for the 4 km cell, the last 24-hour PM means against the WHO 24-hour guidelines, the BelAQI forecast for today and the next three days (1 excellent to 10 horrible), annual means of the last complete year (street level in Flanders via ATMO-Street, 4 km background elsewhere) compared with the WHO 2021 guidelines and the current and 2030 EU limit values, and the nearest measuring stations that are reporting now (out-of-service stations are skipped and named). Includes the municipality (NIS code) with its population and income. Starts with key_facts; cite IRCEL-CELINE (CC BY 4.0).",
-    inputSchema:{type:"object",properties:{
-      address:{type:"string",description:"Address in Belgium, e.g. 'Grote Markt 1, 3000 Leuven' or 'Place Saint-Lambert 1, 4000 Liège'."},
-      latitude:{type:"number"},longitude:{type:"number"},x_lambert72:{type:"number"},y_lambert72:{type:"number"}
-    }},annotations:{title:"Air quality at a place in Belgium (now, forecast, annual)",readOnlyHint:true,destructiveHint:false,openWorldHint:true}
-  },
-  {
-    name:"flood_risk",title:"Flood-prone classes at a place in Flanders (official VMM maps)",
-    description:"Whether an address or point in Flanders is flood-prone on the official VMM maps of flood-prone areas from rivers (fluvial), heavy rain (pluvial) and the sea, each as class A (no flooding modelled), B (small chance under climate change), C (small chance) or D (medium chance). These maps underlie the flood information required when property in Flanders is sold or let and the water test for permits. Includes the municipality (NIS code) with its population and income. Flanders only. Starts with key_facts; describes the location, not a building's floor level or defences.",
-    inputSchema:{type:"object",properties:{
-      address:{type:"string",description:"Address in Flanders, e.g. 'Groenplaats 1, 2000 Antwerpen'."},
-      latitude:{type:"number"},longitude:{type:"number"},x_lambert72:{type:"number"},y_lambert72:{type:"number"}
-    }},annotations:{title:"Flood-prone classes at a place in Flanders (official VMM maps)",readOnlyHint:true,destructiveHint:false,openWorldHint:true}
-  },
+  // Live answer tools: one definition per file in tools/, listed in tools/index.mjs.
+  ...LIVE_TOOLS.map(toMcpTool),
   // Compatibility with ChatGPT deep research / company knowledge, which expect exactly these two tools.
   {
     name:"search",title:"Search (deep-research compatible)",
@@ -291,7 +210,7 @@ export async function searchDatasets(reader,args){
   }
   scored.sort((x,y)=>y.score-x.score);
   const results=[...pinned.map(d=>({...summary(d),authoritative_source:true})),...collapseCollections(scored)].slice(0,limit);
-  const live=LIVE_TOOLS.find(([re])=>tokens.some(t=>re.test(t)));
+  const live=ROUTING.find(([re])=>tokens.some(t=>re.test(t)));
   return{query:q,scope,candidates_considered:counts.size,
     ...(live?{related_tool:{name:live[1],why:live[2]}}:{}),
     ...(pinned.length?{guidance:{need:authority.need,authoritative_source:authority.why,...(authority.caveat?{caveat:authority.caveat}:{})}}:{}),
@@ -405,14 +324,15 @@ function writeMcpUsage(env,{method,tool="",args={},status="ok",durationMs=0,resu
   })}catch{}
 }
 
-// Live tools: they read official services (bounded client in dov.mjs) and, for place context and statistics, the static Statbel tables.
-const DOV_TOOLS={subsurface_at_location:subsurfaceAtLocation,get_subsurface_record:getSubsurfaceRecord,search_subsurface:searchSubsurface,
-  belgian_statistics:belgianStatistics,air_quality:airQuality,flood_risk:floodRisk};
+// Live tools (tools/): each gets its own bounded client, limited to the hosts and request budget its definition declares, and
+// reads static tables (place context, Statbel) through the same asset reader as the catalogue tools.
 export async function callTool(env,origin,name,args,{previewFile=null,dov=null}={}){
-  if(DOV_TOOLS[name]){
+  const tool=liveTool(name);
+  if(tool){
     if(!dov?.fetchImpl)return asText({error:"Live data access is not available on this server."});
     if(dov.rateLimit&&!(await dov.rateLimit()))return asText({error:"Too many live-data requests right now; try again in a minute."});
-    return asText(await DOV_TOOLS[name](makeDovClient({fetchImpl:dov.fetchImpl}),args,{assets:makeReader(env,origin)}));
+    const client=makeDovClient({fetchImpl:dov.fetchImpl,hosts:tool.hosts,maxRequests:tool.maxRequests});
+    return asText(await tool.run(client,args||{},{assets:makeReader(env,origin)}));
   }
   const reader=makeReader(env,origin);
   if(name==="search_datasets")return asText(await searchDatasets(reader,args));
