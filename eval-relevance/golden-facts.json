@@ -1,0 +1,44 @@
+[
+  {
+    "question": "How many people lived in Belgium on 1 January 2026?",
+    "tool": "belgian_statistics", "args": { "places": ["Belgium"], "topic": "population" },
+    "expect": [ { "path": "places.0.pop.reference_date", "equals": "2026-01-01" }, { "path": "places.0.pop.population", "equals": 11867634 } ],
+    "source": "https://statbel.fgov.be/en/themes/population/structure-population",
+    "why": "The headline Statbel figure; a change means the tables were rebuilt wrongly or Statbel revised it."
+  },
+  {
+    "question": "How many tax declarations were there in Belgium for income year 2023?",
+    "tool": "belgian_statistics", "args": { "places": ["Belgium"], "topic": "income" },
+    "expect": [ { "path": "places.0.income.income_year", "equals": 2023 }, { "path": "places.0.income.declarations", "equals": 6846186 } ],
+    "source": "https://statbel.fgov.be/en/themes/households/taxable-income",
+    "why": "Statbel fiscal statistics; a new income year changes this on purpose, so update it with the source."
+  },
+  {
+    "question": "Population of Melle (merged into Merelbeke-Melle on 1 January 2025)",
+    "tool": "belgian_statistics", "args": { "places": ["Melle"], "topic": "population", "with_context": false },
+    "expect": [ { "path": "places.0.nis_code", "equals": "44088" }, { "path": "places.0.place", "equals": "Merelbeke-Melle" }, { "path": "places.0.note", "matches": "merged" } ],
+    "source": "https://statbel.fgov.be/nl/over-statbel/methodologie/classificaties/geografie",
+    "why": "Pre-merger names must resolve to the 2025 municipality and say so."
+  },
+  {
+    "question": "How deep is borehole 2016-140688?",
+    "tool": "get_subsurface_record", "args": { "id": "boring/2016-140688" },
+    "expect": [ { "path": "depth_m", "equals": 10.4 }, { "path": "provenance.source", "matches": "Databank Ondergrond Vlaanderen" } ],
+    "source": "https://www.dov.vlaanderen.be/data/boring/2016-140688",
+    "why": "A fixed DOV record: a different depth means the record export or its parsing changed."
+  },
+  {
+    "question": "Is the Grote Markt in Leuven flood-prone?",
+    "tool": "flood_risk", "args": { "address": "Grote Markt 1, 3000 Leuven" },
+    "expect": [ { "path": "highest_class", "equals": "A" }, { "path": "place.nis_code", "equals": "24062" } ],
+    "source": "https://www.waterinfo.be/informatieplicht",
+    "why": "VMM's maps class this point A; a change means new maps or a broken lookup."
+  },
+  {
+    "question": "Which source is official for population by municipality?",
+    "tool": "search_datasets", "args": { "query": "bevolking per gemeente", "limit": 3 },
+    "expect": [ { "path": "results.0.authoritative_source", "equals": true }, { "path": "results.0.publisher", "matches": "Statbel" } ],
+    "source": "https://statbel.fgov.be/en/open-data",
+    "why": "The authoritative source must stay first for the most common question."
+  }
+]
