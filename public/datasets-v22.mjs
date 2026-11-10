@@ -75,7 +75,7 @@ const harvestToAsset=h=>{
     caveat:depth==="structured"?"Field names/types come from a publisher-exposed schema. Observation grain and semantics are still not manually audited.":observedFile?"Field names and sample rows were observed by downloading a publisher file. They are not a publisher-declared schema, and inferred types can be imperfect.":schemaOrigin==="sample-observed"?"Fields were observed in a sample response, not supplied as an authoritative schema.":"Catalogue metadata only; schema and observation grain are not audited.",
     evidence:[h.officialUrl].filter(Boolean),description:h.description||"",provider:h.provider||"",publisherUri:h.publisherUri||null,contactName:h.contactName||"",contactEmail:h.contactEmail||"",contactUrl:h.contactUrl||"",officialUrl:h.officialUrl||"",platform:h.platform||"",discovery:h.discovery||"publisher",discoverySources:[h.discovery||"publisher"],sourceRecord:h.sourceRecord||null,updatedAt:h.updatedAt||null,dataProcessedAt:h.dataProcessedAt||null,metadataProcessedAt:h.metadataProcessedAt||null,catalogueModifiedAt:h.catalogueModifiedAt||null,
     recordCount:Number.isFinite(h.recordCount)?h.recordCount:null,recordCountKind:h.recordCountKind||null,previewRows:h.previewRows||[],tabularProfile:h.tabularProfile||null,extent:h.extent||{},themes:h.themes||[],license:h.license||"",
-    probe:h.probe||null,tier:h.tier||"",seriesId:h.seriesId||"",dataKind:h.dataKind||"",topic:h.topic||"",licenseFamily:h.licenseFamily||"",geoScope:h.geoScope||"",euThemes:h.euThemes||[],schemaOrigin,sampleOrigin:h.sampleOrigin||"none",harvestedAt:h.harvestedAt||null,enrichment:h.enrichment||{level:"harvested",score:0,reasons:[]}
+    probe:h.probe||null,streamCheck:h.streamCheck||null,tier:h.tier||"",seriesId:h.seriesId||"",dataKind:h.dataKind||"",topic:h.topic||"",licenseFamily:h.licenseFamily||"",geoScope:h.geoScope||"",euThemes:h.euThemes||[],schemaOrigin,sampleOrigin:h.sampleOrigin||"none",harvestedAt:h.harvestedAt||null,enrichment:h.enrichment||{level:"harvested",score:0,reasons:[]}
   };
 };
 const depthRank={modelled:3,structured:2,harvested:1};
@@ -86,7 +86,7 @@ const withTopic=list=>list.map(a=>a.topic?a:{...a,topic:topicOf(a)});
 let mergedCatalogue=withTopic(mergeDiscoveredAssets([...MODELED]));
 const refreshCatalogue=()=>{mergedCatalogue=withTopic(mergeDiscoveredAssets([...MODELED,...state.harvested,...state.national]));joinCandidateCache.clear()};
 const all=()=>mergedCatalogue;
-const by=id=>all().find(a=>a.id===id);
+const by=id=>all().find(a=>a.id===id)||all().find(a=>a.aliases?.includes(id));   // aliases: ids of records merged into it
 const srcLabel=a=>a.depth==="modelled"?(sourceBy(a.sourceId)?.name||a.product):publisherDisplayName(a);
 const publisherFilterLabel=a=>{const s=srcLabel(a);return /^Belgian organisation\s/i.test(s)?"Other Belgian organisations":s==="data.gov.be publisher"?"Other data.gov.be publishers":s};
 const publisherFilterKey=a=>{const label=publisherFilterLabel(a),named=!/^Other /i.test(label)&&label!=="Other data.gov.be publishers";if(named)return"name:"+norm(label).replace(/[^a-z0-9]+/g,"-");const id=publisherReference(a);return id?"be:"+id:(sourceAlias(a)||norm(srcLabel(a)).replace(/[^a-z0-9]+/g,"-"))};
@@ -827,6 +827,14 @@ function renderJoinFinder(a){
   const target=by(state.joinTarget);
   return '<section class="join-finder"><div class="section-cap"><h3>Join Finder</h3><span>identifier-first · metadata-aware</span></div><div class="join-finder-search"><input id="joinFinderSearch" type="search" placeholder="Find another dataset to combine with…"><button id="joinFinderClear" type="button">Best matches</button></div><div id="joinFinderResults" class="join-candidates">'+joinCandidateMarkup(best)+'</div><div id="joinFinderPlan">'+renderJoinPlanLite(a,target)+'</div><p class="dk-note">Harvested-dataset suggestions are heuristic. The Join Finder never treats matching names alone as a safe key.</p></section>';
 }
+// The weekly check of an LDES endpoint (scripts/probe-links.mjs): did it answer with LDES/TREE vocabulary?
+function streamCheckLine(a,url){
+  const c=(a.streamCheck||[]).find(s=>s.url===url);
+  if(!c)return'<span class="ldes-check">Not checked yet.</span>';
+  if(c.result==="stream")return'<span class="ldes-check ok">Answered as an event stream (LDES/TREE) on '+esc(c.at)+'.</span>';
+  if(c.result==="not_a_stream")return'<span class="ldes-check warn">Answered on '+esc(c.at)+', but without LDES/TREE vocabulary: it may have moved or need a different address.</span>';
+  return'<span class="ldes-check bad">Did not work on '+esc(c.at)+' ('+esc(c.status?"HTTP "+c.status:c.error==="ENOTFOUND"?"the host no longer exists":c.error||"no answer")+'). Check the publisher’s page for a current address.</span>';
+}
 function renderLdesPanel(a){
   const stream=ldesCapability(a);
   if(stream.status==="none")return"";
@@ -834,7 +842,7 @@ function renderLdesPanel(a){
     return '<p class="ldes-mention">LDES is mentioned in this catalogue record, but no stream endpoint was captured. Follow the official source link; this is not yet classified as an accessible stream.</p>';
   return '<section class="ldes-panel" aria-label="Linked Data Event Stream"><header><div><small>DELIVERY · PUBLISHER-DECLARED</small><h3>Linked Data Event Stream (LDES)</h3></div><span>STREAM</span></header>'+
     '<p>The publisher lists a versioned data stream. An LDES consumer follows TREE links to synchronize members and can build its own queryable view.</p>'+
-    '<div class="ldes-endpoints">'+stream.endpoints.map(ep=>'<div><small>Publisher endpoint · '+esc(ep.format||"LDES")+'</small><a href="'+esc(ep.url)+'" target="_blank" rel="noopener noreferrer">'+esc(ep.url)+' ↗</a></div>').join("")+'</div>'+
+    '<div class="ldes-endpoints">'+stream.endpoints.map(ep=>'<div><small>Publisher endpoint · '+esc(ep.format||"LDES")+'</small><a href="'+esc(ep.url)+'" target="_blank" rel="noopener noreferrer">'+esc(ep.url)+' ↗</a>'+streamCheckLine(a,ep.url)+'</div>').join("")+'</div>'+
     (a.endpointDescription&&/^https:\/\//.test(a.endpointDescription)?'<a class="ldes-doc-link" href="'+esc(a.endpointDescription)+'" target="_blank" rel="noopener noreferrer">Publisher endpoint documentation ↗</a>':"")+
     '<p class="ldes-limit"><b>What is verified here:</b> a publisher-described endpoint. <b>What is not:</b> live health, history completeness, record freshness, or a synchronized SQL/MCP mirror. This is not a CSV download or a browser preview.</p></section>';
 }
@@ -892,7 +900,7 @@ async function openPinnedDataset(id){
   const asset=by(id);if(!asset)return;
   state.q=state.source=state.kind=state.format=state.depth=state.delivery=state.analysis=state.topic=state.licence="";state.scope="all";state.pinnedOnly=false;
   $("#datasetSearch").value="";renderFilters();$("#dsPinnedOnly").classList.remove("active");$("#dsPinnedOnly").setAttribute("aria-pressed","false");
-  state.selected=id;state.forceVisible=id;renderList();
+  state.selected=asset.id;state.forceVisible=asset.id;renderList();   // asset.id: the link may use the id of a merged record
   $("#assetInspector").scrollIntoView({behavior:"smooth",block:"start"});
 }
 

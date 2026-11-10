@@ -43,6 +43,21 @@ assert.equal(mergeDiscoveredAssets([...layers,...repository]).length,65,"shared 
 const sharedFile={id:"national:file1",depth:"harvested",provider:"Statbel",datasetId:"a",title:"Population by sex",evidence:[],distributions:[["x","CSV","","","https://statbel.fgov.be/download/pop.csv"]],discovery:"data.gov.be"};
 const sameFileOtherSource={id:"harvest:statbel:a",depth:"structured",provider:"Statbel",datasetId:"a",title:"Population by sex",evidence:[],distributions:[["x","CSV","","","https://statbel.fgov.be/download/pop.csv"]],discovery:"publisher"};
 assert.equal(mergeDiscoveredAssets([sharedFile,sameFileOtherSource]).length,1,"a real cross-source duplicate still merges");
+// the merged record remembers the id it absorbed, so a link to that id still opens it
+{
+  const merged=mergeDiscoveredAssets([sharedFile,sameFileOtherSource]);
+  assert.deepEqual(merged[0].aliases,[merged[0].id==="harvest:statbel:a"?"national:file1":"harvest:statbel:a"],"merged id kept as alias");
+}
+// a data service (API, LDES stream) sharing a landing page or id with the dataset it serves stays a separate record
+{
+  const ds={id:"harvest:gipod:HINDER",depth:"structured",provider:"Digitaal Vlaanderen",datasetId:"gipod-hinder",title:"GIPOD hinder",evidence:["https://gipod.vlaanderen.be"],distributions:[],discovery:"publisher"};
+  const svc={id:"national:gipod-ldes",depth:"harvested",provider:"Digitaal Vlaanderen",datasetId:"gipod-hinder",title:"GIPOD hinder (LDES)",dataKind:"data-service",evidence:["https://gipod.vlaanderen.be"],
+    distributions:[["Service endpoint","LDES","","","https://gipod.api.vlaanderen.be/api/v1/ldes/mobility-hindrances"]],discovery:"data.gov.be"};
+  const out=mergeDiscoveredAssets([ds,svc]);
+  assert.equal(out.length,2,"a data service is not merged into the dataset it serves");
+  assert.ok(identityKeys(svc).every(k=>k.startsWith("service:")));
+}
+
 
 assert.ok(identityKeys(direct).includes("elia|ods001"));
 assert.ok(identityKeys(nationalElia).includes("elia|ods001"));

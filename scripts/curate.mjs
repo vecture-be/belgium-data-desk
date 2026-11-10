@@ -104,7 +104,7 @@ import { freshness, summarizeChecks, trustChecks } from "../public/dataset-trust
 export { freshness, summarizeChecks, trustChecks };
 
 /* ---------- link-probe interpretation ---------- */
-const SNIFF_OK={CSV:["delimited"],TSV:["delimited"],JSON:["json"],GeoJSON:["json"],XLSX:["zip/xlsx"],XLS:["ole/xls","xml","zip/xlsx"],Parquet:["parquet"],XML:["xml"]};
+const SNIFF_OK={CSV:["delimited"],TSV:["delimited"],JSON:["json"],GeoJSON:["json"],XLSX:["zip/xlsx"],XLS:["ole/xls","xml","zip/xlsx"],Parquet:["parquet"],XML:["xml"],LDES:["ldes"]};
 export function interpretProbe(p){
   const ok=!p.error&&p.status>=200&&p.status<300;
   const expected=SNIFF_OK[p.fmt];

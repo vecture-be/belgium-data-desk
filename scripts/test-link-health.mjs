@@ -50,3 +50,18 @@ assert.equal(by[5].tier,"service");
 assert.equal(by[6].tier,"ready","one working file is enough");assert.equal(by[6].probe.n,2);assert.equal(by[6].probe.ok,1);
 annotateItems(items,byUrl);assert.equal(by[1].probe.n,1,"idempotent");
 console.log("link health tests passed");
+// LDES endpoints: answered with stream vocabulary, answered otherwise, gone, or (timeout) no claim at all
+{
+  const f3=path.join(dir,"p3.jsonl");
+  fs.writeFileSync(f3,[
+    {url:"https://s.example/ldes/a",fmt:"LDES",status:200,sniff:"ldes",checkedAt:"2026-11-10T01:00:00Z"},
+    {url:"https://s.example/ldes/b",fmt:"LDES",status:200,sniff:"json",checkedAt:"2026-11-10T01:00:00Z"},
+    {url:"https://s.example/ldes/c",fmt:"LDES",status:404,checkedAt:"2026-11-10T01:00:00Z"},
+    {url:"https://s.example/ldes/d",fmt:"LDES",error:"UND_ERR_CONNECT_TIMEOUT",checkedAt:"2026-11-10T01:00:00Z"}
+  ].map(r=>JSON.stringify(r)).join("\n")+"\n");
+  const items=["a","b","c","d"].map(k=>({id:k,distributions:[{url:"https://s.example/ldes/"+k,format:"LDES"}]}));
+  annotateItems(items,loadProbes(f3).byUrl);
+  assert.deepEqual(items.map(i=>i.streamCheck?.[0]?.result??null),["stream","not_a_stream","unreachable",null]);
+  assert.equal(items[2].streamCheck[0].status,404);
+}
+console.log("ldes stream check tests passed");

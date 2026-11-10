@@ -238,6 +238,8 @@ export async function getDataset(reader,args){
     preview_available:previewable(x).length>0,
     web_url:reader.origin+"/?dataset="+encodeURIComponent(d.id),
     link_check:x.pr?{checked_on:x.pr.at,files_checked:x.pr.n,files_ok:x.pr.ok,format_mismatches:x.pr.mm}:null,
+    // LDES endpoints: "stream" = answered with LDES/TREE vocabulary when checked; not a statement about history completeness
+    ...(x.sc?{stream_check:x.sc.map(s=>({endpoint:s.url,checked_on:s.at,result:s.result,...(s.status?{http_status:s.status}:{}),...(s.error?{error:s.error}:{})}))}:{}),
     files:(x.files||[]).map(f=>({format:f.f,url:f.u,size_bytes:f.s||null})),...(card?{card}:{}),note:TRUST_NOTE};
 }
 

@@ -23,3 +23,8 @@
   .ldes-label{background:#163e33;color:#a5ebd4;border-color:#509780}
   .ldes-mention{background:#302c21;color:#f0dcb2}
 }
+/* weekly endpoint check under each LDES endpoint */
+.ldes-check{display:block;margin-top:4px;font-size:.62rem;line-height:1.4;color:var(--m)}
+.ldes-check.ok::before{content:"● ";color:#2f8f4e}
+.ldes-check.warn::before{content:"● ";color:var(--o)}
+.ldes-check.bad::before{content:"● ";color:var(--r)}

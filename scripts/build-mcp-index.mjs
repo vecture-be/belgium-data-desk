@@ -29,7 +29,8 @@ export function mergeItems(national,harvested){
   const byId=new Map(),assets=[];
   for(const h of harvested){byId.set(h.id,h);assets.push(toAsset(h,"publisher"))}
   for(const h of national){byId.set(h.id,{...h,discovery:"data.gov.be"});assets.push(toAsset(h,"data.gov.be"))}
-  return mergeDiscoveredAssets(assets).map(a=>byId.get(a.id)).filter(Boolean);
+  // keep the ids merged into each record (aliases) so get_dataset still answers for them
+  return mergeDiscoveredAssets(assets).map(a=>{const h=byId.get(a.id);return h&&a.aliases?.length?{...h,aliases:a.aliases}:h}).filter(Boolean);
 }
 
 /** Hand-reviewed atlas assets share the catalogue item shape so they are searchable too — they are the best-evidenced records. */
@@ -63,7 +64,7 @@ export function toDocs(it,relay){
     return{f:formatLabel(d.format||""),u:d.url,...(d.byteSize?{s:d.byteSize}:{}),...(relay&&relay[r]?{r}:{})};
   });
   const detail={fq:it.frequency||"",g:it.geoCoverage||"",url:it.officialUrl||"",ce:it.contactEmail||"",cu:it.contactUrl||"",d:desc.slice(0,600),
-    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.probe?{pr:it.probe}:{}),files};
+    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.probe?{pr:it.probe}:{}),...(it.streamCheck?{sc:it.streamCheck}:{}),files};
   return{light,detail};
 }
 
@@ -84,7 +85,7 @@ export function buildIndex(rawItems,{relay=null}={}){
   const ranked=items.slice().sort((a,b)=>rankOf(b)-rankOf(a)||String(a.title).localeCompare(String(b.title)));
   const built=ranked.map(it=>toDocs(it,relay)),docs=built.map(b=>b.light),details=built.map(b=>b.detail),postings=new Map(),ids=new Map();
   docs.forEach((d,i)=>{
-    ids.set(d.id,i);
+    ids.set(d.id,i);for(const alias of ranked[i].aliases||[])if(!ids.has(alias))ids.set(alias,i);
     const toks=new Set([...tokenize(d.t,{cap:30}),...tokenize(d.p,{cap:6}),...tokenize(details[i].d.slice(0,240),{cap:20}),...tokenize(TOPIC_LABELS[d.tp]||"",{cap:4})]);
     for(const t of [...toks]){const pk=prefixKey(t);if(pk)toks.add(pk)}
     for(const t of toks){let l=postings.get(t);if(!l)postings.set(t,l=[]);l.push(i)}

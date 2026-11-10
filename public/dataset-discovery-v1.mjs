@@ -28,13 +28,17 @@ export function identityKeys(a){
   // GeoNetwork catalogues (Metawal, geo.be) and data.gov.be describe the same record with the same UUID under different hosts.
   for(const v of [a.datasetId,a.evidence?.[0],a.sourceRecord]){const u=String(v||"").match(UUID);if(u)out.add("uuid|"+u[0].toLowerCase())}
   if(!out.size)out.add(alias+"|"+norm(a.title));
-  return [...out];
+  // A data service (API, LDES event stream) is a different thing from the dataset it serves, even when both share a landing page
+  // or identifier: its keys live in their own namespace, so it is never merged into (and hidden behind) a dataset record.
+  return a.dataKind==="data-service"?[...out].map(k=>"service:"+k):[...out];
 }
 const depthRank={modelled:3,structured:2,harvested:1};
 // Within one depth, the record carrying more usable metadata wins (licence, typed distributions) before the publisher-vs-national tie-break.
 const informationScore=a=>(a.license?3:0)+Math.min(5,(a.distributions||[]).filter(d=>d?.[1]&&d[1]!=="URL").length)+(a.themes?.length?1:0);
 const assetRank=a=>(depthRank[a.depth]||0)*100+informationScore(a)*2+(a.discovery==="data.gov.be"?0:1);
-const mergeUsefulMetadata=(preferred,other,sources)=>({...preferred,contactName:preferred.contactName||other.contactName||"",contactEmail:preferred.contactEmail||other.contactEmail||"",contactUrl:preferred.contactUrl||other.contactUrl||"",officialUrl:preferred.officialUrl||other.officialUrl||"",publisherUri:preferred.publisherUri||other.publisherUri||null,discoverySources:sources});
+// aliases: the ids of the records merged into this one, so a link to any of them (e.g. from an MCP answer) still opens it
+const mergeUsefulMetadata=(preferred,other,sources)=>({...preferred,
+  aliases:[...new Set([...(preferred.aliases||[]),...(other.aliases||[]),other.id].filter(x=>x&&x!==preferred.id))],contactName:preferred.contactName||other.contactName||"",contactEmail:preferred.contactEmail||other.contactEmail||"",contactUrl:preferred.contactUrl||other.contactUrl||"",officialUrl:preferred.officialUrl||other.officialUrl||"",publisherUri:preferred.publisherUri||other.publisherUri||null,discoverySources:sources});
 
 const titleKey=a=>norm(a.title).normalize("NFKD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim();
 // A key that one source attaches to several differently-titled records (a shared WMS endpoint, a catalogue landing page)

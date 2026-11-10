@@ -16,7 +16,7 @@ export function loadProbes(file){
     if(!line.trim())continue;
     let r;try{r=JSON.parse(line)}catch{continue}
     if(!r.url||!probeIsConclusive(r))continue;
-    const h=r.ok!==undefined&&"formatMatch" in r?{ok:r.ok,formatMatch:r.formatMatch,cors:!!r.cors,range:!!r.range,total:r.total??null}:interpretProbe(r);
+    const h=r.ok!==undefined&&"formatMatch" in r?{ok:r.ok,formatMatch:r.formatMatch,cors:!!r.cors,range:!!r.range,total:r.total??null,status:r.status??null,error:r.error??null}:interpretProbe(r);
     byUrl.set(r.url,{...h,at:(r.checkedAt||"").slice(0,10)});
     if(r.checkedAt&&r.checkedAt>newest)newest=r.checkedAt;
   }
@@ -33,6 +33,10 @@ export function annotateItems(items,byUrl){
     const hs=probed.map(d=>byUrl.get(d.url));
     item.probe={at:hs.map(h=>h.at).sort().pop()||"",n:hs.length,ok:hs.filter(h=>h.ok).length,mm:hs.filter(h=>h.ok&&h.formatMatch===false).length,cors:hs.filter(h=>h.cors).length};
     item.tier=accessTier(item,health);
+    // event streams: did each declared LDES endpoint answer as a stream (LDES/TREE vocabulary), answer otherwise, or not at all?
+    const streams=probed.filter(d=>d.format==="LDES").map(d=>{const h=byUrl.get(d.url);
+      return{url:d.url,at:h.at,result:h.ok?(h.formatMatch?"stream":"not_a_stream"):"unreachable",...(h.status?{status:h.status}:{}),...(h.error?{error:h.error}:{})}});
+    if(streams.length)item.streamCheck=streams;else delete item.streamCheck;
     annotated++;
   }
   return annotated;

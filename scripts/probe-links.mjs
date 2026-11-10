@@ -14,7 +14,7 @@ import { profileColumns, setNisReference } from "./dataset-card.mjs";
 const __dirname=path.dirname(fileURLToPath(import.meta.url)),pub=path.resolve(__dirname,"../public");
 const args=Object.fromEntries(process.argv.slice(2).reduce((a,x,i,all)=>x.startsWith("--")?[...a,[x.slice(2),all[i+1]&&!all[i+1].startsWith("--")?all[i+1]:"1"]]:a,[]));
 const outFile=path.resolve(args.out||path.join(__dirname,"../.cache/link-probe.jsonl")),limit=Number(args.limit||0);
-const FORMATS=new Set((args.formats||"CSV,TSV,JSON,GeoJSON,XLSX,XLS,Parquet,XML").split(","));
+const FORMATS=new Set((args.formats||"CSV,TSV,JSON,GeoJSON,XLSX,XLS,Parquet,XML,LDES").split(","));
 const UA="Belgium-Data-Desk-QA/1.0 (+https://data.vecture.be)";
 
 export function sniff(buf){
@@ -47,11 +47,13 @@ function loadWork(){
 }
 // CSV/TSV files are read further (PROFILE_BYTES) so the same request also yields the column profile behind the dataset card.
 const SNIFF_BYTES=32768,PROFILE_BYTES=256*1024;
+const LDES_ACCEPT="application/ld+json, text/turtle;q=0.9, */*;q=0.1",LDES_TERMS=/w3id\.org\/(ldes|tree)|ldes#|\bldes:EventStream|"EventStream"|\btree:(relation|member|view|node|Node)/;
 async function probe(w){
   const t0=Date.now(),r={url:w.url,fmt:w.fmt,ds:w.ds,prov:w.prov};
-  const want=w.fmt==="CSV"||w.fmt==="TSV"?PROFILE_BYTES:SNIFF_BYTES;
+  // LDES pages can put their stream vocabulary after large JSON-LD contexts or members: read 128 KiB
+  const want=w.fmt==="CSV"||w.fmt==="TSV"?PROFILE_BYTES:w.fmt==="LDES"?128*1024:SNIFF_BYTES;
   try{
-    const res=await fetch(w.url,{headers:{range:"bytes=0-"+(want-1),"user-agent":UA,accept:"*/*"},redirect:"follow",signal:AbortSignal.timeout(20000)});
+    const res=await fetch(w.url,{headers:{range:"bytes=0-"+(want-1),"user-agent":UA,accept:w.fmt==="LDES"?LDES_ACCEPT:"*/*"},redirect:"follow",signal:AbortSignal.timeout(20000)});
     r.status=res.status;r.finalHost=new URL(res.url).host;
     r.ct=(res.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();
     const cr=res.headers.get("content-range"),cl=res.headers.get("content-length");
@@ -61,6 +63,8 @@ async function probe(w){
     while(n<want){const {done,value}=await reader.read();if(done)break;chunks.push(value);n+=value.length}
     try{await reader.cancel()}catch{}
     const buf=Buffer.concat(chunks.map(c=>Buffer.from(c))).subarray(0,want);r.bytes=buf.length;r.sniff=sniff(buf);
+    // an LDES endpoint answers with a stream description: LDES or TREE vocabulary (https://w3id.org/ldes, https://w3id.org/tree)
+    if(w.fmt==="LDES"&&LDES_TERMS.test(buf.toString("utf8")))r.sniff="ldes";
     if(r.sniff==="delimited"){
       const first=buf.toString("utf8").split(/\r?\n/).filter(Boolean)[0]||"";
       const best=[",",";","\t","|"].map(d=>[d,first.split(d).length]).sort((a,b)=>b[1]-a[1])[0];r.delim=best[0];r.cols=best[1];
