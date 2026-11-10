@@ -171,7 +171,7 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
     add("The columns changed since "+previous.profiled_at+(added.length?": added "+added.slice(0,5).map(c=>"'"+c+"'").join(", "):"")+(removed.length?(added.length?";":":")+" removed "+removed.slice(0,5).map(c=>"'"+c+"'").join(", "):"")+".",{added,removed});
   }else if(previous?.schema)schema={...schema,stable_since:previous.schema.stable_since||previous.profiled_at};
 
-  return{v:CARD_VERSION,id:record.id,profiled_at:now.slice(0,10),
+  return{v:CARD_VERSION,id:record.id,...(record.title?{title:record.title,publisher:record.publisher||null,topic:record.topic||null}:{}),...(record.authoritative?{hand_reviewed:true}:{}),profiled_at:now.slice(0,10),
     file:{url:file.url||null,format:file.format||null,bytes_read:file.bytesRead??null,total_bytes:file.totalBytes??null,rows:profile.rows,rows_exact:profile.rows_exact},
     freshness:fresh,coverage:{time,keys},quality:{sparse_columns:sparse,constant_columns:constant},schema,
     columns:cols.map(({key,...c})=>c).slice(0,40),facts};

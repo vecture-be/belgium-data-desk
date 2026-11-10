@@ -32,7 +32,7 @@ function loadRecords(){
   const chunks=sub=>fs.readdirSync(path.join(dir,sub)).filter(f=>/^\d+\.json$/.test(f)).sort((a,b)=>parseInt(a)-parseInt(b));
   for(const f of chunks("d"))docs.push(...JSON.parse(fs.readFileSync(path.join(dir,"d",f),"utf8")));
   for(const f of chunks("x"))details.push(...JSON.parse(fs.readFileSync(path.join(dir,"x",f),"utf8")));
-  docs.forEach((d,i)=>{const x=details[i]||{};items.push({id:d.id,updatedAt:d.u||null,frequency:x.fq||"",distributions:(x.files||[]).map(f=>({url:f.u,format:f.f}))})});
+  docs.forEach((d,i)=>{const x=details[i]||{};items.push({id:d.id,title:d.t||"",publisher:d.p||"",topic:d.tp||"",authoritative:!!d.c,updatedAt:d.u||null,frequency:x.fq||"",distributions:(x.files||[]).map(f=>({url:f.u,format:f.f}))})});
   return items;
 }
 const distUrl=d=>Array.isArray(d)?d[4]:d?.url;
