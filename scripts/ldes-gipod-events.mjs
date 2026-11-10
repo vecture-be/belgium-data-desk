@@ -131,11 +131,20 @@ export function buildReviewQueue(versions,{sincePublishedAt=null,blockedEntities
     const baseline=firstIndex?chronological[firstIndex-1]:first;
     if(baseline===latest)continue;
     const diff=changes(baseline.snapshot,latest.snapshot),p=priority(diff);
+    // GIPOD distinguishes draft (In opmaak) from validated (Gevalideerd)
+    // hindrances. A draft change is never a citizen-facing road-closure claim.
+    const validated=latest.snapshot.status?.label?.trim().toLowerCase()==="gevalideerd";
+    const substantive=diff.some(c=>c.field==="mobility_consequences"||c.field==="periods");
+    const reviewChannel=validated&&substantive?"editorial_review":"technical_review";
     // We publish research/evidence candidates, not raw administrative revision chatter.
     if(p!=="review_first"&&p!=="review")continue;
     queue.push({
       kind:"evidence_review_candidate",entity_id:entityId,title:headline(entityId,diff),
-      review_priority:p,published_at:latest.published_at,
+      review_priority:p,review_channel:reviewChannel,published_at:latest.published_at,
+      screening:{validated_status:validated,substantive_published_change:substantive,
+        ready_for_automatic_publication:false,
+        limitations:["Actual hindrance not independently verified",
+          "Relevant local geography and planned period require verification"]},
       first_evidence_member:baseline.member_id,last_evidence_member:latest.member_id,
       first_evidence_published_at:baseline.published_at,
       versions_in_sample:chronological.length,versions_in_requested_window:recent.length,
@@ -238,7 +247,9 @@ export function analyseGipodVersions(members,{maxMembers=2000,sincePublishedAt=n
   }
   const review_queue=buildReviewQueue(versions,{sincePublishedAt,blockedEntities:[...blocked]});
   return{kind:"ldes_change_evidence",source:SOURCE,history_complete:false,
-    review_queue,review_queue_count:review_queue.length,requested_since:sincePublishedAt||null,
+    review_queue,review_queue_count:review_queue.length,
+    editorial_review_count:review_queue.filter(c=>c.review_channel==="editorial_review").length,
+    requested_since:sincePublishedAt||null,
     coordinate_system:"EPSG:31370",
     limitations:["Only the supplied LDES members were processed; no complete historical coverage",
       "generatedAtTime is publication time, not planned work time",
@@ -282,6 +293,8 @@ function selfTest(){
   assert.equal(q.length,1);
   assert.equal(q[0].entity_id,"10031313");
   assert.deepEqual(q[0].changed_fields,["periods","mobility_consequences"]);
+  assert.equal(q[0].review_channel,"technical_review");
+  assert.equal(q[0].screening.ready_for_automatic_publication,false);
   assert.equal(r.events[0].member_id,"https://gipod.api.vlaanderen.be/api/v1/mobility-hindrances/10031313/1");
   assert.equal(analyseGipodVersions([version("3","2026-11-11T11:00:00Z",
     {gipodId:null,isVersionOf:null})]).events[0].kind,"identity_unverified");
@@ -293,7 +306,7 @@ function selfTest(){
     {gipodId:{value:"99"}})]).counts.invalid,1);
   assert.throws(()=>analyseGipodVersions([a,{object:{...a.object,description:"conflict"}}]),
     /Conflicting immutable member/);
-  console.log("GIPOD LDES: 13 publisher-shape and net-change checks passed");
+  console.log("GIPOD LDES: 15 publisher-shape and editorial-gate checks passed");
 }
 
 if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
