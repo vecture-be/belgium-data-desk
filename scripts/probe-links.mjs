@@ -1,12 +1,15 @@
 // Polite link + format probe for catalogue distributions.
 //   node scripts/probe-links.mjs [--out .cache/link-probe.jsonl] [--limit 500] [--formats CSV,TSV,...]
-// Reads the harvested catalogue from public/, fetches only the first 32 KiB of each file (Range GET), and records
+// Reads the harvested catalogue from public/, fetches the first 32 KiB of each file (256 KiB for CSV/TSV, which also yields the column profile behind the dataset
+// cards, scripts/dataset-card.mjs) with a Range GET, and records
 // whether the link answers, what the bytes look like, and which browser-relevant headers it sends.
 // Resumable: URLs already present in --out are skipped. Intended for the self-hosted runner or a laptop, never a Worker.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { interpretProbe } from "./curate.mjs";
+import { encodingFor } from "./tabular-profile.mjs";
+import { profileColumns, setNisReference } from "./dataset-card.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url)),pub=path.resolve(__dirname,"../public");
 const args=Object.fromEntries(process.argv.slice(2).reduce((a,x,i,all)=>x.startsWith("--")?[...a,[x.slice(2),all[i+1]&&!all[i+1].startsWith("--")?all[i+1]:"1"]]:a,[]));
@@ -42,28 +45,42 @@ function loadWork(){
   }
   return [...seen.values()];
 }
+// CSV/TSV files are read further (PROFILE_BYTES) so the same request also yields the column profile behind the dataset card.
+const SNIFF_BYTES=32768,PROFILE_BYTES=256*1024;
 async function probe(w){
   const t0=Date.now(),r={url:w.url,fmt:w.fmt,ds:w.ds,prov:w.prov};
+  const want=w.fmt==="CSV"||w.fmt==="TSV"?PROFILE_BYTES:SNIFF_BYTES;
   try{
-    const res=await fetch(w.url,{headers:{range:"bytes=0-32767","user-agent":UA,accept:"*/*"},redirect:"follow",signal:AbortSignal.timeout(20000)});
+    const res=await fetch(w.url,{headers:{range:"bytes=0-"+(want-1),"user-agent":UA,accept:"*/*"},redirect:"follow",signal:AbortSignal.timeout(20000)});
     r.status=res.status;r.finalHost=new URL(res.url).host;
     r.ct=(res.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();
     const cr=res.headers.get("content-range"),cl=res.headers.get("content-length");
     r.total=cr?Number(cr.split("/")[1])||null:(res.status===200&&cl?Number(cl):null);
     r.range=res.status===206;r.lastModified=res.headers.get("last-modified")||null;r.cors=res.headers.get("access-control-allow-origin")||null;
     const reader=res.body.getReader(),chunks=[];let n=0;
-    while(n<32768){const {done,value}=await reader.read();if(done)break;chunks.push(value);n+=value.length}
+    while(n<want){const {done,value}=await reader.read();if(done)break;chunks.push(value);n+=value.length}
     try{await reader.cancel()}catch{}
-    const buf=Buffer.concat(chunks.map(c=>Buffer.from(c))).subarray(0,32768);r.bytes=buf.length;r.sniff=sniff(buf);
+    const buf=Buffer.concat(chunks.map(c=>Buffer.from(c))).subarray(0,want);r.bytes=buf.length;r.sniff=sniff(buf);
     if(r.sniff==="delimited"){
       const first=buf.toString("utf8").split(/\r?\n/).filter(Boolean)[0]||"";
       const best=[",",";","\t","|"].map(d=>[d,first.split(d).length]).sort((a,b)=>b[1]-a[1])[0];r.delim=best[0];r.cols=best[1];
+      if(res.status>=200&&res.status<300)r.profile=profileFile(buf,r,w);
     }
   }catch(e){r.error=String(e.cause?.code||e.name||"error")}
   r.ms=Date.now()-t0;r.checkedAt=new Date().toISOString();return r;
 }
+function profileFile(buf,r,w){
+  try{
+    const {encoding,skip}=encodingFor(buf),text=new TextDecoder(encoding).decode(buf.subarray(skip));
+    // the whole file was read when the server sent less than asked and no larger total
+    const total=r.total||(buf.length<(w.fmt==="CSV"||w.fmt==="TSV"?PROFILE_BYTES:SNIFF_BYTES)?buf.length:null);
+    return profileColumns(text,{url:w.url,format:w.fmt,bytesRead:buf.length,totalBytes:total});
+  }catch(e){return{error:String(e.message||e).slice(0,120)}}
+}
 async function main(){
   fs.mkdirSync(path.dirname(outFile),{recursive:true});
+  // municipality code list for NIS detection in column profiles (committed with the Statbel tables)
+  setNisReference(JSON.parse(fs.readFileSync(path.join(pub,"statbel/places-v1.json"),"utf8")).places);
   const done=new Set();
   if(fs.existsSync(outFile))for(const l of fs.readFileSync(outFile,"utf8").split("\n")){try{done.add(JSON.parse(l).url)}catch{}}
   let work=loadWork().filter(w=>!done.has(w.url));

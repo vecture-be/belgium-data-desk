@@ -101,7 +101,8 @@ function mergeType(a,b){
   if((a==="date"&&b==="datetime")||(a==="datetime"&&b==="date"))return"datetime";
   return"string";
 }
-function accumulator(delimiter,{sampleRows=DEFAULT_SAMPLE_ROWS,inferRows=DEFAULT_INFER_ROWS}={}){
+// onRow(values, headers) is called for every data row (after the header), e.g. by scripts/dataset-card.mjs for column statistics.
+function accumulator(delimiter,{sampleRows=DEFAULT_SAMPLE_ROWS,inferRows=DEFAULT_INFER_ROWS,onRow=null}={}){
   let cell="",row=[],quoted=false,pendingQuote=false,headers=null,rowCount=0,nonEmptyRows=0;
   const samples=[],types=[];
   const finishRow=()=>{
@@ -110,6 +111,7 @@ function accumulator(delimiter,{sampleRows=DEFAULT_SAMPLE_ROWS,inferRows=DEFAULT
     nonEmptyRows++;
     if(!headers){headers=uniqueHeaders(values);return}
     rowCount++;
+    if(onRow)onRow(values,headers);
     if(rowCount<=inferRows)values.forEach((v,i)=>types[i]=mergeType(types[i],valueType(v)));
     if(samples.length<sampleRows){
       const o={};headers.forEach((h,i)=>o[h]=values[i]??"");samples.push(o);
@@ -142,8 +144,8 @@ function accumulator(delimiter,{sampleRows=DEFAULT_SAMPLE_ROWS,inferRows=DEFAULT
   };
   return{push,finish};
 }
-export function parseDelimitedText(text,{delimiter=detectDelimiter(text),sampleRows=DEFAULT_SAMPLE_ROWS,inferRows=DEFAULT_INFER_ROWS}={}){
-  const a=accumulator(delimiter,{sampleRows,inferRows});a.push(String(text||""));return{delimiter,...a.finish()};
+export function parseDelimitedText(text,{delimiter=detectDelimiter(text),sampleRows=DEFAULT_SAMPLE_ROWS,inferRows=DEFAULT_INFER_ROWS,onRow=null}={}){
+  const a=accumulator(delimiter,{sampleRows,inferRows,onRow});a.push(String(text||""));return{delimiter,...a.finish()};
 }
 function delimiterLabel(d){return d==="\t"?"tab":d===";"?"semicolon":d==="|"?"pipe":"comma"}
 

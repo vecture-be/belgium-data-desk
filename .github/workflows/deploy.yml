@@ -65,7 +65,18 @@ jobs:
             relay-index.mjs
           key: catalogue-${{ steps.key.outputs.week }}-${{ hashFiles('scripts/harvest.mjs', 'scripts/national-dcat.mjs', 'scripts/curate.mjs', 'scripts/relay-index-lib.mjs', 'public/dataset-atlas*.mjs') }}
 
-      - name: Restore link health
+      - name: Restore link health and column profiles
+        id: health
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .cache/link-probe.jsonl
+            .cache/link-probe-prev.jsonl
+          key: link-health-none
+          restore-keys: link-health-
+      # entries saved before the previous-probe file existed hold one path (a cache entry only matches its own path list)
+      - name: Restore link health (single-file entries)
+        if: steps.health.outputs.cache-matched-key == ''
         uses: actions/cache/restore@v4
         with:
           path: .cache/link-probe.jsonl
@@ -94,6 +105,8 @@ jobs:
 
       - name: Smoke test every MCP tool
         run: node scripts/smoke-mcp.mjs ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}
+      - name: Golden facts (answers with officially known values)
+        run: node scripts/check-golden.mjs ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}
       - name: Verify catalogue, relay, MCP and pages
         continue-on-error: true
         run: node scripts/verify-live.mjs ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}

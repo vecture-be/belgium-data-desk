@@ -8,6 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
+import { MERGERS_2025 } from "../public/nis-mergers-2025-v1.mjs";
 
 const here=path.dirname(fileURLToPath(import.meta.url)),root=path.join(here,"..");
 const CACHE=path.join(root,".cache","statbel"),OUT=path.join(root,"public","statbel");
@@ -49,25 +50,8 @@ for(let y=FIRST_YEAR;y<=LAST_POP_YEAR;y++){
 }
 
 // ---------- old (pre-2025) codes -> 2025 municipalities ----------
-// The 1 January 2025 mergers (decrees of the Flemish Government and the Walloon Government), as old NIS code -> 2025 NIS code.
-// The build checks every entry: each 2025 municipality must equal the 2024 sum of its parts within 1.5 %, every code that disappears
-// between the 2024 and 2025 files must be listed, and nothing else may be.
-const MERGERS_2025={
-  "11007":"11002",                                   // Borsbeek -> Antwerpen
-  "11056":"46030","46003":"46030","46013":"46030",   // Zwijndrecht, Beveren, Kruibeke -> Beveren-Kruibeke-Zwijndrecht
-  "23023":"23106","23024":"23106","23032":"23106",   // Galmaarden, Gooik, Herne -> Pajottegem
-  "37012":"37021","37018":"37021",                   // Ruiselede, Wingene -> Wingene
-  "37007":"37022","37015":"37022",                   // Meulebeke, Tielt -> Tielt
-  "44012":"44086","44048":"44086",                   // De Pinte, Nazareth -> Nazareth-De Pinte
-  "44034":"44087","44073":"44087",                   // Lochristi, Wachtebeke -> Lochristi
-  "44040":"44088","44043":"44088",                   // Melle, Merelbeke -> Merelbeke-Melle
-  "46014":"46029","44045":"46029",                   // Lokeren, Moerbeke -> Lokeren
-  "71057":"71071","71069":"71071",                   // Tessenderlo, Ham -> Tessenderlo-Ham
-  "71022":"71072","73040":"71072",                   // Hasselt, Kortessem -> Hasselt
-  "73006":"73110","73032":"73110",                   // Bilzen, Hoeselt -> Bilzen-Hoeselt
-  "73009":"73111","73083":"73111",                   // Borgloon, Tongeren -> Tongeren-Borgloon
-  "82003":"82039","82005":"82039"                    // Bastenaken (Bastogne), Bertogne -> Bastenaken
-};
+// MERGERS_2025 (public/nis-mergers-2025-v1.mjs). The build checks every entry: each 2025 municipality must equal the 2024 sum of its
+// parts within 1.5 %, every code that disappears between the 2024 and 2025 files must be listed, and nothing else may be.
 const p24=pop[2024],p25=pop[2025];
 if(!p24||!p25)throw new Error("the merger check needs the 2024 and 2025 population files");
 const vanished=Object.keys(p24).filter(k=>!p25[k]).sort(),listed=Object.keys(MERGERS_2025).filter(k=>!p25[k]).sort();

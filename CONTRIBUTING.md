@@ -20,6 +20,15 @@ Open an issue with the **Wrong answer** form. Give the tool or the question you 
 
 Run `npm run snapshot && npm run build:index && npm run eval` to see where your question lands today. A question that fails is still a good contribution: say so in the pull request, and it becomes a starting point for a ranking fix.
 
+**Golden facts** (`eval-relevance/golden-facts.json`) are questions whose answer is officially known: Belgium's population on a reference date, the depth of a DOV borehole, the flood class of an address. After every deploy they are asked to the live service through MCP; if an answer changes, the deploy is flagged. Add one when you know a figure and the official page that states it:
+
+```json
+{ "question": "How deep is borehole 2016-140688?", "tool": "get_subsurface_record", "args": { "id": "boring/2016-140688" },
+  "expect": [ { "path": "depth_m", "equals": 10.4 } ], "source": "https://www.dov.vlaanderen.be/data/boring/2016-140688", "why": "A fixed DOV record." }
+```
+
+`expect` takes `equals`, `between: [low, high]` or `matches: "regex"` on a dotted path into the answer. Check it with `npm run check:golden`.
+
 ## 3. Correct the catalogue's knowledge (small code edits, each covered by `npm test`)
 
 | To change | Edit |

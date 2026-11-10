@@ -92,7 +92,7 @@ const TOOLS=[
   },
   {
     name:"get_dataset",title:"Get one dataset record",
-    description:"Full catalogue record for one dataset id from search_datasets: publisher, licence and what it allows, update cycle, contact, description, file links, publisher-declared columns, link-check evidence, and whether preview_dataset can read the file.",
+    description:"Full catalogue record for one dataset id from search_datasets: publisher, licence and what it allows, update cycle, contact, description, file links, publisher-declared columns, link-check evidence, and whether preview_dataset can read the file. For files checked weekly it adds a dataset card computed from the file itself: whether it is overdue against its declared update cycle, the period the data covers, join keys (NIS municipality codes incl. pre-2025 codes, enterprise numbers, postcodes, coordinates), sparse and constant columns, column changes since the last check, and quotable facts each with its evidence.",
     inputSchema:{type:"object",properties:{id:{type:"string",description:"Dataset id as returned by search_datasets."}},required:["id"]},annotations:{title:"Get one dataset record",readOnlyHint:true,destructiveHint:false,openWorldHint:false}
   },
   {
@@ -231,14 +231,14 @@ const previewable=x=>(x.files||[]).filter(f=>f.r);
 
 export async function getDataset(reader,args){
   const rec=await loadRecord(reader,args?.id);if(rec.error)return{error:rec.error};
-  const {d,x}=rec,auth=AUTHORITIES.find(a=>a.ids.includes(d.id));
+  const {d,x}=rec,auth=AUTHORITIES.find(a=>a.ids.includes(d.id)),card=await cardFor(reader,d.id);
   return{id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,hand_reviewed:!!d.c,licence:{label:d.l||null,family:d.lf||"unknown"},updated:d.u||null,update_cycle:x.fq||null,
     geography:x.g||null,landing_page:x.url||null,contact:{email:x.ce||null,url:x.cu||null},description:x.d||"",columns:x.cols||[],access_tier:d.tier||null,
     ...(auth?{authoritative_source:{need:auth.need,why:auth.why,...(auth.caveat?{caveat:auth.caveat}:{})}}:{}),
     preview_available:previewable(x).length>0,
     web_url:reader.origin+"/?dataset="+encodeURIComponent(d.id),
     link_check:x.pr?{checked_on:x.pr.at,files_checked:x.pr.n,files_ok:x.pr.ok,format_mismatches:x.pr.mm}:null,
-    files:(x.files||[]).map(f=>({format:f.f,url:f.u,size_bytes:f.s||null})),note:TRUST_NOTE};
+    files:(x.files||[]).map(f=>({format:f.f,url:f.u,size_bytes:f.s||null})),...(card?{card}:{}),note:TRUST_NOTE};
 }
 
 const cut=s=>{const t=String(s??"");return t.length>MAX_CELL_CHARS?t.slice(0,MAX_CELL_CHARS-1)+"…":t};
@@ -281,7 +281,17 @@ export async function catalogueOverview(reader){
   const m=await reader.json("/mcp/manifest.json");
   if(!m)return{error:"Index not available."};
   const {ranges,pins,...rest}=m;void ranges;void pins;
-  return{...rest,note:TRUST_NOTE};
+  const cards=await reader.json("/cards/summary.json");
+  return{...rest,...(cards?{dataset_cards:cards}:{}),note:TRUST_NOTE};
+}
+
+/** The dataset card (scripts/dataset-card.mjs) for a record, trimmed for an MCP answer: facts with evidence first. */
+async function cardFor(reader,id){
+  const c=(await reader.json("/cards/"+idShard(id)+".json"))?.[id];
+  if(!c)return null;
+  return{profiled_at:c.profiled_at,facts:c.facts,freshness:c.freshness,coverage:c.coverage,quality:c.quality,schema:c.schema,
+    file:c.file,columns:(c.columns||[]).slice(0,25),
+    note:"Computed by code from the first "+Math.round((c.file?.bytes_read||0)/1024)+" KiB of the file and the catalogue record"+(c.file?.rows_exact?" (the whole file)":"; ranges and counts describe the rows read")+". Quote facts with their evidence."};
 }
 
 // Compact JSON: the same object is also in structuredContent, and indentation would roughly double the tokens a client reads.

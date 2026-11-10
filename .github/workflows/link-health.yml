@@ -39,11 +39,33 @@ jobs:
       - name: Use the deployed catalogue when no cached copy exists
         if: steps.catalogue.outputs.cache-matched-key == ''
         run: npm run snapshot
-      - name: Probe links
+      # Last week's results become the "previous" probe: dataset cards compare column sets with it to report schema changes.
+      - name: Restore last week's probe
+        id: last
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .cache/link-probe.jsonl
+            .cache/link-probe-prev.jsonl
+          key: link-health-none
+          restore-keys: link-health-
+      # entries saved before the previous-probe file existed hold one path (a cache entry only matches its own path list)
+      - name: Restore last week's probe (single-file entries)
+        if: steps.last.outputs.cache-matched-key == ''
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/link-probe.jsonl
+          key: link-health-none
+          restore-keys: link-health-
+      - name: Keep it as the previous probe
+        run: if [ -f .cache/link-probe.jsonl ]; then mv .cache/link-probe.jsonl .cache/link-probe-prev.jsonl; fi
+      - name: Probe links and profile CSV/TSV files
         run: node scripts/probe-links.mjs --out .cache/link-probe.jsonl
       - uses: actions/cache/save@v4
         with:
-          path: .cache/link-probe.jsonl
+          path: |
+            .cache/link-probe.jsonl
+            .cache/link-probe-prev.jsonl
           key: link-health-${{ github.run_id }}
       - name: Redeploy with fresh link health
         env:
