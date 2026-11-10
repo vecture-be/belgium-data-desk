@@ -21,15 +21,16 @@ Node 22+, no extra project dependencies:
     node scripts/ldes-gipod-events.mjs --self-test
     node scripts/ldes-gipod-events.mjs /path/to/parsed-client-members.json
 
-Input is a small JSON array containing actual member objects exported from a proper, standards-aware LDES client configured for object representation. Each element must contain the immutable member IRI as an id and its publisher-decoded object (with a numeric gipodId, generatedAtTime, etc.). Limit: 2,000 members / 8 MiB. The script does not fetch endpoints itself.
+Input is a small JSON array containing actual member objects exported from a proper, standards-aware LDES client configured for object representation. Each member must contain an id or an object.id (absolute IRI or the official relative GIPOD record path), and its publisher-decoded object (gipodId, isVersionOf, generatedAtTime, etc.). Limit: 2,000 members / 8 MiB. The script does not fetch endpoints itself.
 
 Expected input shape (synthetic illustration only):
 
     [
       {
-        "id": "https://example.org/stream/123-v1",
+        "id": "api/v1/mobility-hindrances/123/1",
         "object": {
           "gipodId": {"value": "123"},
+          "isVersionOf": "api/v1/mobility-hindrances/123",
           "generatedAtTime": "2026-11-08T10:00:00Z",
           "status": {"id": "https://example.org/status/planned"},
           "period": [{"start": "2026-12-01T08:00:00Z", "end": "2026-12-01T17:00:00Z"}]
@@ -42,7 +43,8 @@ Expected input shape (synthetic illustration only):
 - A first_observed_version is only first **in the supplied sample**, not evidence of a newly created roadwork.
 - Observed revisions are linked exclusively on publisher-defined GIPOD identifiers. Missing identifiers are explicit; none are guessed.
 - generatedAtTime is publication time; start/end in period describe planned real-world activity.
-- The comparison covers status, description, periods, a schedule fingerprint and zone/consequence/geometry fingerprints. It does not interpret recurrence, assign geographical locations, infer severity, or claim observed traffic impact.
+- The comparison covers status, description, periods, a schedule fingerprint, publisher-labelled mobility consequences, zone geometry fingerprints, and WKT envelopes in EPSG:31370. An envelope is not a precise geographic intersection. It does not interpret recurrence, infer severity, or claim observed traffic impact.
+- Changes include explicit before/after evidence and a deterministic review priority based on the type of changed published field, **not actual physical impact**.
 - A repeated immutable member IRI with conflicting payloads is rejected. Equal publication timestamps for the same entity are marked as ordering_unverified.
 - No historical completeness is claimed. Input from an arbitrary recent page is insufficient for deciding when an entity first appeared.
 
