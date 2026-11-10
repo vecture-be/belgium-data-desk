@@ -39,7 +39,8 @@ async function main(){
   if(!Array.isArray(existing)||existing.length>=MAX_MEMBERS)
     throw Error("Sample is at its 1750-member cap; use a new --out directory");
   const normalizedIdentity=m=>normalizeGipodMember(m);
-  const checksum=m=>createHash("sha256").update(JSON.stringify(normalizedIdentity(m))).digest("hex");
+  const stable=v=>JSON.stringify(v,(k,x)=>x&&typeof x==="object"&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(key=>[key,x[key]])):x);
+  const checksum=m=>createHash("sha256").update(stable({id:keyOf(m),object:m?.object||m})).digest("hex");
   const keyOf=m=>normalizedIdentity(m).member_id||String(m.id||m.object?.id||"");
   const seen=new Map(existing.map(m=>[keyOf(m),checksum(m)]));
   if(seen.size!==existing.length)throw Error("Stored sample contains duplicate member IRIs; refuse ambiguous checkpoint");
