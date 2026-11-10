@@ -174,7 +174,7 @@ export function analyseGipodVersions(members,{maxMembers=2000,sincePublishedAt=n
   for(const [index,member] of members.entries()){
     const n=normalizeGipodMember(member);
     if(n.error){errors.push({index,reason:n.error,member_id:n.member_id,identifiers:n.identifiers});continue;}
-    const fingerprint=hash(n);
+    const fingerprint=hash({member_id:n.member_id,raw:member?.object||member});
     if(seen.has(n.member_id)){
       if(seen.get(n.member_id)!==fingerprint)throw Error("Conflicting immutable member: "+n.member_id);
       duplicates++;continue;
