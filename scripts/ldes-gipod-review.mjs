@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const plain=v=>String(v??"").replace(/[\r\n\t]+/g," ").replace(/\s+/g," ").replace(/[<>]/g,"").slice(0,240);
-const quote=v=>plain(v).replace(/[\\*_#[\]`]/g,"");
+const quote=v=>plain(v).replaceAll("*","").replaceAll("#","").replaceAll("[","").replaceAll("]","");
 const truncate=(v,max=180)=>v.length>max?v.slice(0,max-1)+"…":v;
 const label=x=>plain(x?.label||x?.id||x||"unknown");
 const time=x=>plain(x||"not given").replace("T"," ").replace(/\.000Z$/,"Z");
