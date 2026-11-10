@@ -25,6 +25,11 @@ const memberIRI=raw=>{
   return null;
 };
 const versionIdentity=raw=>str(val(raw)).match(/(?:^|\/)api\/v1\/mobility-hindrances\/(\d+)\/?$/)?.[1]||null;
+const iriVersion=memberId=>{
+  const match=memberId.match(/\/api\/v1\/mobility-hindrances\/(\d+)\/(\d+)$/);
+  return match?{entity:match[1],position:match[2]}:null;
+};
+const comparePosition=(a,b)=>BigInt(a)<BigInt(b)?-1:BigInt(a)>BigInt(b)?1:0;
 // The publisher documents EPSG:31370. This is a conservative envelope, not a polygon-intersection claim.
 const envelope=wkt=>{
   const text=str(val(wkt));
@@ -52,8 +57,13 @@ export function normalizeGipodMember(member){
   if(entityFromId&&entityFromVersion&&entityFromId!==entityFromVersion)
     return{error:"conflicting_publisher_entity_identity",member_id:memberId,
       identifiers:[entityFromId,entityFromVersion]};
+  const uri=iriVersion(memberId),resolvedId=entityFromId||entityFromVersion||null;
+  if(uri&&resolvedId&&uri.entity!==resolvedId)
+    return{error:"member_iri_identity_mismatch",member_id:memberId,
+      identifiers:[uri.entity,resolvedId]};
   return{
-    member_id:memberId,entity_id:entityFromId||entityFromVersion||null,
+    member_id:memberId,entity_id:resolvedId,
+    version_position:uri?.position||null,
     version_of:str(val(o?.isVersionOf))||null,published_at:published,
     created_at:iso(val(o?.createdOn)),last_modified_at:iso(val(o?.lastModifiedOn)),
     source_event_name:str(val(o?.eventName))||null,source_url:SOURCE,
@@ -111,7 +121,14 @@ export function analyseGipodVersions(members,{maxMembers=2000}={}){
     }
     seen.set(n.member_id,fingerprint);versions.push(n);
   }
-  versions.sort((a,b)=>a.published_at.localeCompare(b.published_at)||a.member_id.localeCompare(b.member_id));
+  versions.sort((a,b)=>{
+    const t=a.published_at.localeCompare(b.published_at);if(t)return t;
+    // With equal publication times, the publisher's /history/{position} version suffix
+    // gives a documented version discriminator; do not sort numeric positions lexically.
+    if(a.entity_id&&a.entity_id===b.entity_id&&a.version_position&&b.version_position)
+      return comparePosition(a.version_position,b.version_position);
+    return a.member_id.localeCompare(b.member_id);
+  });
   const byEntity=new Map();
   for(const v of versions)if(v.entity_id){
     const list=byEntity.get(v.entity_id)||[];list.push(v);byEntity.set(v.entity_id,list);
@@ -130,7 +147,11 @@ export function analyseGipodVersions(members,{maxMembers=2000}={}){
       continue;
     }
     const sameTime=byEntity.get(v.entity_id).filter(n=>n.published_at===v.published_at);
-    if(sameTime.length>1){
+    const positions=sameTime.map(x=>x.version_position);
+    const hasOrderedVersions=positions.every(Boolean)&&new Set(positions).size===positions.length;
+    // Tied generatedAtTime is common during GIPOD batch projections. If every record
+    // has a distinct numeric publisher version position, it is not an ambiguous version chain.
+    if(sameTime.length>1&&!hasOrderedVersions){
       errors.push({entity_id:v.entity_id,reason:"equal_publication_timestamps",
         member_ids:sameTime.map(n=>n.member_id)});
       blocked.add(v.entity_id);last.delete(v.entity_id);
@@ -138,9 +159,22 @@ export function analyseGipodVersions(members,{maxMembers=2000}={}){
         note:"Two distinct versions share a publication timestamp; cannot order them"});
       continue;
     }
-    const previous=last.get(v.entity_id),diff=previous?changes(previous.snapshot,v.snapshot):[];
+    const previous=last.get(v.entity_id);
+    if(previous&&v.version_position&&previous.version_position&&
+       comparePosition(previous.version_position,v.version_position)>=0){
+      errors.push({entity_id:v.entity_id,member_id:v.member_id,reason:"non_monotonic_version_positions"});
+      blocked.add(v.entity_id);last.delete(v.entity_id);
+      events.push({...base,kind:"ordering_unverified",
+        note:"Publisher version positions contradict the observed timestamp order"});
+      continue;
+    }
+    const diff=previous?changes(previous.snapshot,v.snapshot):[];
     events.push({...base,kind:previous?"observed_revision":"first_observed_version",
-      previous_member_id:previous?.member_id||null,changed_fields:diff.map(x=>x.field),
+      previous_member_id:previous?.member_id||null,
+      publisher_version_position:v.version_position,
+      ordering_basis:previous&&previous.published_at===v.published_at&&v.version_position?
+        "publisher_version_position":"generated_at_time",
+      changed_fields:diff.map(x=>x.field),
       before_after:diff,review_priority:previous?priority(diff):"not_a_change_claim",
       title:previous?headline(v.entity_id,diff):"GIPOD "+v.entity_id+": first version observed in sample",
       observed_status:v.snapshot.status,planned_periods:v.snapshot.periods,
@@ -163,6 +197,7 @@ export function analyseGipodVersions(members,{maxMembers=2000}={}){
     counts:{input:members.length,unique_valid:versions.length,duplicates,
       revisions:events.filter(e=>e.kind==="observed_revision").length,
       actionable_revisions:events.filter(e=>e.kind==="observed_revision"&&e.review_priority==="review_first").length,
+      timestamp_ties_resolved:events.filter(e=>e.ordering_basis==="publisher_version_position").length,
       unlinked:events.filter(e=>e.kind==="identity_unverified").length,
       invalid:errors.filter(e=>e.index!==undefined).length},
     errors,events};
@@ -193,8 +228,10 @@ function selfTest(){
   assert.equal(r.events[0].member_id,"https://gipod.api.vlaanderen.be/api/v1/mobility-hindrances/10031313/1");
   assert.equal(analyseGipodVersions([version("3","2026-11-11T11:00:00Z",
     {gipodId:null,isVersionOf:null})]).events[0].kind,"identity_unverified");
-  assert.equal(analyseGipodVersions([a,version("2","2026-11-08T10:00:00Z"),
-    version("3","2026-11-09T11:00:00Z")]).events.at(-1).kind,"ordering_unverified");
+  const tied=analyseGipodVersions([a,version("2","2026-11-08T10:00:00Z"),version("3","2026-11-09T11:00:00Z")]);
+  assert.equal(tied.events[1].kind,"observed_revision");
+  assert.equal(tied.events[1].ordering_basis,"publisher_version_position");
+  assert.equal(tied.counts.timestamp_ties_resolved,1);
   assert.equal(analyseGipodVersions([version("4","2026-11-12T11:00:00Z",
     {gipodId:{value:"99"}})]).counts.invalid,1);
   assert.throws(()=>analyseGipodVersions([a,{object:{...a.object,description:"conflict"}}]),
