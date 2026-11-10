@@ -26,8 +26,10 @@ export function validateSite(files,origin,{extraKnown=[]}={}){
     info.set(canon,{rel,alts,lds});
     titles.set(title,(titles.get(title)||[]).concat(rel));
     if(rel.startsWith("datasets/")){
-      const ds=lds.find(o=>o["@type"]==="Dataset");
-      if(!(ds&&ds.name&&ds.description&&ds.url&&ds.creator?.name&&ds.includedInDataCatalog))add(rel,"incomplete Dataset JSON-LD");
+      // data services (APIs, LDES streams) are described as schema.org Service, datasets as Dataset
+      const ds=lds.find(o=>o["@type"]==="Dataset"),svc=lds.find(o=>o["@type"]==="Service");
+      if(svc&&!ds){if(!(svc.name&&svc.description&&svc.url&&svc.provider?.name))add(rel,"incomplete Service JSON-LD")}
+      else if(!(ds&&ds.name&&ds.description&&ds.url&&ds.creator?.name&&ds.includedInDataCatalog))add(rel,"incomplete Dataset JSON-LD");
       else if(ds.distribution&&!ds.distribution.every(x=>/^https:\/\//.test(x.contentUrl)))add(rel,"non-https distribution in JSON-LD");
     }
   }
