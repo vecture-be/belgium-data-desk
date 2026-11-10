@@ -1,6 +1,7 @@
 // Opt-in, bounded harvest using the publisher-recommended TREEcg LDES client.
 // Only ignored .cache/ state is written. No daemon, deployment, or continuous polling.
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { analyseGipodVersions, normalizeGipodMember, SOURCE } from "./ldes-gipod-events.mjs";
@@ -34,8 +35,15 @@ async function main(){
   }
   const state=fs.existsSync(stateFile)?JSON.parse(fs.readFileSync(stateFile,"utf8")):null;
   const existing=fs.existsSync(membersFile)?JSON.parse(fs.readFileSync(membersFile,"utf8")):[];
-  if(!Array.isArray(existing)||existing.length>1800)throw Error("Sample already too large; use a new --out directory");
-  const buffered=[...existing],seen=new Set(existing.map(m=>String(m.id||m.object?.id||"")));
+  const MAX_MEMBERS=1750,MAX_BYTES=24*1024*1024;
+  if(!Array.isArray(existing)||existing.length>=MAX_MEMBERS)
+    throw Error("Sample is at its 1750-member cap; use a new --out directory");
+  const normalizedIdentity=m=>normalizeGipodMember(m);
+  const checksum=m=>createHash("sha256").update(JSON.stringify(normalizedIdentity(m))).digest("hex");
+  const keyOf=m=>normalizedIdentity(m).member_id||String(m.id||m.object?.id||"");
+  const seen=new Map(existing.map(m=>[keyOf(m),checksum(m)]));
+  if(seen.size!==existing.length)throw Error("Stored sample contains duplicate member IRIs; refuse ambiguous checkpoint");
+  const buffered=[...existing];
   let received=0,invalid=0,bufferOverflow=false,bytes=Buffer.byteLength(JSON.stringify(buffered));
   const url=new URL(SOURCE);url.searchParams.set("generatedAtTime",since);
   const engine=new lib.newEngine();
@@ -71,7 +79,7 @@ async function main(){
       editorial_review_candidates:report.editorial_review_count,
       checkpointed:!!checkpoint&&!bufferOverflow,buffer_overflow:bufferOverflow,
       history_complete:false}));
-    if(bufferOverflow)throw Error("Bounded buffer overflow: checkpoint withheld to avoid losing events");
+    if(bufferOverflow)throw Error("Bounded sample capacity or immutable-member conflict: checkpoint withheld to avoid losing events");
   };
   let timer;
   const done=new Promise((resolve,reject)=>{
@@ -80,11 +88,16 @@ async function main(){
     stream.on("data",member=>{
       received++;
       if(normalizeGipodMember(member).error)invalid++;
-      const key=String(member.id||member.object?.id||"");
-      if(!seen.has(key)){
+      const key=keyOf(member),fingerprint=checksum(member);
+      if(seen.has(key)){
+        if(seen.get(key)!==fingerprint){
+          bufferOverflow=true;stop();return;
+        }
+      }else{
         const encoded=JSON.stringify(member),size=Buffer.byteLength(encoded);
-        if(bytes+size<=7*1024*1024){seen.add(key);buffered.push(member);bytes+=size}
-        else{bufferOverflow=true;stop();return}
+        if(bytes+size<=MAX_BYTES&&buffered.length<MAX_MEMBERS){
+          seen.set(key,fingerprint);buffered.push(member);bytes+=size;
+        }else{bufferOverflow=true;stop();return}
       }
       if(received>=limit)stop();
     });
