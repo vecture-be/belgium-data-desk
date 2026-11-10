@@ -1,0 +1,11 @@
+/* Dataset card in the inspector (public/dataset-card-panel-v1.mjs); follows the trust panel's look. */
+.dataset-card-panel{margin-top:14px;border-top:3px solid var(--i);padding-top:10px}
+.card-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border:1px solid var(--l)}
+.card-chip{padding:9px;min-width:0;border-left:1px solid var(--l);margin-left:-1px}
+.card-chip small{display:block;font:800 .55rem ui-monospace,monospace;color:var(--m);letter-spacing:.06em;margin-bottom:4px}
+.card-chip b{display:block;font-size:.72rem;line-height:1.35}
+.card-chip em{display:block;font-style:normal;color:var(--m);font-size:.6rem;line-height:1.35;margin-top:3px}
+.card-chip.ok b::before{content:"● ";color:#2f8f4e}
+.card-chip.warn b::before{content:"● ";color:var(--o)}
+.card-facts{margin:0;border:1px solid var(--l);border-top:0;padding:8px 10px 8px 26px;background:var(--p);font-size:.69rem;line-height:1.5}
+.card-facts li+li{margin-top:3px}
