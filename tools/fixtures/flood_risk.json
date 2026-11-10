@@ -1,0 +1,33 @@
+{
+ "tool": "flood_risk",
+ "args": {
+  "address": "Grote Markt 1, 3000 Leuven"
+ },
+ "recordedAt": "2026-11-10T08:15:31.633Z",
+ "calls": [
+  {
+   "url": "https://geo.api.vlaanderen.be/geolocation/v4/Location?q=Grote+Markt+1%2C+3000+Leuven&c=1",
+   "status": 200,
+   "contentType": "application/json; charset=utf-8",
+   "body": "H4sIAAAAAAAACtWQW0vDQBSE/0o4zyFsks1t3yxiFVKEWu9I2CanyWqzG/ailpL/LhGq7U/o65kZzjezh1LV3Aoll2jc1gJ73cPCSVGLgW+F3QGDEt0nSvDhRQy1ahAYxIQQ8GHVKa1c2224Rsn7SZlrZdFbcP1hwYdr5QxK169RA4MQfLi5BBbSOCvy2IcrpXtuLTYXTaPRmNO8F/re9Mj7AziwAttDyW31OL/LKbCEBHlWxFlB8yhN0iJMJqs8yDTICEkTmhRpFKWEFKEPT1XJJyqbRcDCLI6TPAipD8+ndxrnWRAVR/6IkBxYOiWyIIyOEgeFxgUJaDL+4652wzTNmhthNLbCWNSm6pww0vU96opvWtyiaB64vF2/Yz1NN1NONkK2M/X9W1d9oS5xY8+k+/0woF6KtjsP4HF8G38ApOnGTQwDAAA="
+  },
+  {
+   "url": "https://inspirepub.waterinfo.be/arcgis/rest/services/informatieplicht/overstromingsgevoelige_gebieden_vanuit_de_zee/MapServer/identify?geometry=173358%2C174387&geometryType=esriGeometryPoint&sr=31370&layers=all&tolerance=0&mapExtent=173308%2C174337%2C173408%2C174437&imageDisplay=100%2C100%2C96&returnGeometry=false&f=json",
+   "status": 200,
+   "contentType": "application/json; charset=UTF-8",
+   "body": "H4sIAAAAAAAACqtWKkotLs0pKVayio6tBQAKJ3yeDgAAAA=="
+  },
+  {
+   "url": "https://inspirepub.waterinfo.be/arcgis/rest/services/informatieplicht/overstromingsgevoelige_gebieden_fluviaal/MapServer/identify?geometry=173358%2C174387&geometryType=esriGeometryPoint&sr=31370&layers=all&tolerance=0&mapExtent=173308%2C174337%2C173408%2C174437&imageDisplay=100%2C100%2C96&returnGeometry=false&f=json",
+   "status": 200,
+   "contentType": "application/json; charset=UTF-8",
+   "body": "H4sIAAAAAAAACqtWKkotLs0pKVayio6tBQAKJ3yeDgAAAA=="
+  },
+  {
+   "url": "https://inspirepub.waterinfo.be/arcgis/rest/services/informatieplicht/overstromingsgevoelige_gebieden_pluviaal/MapServer/identify?geometry=173358%2C174387&geometryType=esriGeometryPoint&sr=31370&layers=all&tolerance=0&mapExtent=173308%2C174337%2C173408%2C174437&imageDisplay=100%2C100%2C96&returnGeometry=false&f=json",
+   "status": 200,
+   "contentType": "application/json; charset=UTF-8",
+   "body": "H4sIAAAAAAAACqtWKkotLs0pKVayio6tBQAKJ3yeDgAAAA=="
+  }
+ ]
+}

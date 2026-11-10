@@ -55,15 +55,18 @@ export function wgs84ToLambert72(lat,lon){
 }
 
 // ---------- bounded upstream access ----------
-/** One client per tool call: fixed hosts, a request budget, a timeout, a byte cap, manual redirects and edge caching. */
-export function makeDovClient({fetchImpl=fetch}={}){
+/** One client per tool call: fixed hosts, a request budget, a timeout, a byte cap, manual redirects and edge caching.
+ *  The MCP server passes each tool's own declared `hosts` and `maxRequests` (tools/*.mjs, checked by lib/tool-contract.mjs), so a tool
+ *  can reach only the services it names; HOSTS is the default for direct callers such as tests. The budget never exceeds MAX_UPSTREAM. */
+export function makeDovClient({fetchImpl=fetch,hosts=HOSTS,maxRequests=MAX_UPSTREAM}={}){
   let used=0;
+  const allowed=new Set(hosts),budget=Math.min(maxRequests,MAX_UPSTREAM);
   return{
     get used(){return used},
     async get(url,{maxBytes=1<<20,ttl=HOUR,binary=false}={}){
       let u;try{u=new URL(url)}catch{return{error:"bad upstream address"}}
-      if(u.protocol!=="https:"||!HOSTS.has(u.hostname)||u.username||u.password||(PATH_ONLY[u.hostname]&&!u.pathname.startsWith(PATH_ONLY[u.hostname])))return{error:"upstream host not allowed"};
-      if(used>=MAX_UPSTREAM)return{error:"request budget for this answer is used up"};
+      if(u.protocol!=="https:"||!allowed.has(u.hostname)||u.username||u.password||(PATH_ONLY[u.hostname]&&!u.pathname.startsWith(PATH_ONLY[u.hostname])))return{error:"upstream host not allowed"};
+      if(used>=budget)return{error:"request budget for this answer is used up"};
       used++;
       let r;
       try{

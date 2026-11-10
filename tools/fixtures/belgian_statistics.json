@@ -1,0 +1,11 @@
+{
+ "tool": "belgian_statistics",
+ "args": {
+  "places": [
+   "Gent"
+  ],
+  "topic": "population"
+ },
+ "recordedAt": "2026-11-10T08:15:30.180Z",
+ "calls": []
+}

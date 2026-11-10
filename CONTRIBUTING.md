@@ -38,14 +38,9 @@ There are two kinds.
 
 **A catalogue source** (a portal whose dataset list should be searchable). Add an adapter to `scripts/harvest.mjs` and list it in `jobs`. Existing adapters cover CKAN (`harvestCkan`), OpenDataSoft (`harvestOds`), OGC API (`harvestOgc`) and CSW (`harvestCsw`), so a new portal on one of those platforms is often one line. An adapter returns records with at least `id`, `title`, `provider`, `license`, `officialUrl` and `distributions` (`{name, format, url}`); a failing source falls back to its previous records, so one portal being down never empties the catalogue.
 
-**A live answer tool** (answers a question from an official service, like `flood_risk`). `flood.mjs` is the smallest example, about 45 lines:
+**A live answer tool** (answers a question from an official service, like `flood_risk`). A tool is one file in `tools/`: you write the domain logic and real example questions; the platform derives the tool listing, upstream allow-list, search hints and tests from it. Start with `npm run tool:new -- <name>` and follow [docs/adding-a-tool.md](docs/adding-a-tool.md). `tools/flood-risk.mjs` with `flood.mjs` is the smallest complete example.
 
-1. Write a module that exports `async function yourTool(client, args, { assets })` and returns `{ key_facts, ..., provenance }`. Build `key_facts` only from values in the same answer.
-2. Fetch only through the bounded client (`client` from `dov.mjs`): add the upstream host to `HOSTS` there. It gives you timeouts, byte caps, a request budget and edge caching.
-3. Register it in `DOV_TOOLS` and `TOOLS` in `mcp-server.mjs`, with a description that says what the source is and what the tool does not answer.
-4. Add an offline test with an upstream answer shaped like the real one (see `scripts/test-live.mjs`), and a real call to `scripts/live-dov.mjs`.
-
-Requirements for a live tool:
+Requirements for a live tool (the contract test checks most of them):
 
 - The upstream is the official publisher (or its official service), with a licence that allows reuse, and needs **no API key**: the hosted instance must work without secrets.
 - No tool accepts a URL. Inputs are validated before any request is made.
