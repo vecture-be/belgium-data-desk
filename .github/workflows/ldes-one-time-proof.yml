@@ -26,6 +26,11 @@ jobs:
         run: |
           node scripts/ldes-gipod-collect.mjs --since 2026-11-09T00:00:00Z --limit 12 --out .cache/ldes-proof
           node scripts/ldes-gipod-collect.mjs --since 2026-11-09T00:00:00Z --limit 12 --out .cache/ldes-proof
+      - name: Render a bounded human evidence-review digest
+        run: |
+          node scripts/ldes-gipod-review.mjs .cache/ldes-proof/change-evidence.json > .cache/ldes-proof/review.md
+          test -s .cache/ldes-proof/review.md
+          sed -n '1,60p' .cache/ldes-proof/review.md
       - name: Prove real member mapping without publishing private or synthetic data
         run: |
           node --input-type=module -e '
