@@ -68,6 +68,7 @@ async function main(){
       byKind,revisions:report.counts.revisions,review_first:report.counts.actionable_revisions,
       timestamp_ties_resolved:report.counts.timestamp_ties_resolved,
       net_review_candidates:report.review_queue_count,
+      editorial_review_candidates:report.editorial_review_count,
       checkpointed:!!checkpoint&&!bufferOverflow,buffer_overflow:bufferOverflow,
       history_complete:false}));
     if(bufferOverflow)throw Error("Bounded buffer overflow: checkpoint withheld to avoid losing events");
