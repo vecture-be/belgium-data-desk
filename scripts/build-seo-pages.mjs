@@ -8,6 +8,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { LANGS, LOCALE, PATHS, SITE, T, TOPIC_I18N } from "./seo-i18n.mjs";
 import { scopeOf, TOPIC_LABELS, topicOf } from "../public/dataset-taxonomy-v1.mjs";
+import { ldesCapability } from "../public/dataset-ldes-v1.mjs";
 import { LICENSE_URLS, normalizeLicense } from "../public/dataset-licence-v1.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url)),pub=path.resolve(__dirname,"../public");
@@ -152,20 +153,28 @@ export function buildSeoSite(items,{origin=DEFAULT_ORIGIN,generatedAt=null,links
     usedTitles.add(title);
     const descMeta=cut((desc?desc+" ":"")+t.ds.metaTail,MAX_DESC);
     const dists=(it.distributions||[]).filter(d=>d?.url&&/^https:/i.test(d.url)).slice(0,4);
+    const ldes=ldesCapability(it),dataService=it.dataKind==="data-service";
     const pr=it.probe,cycle=it.frequency&&t.ds.cycles[String(it.frequency).toUpperCase()];
     const updated=(it.dataProcessedAt||it.updatedAt||"").slice(0,10);
     const related=(byTopic.get(topic)||[]).filter(x=>x!==r).slice(0,5),more=(byPub.get(pubName)||[]).filter(x=>x!==r).slice(0,4);
     const licUrl=LICENSE_URLS[normalizeLicense(it.licenseUri||it.license).id]||"";
     const crumbs=[[SITE,homeUrl(origin,lang)],[topicName(topic,lang),topicHref(topic,lang)],[r.title,r.url]];
-    const ld={"@context":"https://schema.org","@type":"Dataset",name:r.title,description:cut(desc||r.title+" — "+t.ds.metaTail,500),url:r.url,identifier:it.id,inLanguage:lang,isAccessibleForFree:true,
-      creator:{"@type":"Organization",name:pubName},publisher:{"@type":"Organization",name:pubName},keywords:[topicName(topic,lang),pubName,"Belgium","open data"],spatialCoverage:it.geoCoverage||"Belgium",
-      includedInDataCatalog:{"@type":"DataCatalog",name:SITE,url:origin+"/"},...(updated?{dateModified:updated}:{}),...(licUrl?{license:licUrl}:{}),...(it.officialUrl&&/^https?:/.test(it.officialUrl)?{sameAs:it.officialUrl}:{}),
-      ...(dists.length?{distribution:dists.map(f=>({"@type":"DataDownload",...(f.format?{encodingFormat:String(f.format).replace(/^https?:\/\/.*\//,"")}:{}),contentUrl:f.url}))}:{})};
+    const ld={"@context":"https://schema.org","@type":dataService?"Service":"Dataset",name:r.title,description:cut(desc||r.title+" — "+t.ds.metaTail,500),url:r.url,identifier:it.id,inLanguage:lang,isAccessibleForFree:true,
+      ...(dataService?{serviceType:ldes.status==="publisher_declared"?"Linked Data Event Stream":"Data service",
+        provider:{"@type":"Organization",name:pubName},
+        ...(ldes.endpoints[0]?{serviceUrl:ldes.endpoints[0].url}:{})}:
+        {creator:{"@type":"Organization",name:pubName},publisher:{"@type":"Organization",name:pubName},
+         spatialCoverage:it.geoCoverage||"Belgium",includedInDataCatalog:{"@type":"DataCatalog",name:SITE,url:origin+"/"}}),
+      keywords:[topicName(topic,lang),pubName,"Belgium","open data"],
+      ...(updated?{dateModified:updated}:{}),...(licUrl?{license:licUrl}:{}),
+      ...(it.officialUrl&&/^https?:/.test(it.officialUrl)?{sameAs:it.officialUrl}:{}),
+      ...(!dataService&&dists.length?{distribution:dists.map(f=>({"@type":"DataDownload",
+        ...(f.format?{encodingFormat:String(f.format).replace(/^https?:\/\/.*\//,"")}:{}),contentUrl:f.url}))}:{})};
     const rows=[
       [t.ds.publisher,'<a href="'+esc(pubSlugs.has(pubName)?pubHref(pubName,lang):"#")+'">'+esc(pubName)+"</a>"],
       [t.ds.licence,esc(licName||"—")+'<br><small class="mut">'+esc(t.ds.licenceGroup[group])+"</small>"],
       [t.ds.topic,'<a href="'+esc(topicHref(topic,lang))+'">'+esc(topicName(topic,lang))+"</a>"],
-      [t.ds.kind,esc(t.ds.kinds[it.dataKind||"dataset"]||"")],
+      [t.ds.kind,esc(dataService?(ldes.status==="publisher_declared"?"LDES data service":"Data service"):(t.ds.kinds[it.dataKind||"dataset"]||""))],
       ...(updated?[[t.ds.updated,esc(updated)]]:[]),...(cycle?[[t.ds.cycle,esc(cycle)]]:[]),
       ...((it.formats||[]).length?[[t.ds.formats,esc((it.formats||[]).slice(0,6).map(f=>String(f).replace(/^https?:\/\/.*\//,"")).join(", "))]]:[]),
       ...(it.contactEmail||it.contactUrl?[[t.ds.contact,esc(it.contactUrl||it.contactEmail)]]:[])
@@ -176,6 +185,7 @@ export function buildSeoSite(items,{origin=DEFAULT_ORIGIN,generatedAt=null,links
       "<dl>"+rows+"</dl>"+
       '<p><a class="btn" href="'+esc(origin+"/?dataset="+encodeURIComponent(it.id))+'">'+esc(t.ds.openDesk)+'</a><span class="mut">'+esc(t.ds.openDeskHint)+"</span></p>"+
       (it.officialUrl&&/^https?:/.test(it.officialUrl)?'<p><a href="'+esc(it.officialUrl)+'" rel="noopener nofollow">'+esc(t.ds.official)+" ↗</a></p>":"")+
+      (ldes.endpoints.length?'<h2>Published Linked Data Event Stream (LDES)</h2><p>This is an event stream endpoint, not a file download. A compatible client follows its linked fragments to synchronize versions. Current uptime, event freshness and history completeness are not verified by this catalogue.</p><ul class="list">'+ldes.endpoints.map(e=>'<li><a href="'+esc(e.url)+'" rel="noopener noreferrer">Publisher LDES endpoint ↗</a></li>').join("")+'</ul>':"")+
       '<p class="note">'+esc(pr&&pr.n?fmt(t.ds.linkOk,{date:pr.at,ok:pr.ok,n:pr.n}):t.ds.linkNone)+" "+esc(t.ds.notVerified)+"</p>"+
       (cols.length?"<h2>"+esc(t.ds.columns)+"</h2><p>"+esc(cols.join(", "))+"</p>":"")+
       (related.length?"<h2>"+esc(t.ds.related)+'</h2><ul class="list">'+related.map(x=>dsListItem(x,lang)).join("")+"</ul>":"")+

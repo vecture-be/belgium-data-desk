@@ -3,6 +3,7 @@ import { Readable } from "node:stream";
 import { createHash } from "node:crypto";
 import { createInterface } from "node:readline";
 import { detectSeries, kindOf, normalizeLicense, resolveSpatial, topicOf } from "./curate.mjs";
+import { isLdesEndpoint } from "../public/dataset-ldes-v1.mjs";
 
 export const NATIONAL_DCAT_URL="https://raw.githubusercontent.com/Fedict/dcat/master/all/datagovbe.nt.gz";
 export const NATIONAL_MIN_DATASETS=1000;
@@ -17,8 +18,12 @@ const NS={
   dcat:"http://www.w3.org/ns/dcat#",foaf:"http://xmlns.com/foaf/0.1/",skos:"http://www.w3.org/2004/02/skos/core#",schema:"http://schema.org/",schemaHttps:"https://schema.org/",rdfs:"http://www.w3.org/2000/01/rdf-schema#",vcard:"http://www.w3.org/2006/vcard/ns#"
 };
 const P={
-  type:NS.rdf+"type",dataset:NS.dcat+"Dataset",title:NS.dct+"title",description:NS.dct+"description",
+  type:NS.rdf+"type",dataset:NS.dcat+"Dataset",dataService:NS.dcat+"DataService",
+  title:NS.dct+"title",description:NS.dct+"description",
   publisher:NS.dct+"publisher",distribution:NS.dcat+"distribution",modified:NS.dct+"modified",issued:NS.dct+"issued",
+  endpointURL:NS.dcat+"endpointURL",endpointDescription:NS.dcat+"endpointDescription",
+  accessService:NS.dcat+"accessService",servesDataset:NS.dcat+"servesDataset",
+  conformsTo:NS.dct+"conformsTo",accessRights:NS.dct+"accessRights",
   identifier:NS.dct+"identifier",keyword:NS.dcat+"keyword",theme:NS.dcat+"theme",landingPage:NS.dcat+"landingPage",
   accessURL:NS.dcat+"accessURL",downloadURL:NS.dcat+"downloadURL",format:NS.dct+"format",mediaType:NS.dcat+"mediaType",byteSize:NS.dcat+"byteSize",
   license:NS.dct+"license",frequency:NS.dct+"accrualPeriodicity",spatial:NS.dct+"spatial",contactPoint:NS.dcat+"contactPoint",
@@ -95,7 +100,9 @@ export function canonicalFormat(value,url=""){
 export function catalogueFromNodes(nodes,{generatedAt=new Date().toISOString(),source=NATIONAL_DCAT_URL}={}){
   const items=[],usedIds=new Set();
   for(const [subject,n] of nodes){
-    if(!vals(n,P.type).some(x=>x.v===P.dataset))continue;
+    const isDataset=vals(n,P.type).some(x=>x.v===P.dataset);
+    const isService=vals(n,P.type).some(x=>x.v===P.dataService);
+    if(!isDataset&&!isService)continue;
     const title=pick(n,P.title);if(!title)continue;
     const publisherRef=firstResource(n,P.publisher);
     const publisherNode=publisherRef?nodes.get(publisherRef):null;
@@ -105,20 +112,37 @@ export function catalogueFromNodes(nodes,{generatedAt=new Date().toISOString(),s
     const contactUrl=firstResource(contactNode,P.vcardHasURL)||pick(contactNode,P.vcardHasURL)||"";
     const contactName=pick(contactNode,P.vcardFn)||publisherName(contactNode)||"";
     const distRefs=vals(n,P.distribution).filter(x=>x.resource).map(x=>x.v);
-    const distributions=distRefs.slice(0,20).map(ref=>{
+    const distributions=distRefs.slice(0,20).flatMap(ref=>{
       const d=nodes.get(ref)||{};
       const access=firstResource(d,P.downloadURL)||firstResource(d,P.accessURL);
       const f=vals(d,P.format).find(Boolean)||vals(d,P.mediaType).find(Boolean);
       const license=vals(d,P.license).find(Boolean),rawSize=pick(d,P.byteSize),byteSize=rawSize===""?NaN:Number(rawSize);
-      return{
+      const direct=access?[{
         name:pick(d,P.title)||"distribution",
         format:canonicalFormat(f?readableResource(f):"",access),
         url:access,
         license:license?(normalizeLicense(license.v).label||readableResource(license)):"",
         licenseUri:license?.resource?license.v:"",
         byteSize:Number.isFinite(byteSize)&&byteSize>0?byteSize:null
-      };
-    }).filter(x=>x.url);
+      }]:[];
+      // A DCAT Distribution can point to its providing DataService instead of a
+      // downloadable file. Keep that endpoint, including published LDES streams.
+      const linked=vals(d,P.accessService).filter(x=>x.resource).flatMap(x=>
+        vals(nodes.get(x.v),P.endpointURL).map(v=>v.v).filter(url=>/^https:\/\//i.test(url)).map(url=>({
+          name:pick(nodes.get(x.v),P.title)||"Access service",
+          format:isLdesEndpoint(url)?"LDES":"Data service",url,byteSize:null
+        })));
+      return [...direct,...linked];
+    });
+    if(isService){
+      const conforms=vals(n,P.conformsTo).map(x=>x.v);
+      for(const endpoint of vals(n,P.endpointURL).map(x=>x.v).filter(x=>/^https:\/\//i.test(x))){
+        distributions.push({name:"Service endpoint",format:isLdesEndpoint(endpoint)||conforms.some(x=>/\bldes\b/i.test(x))?"LDES":"Data service",
+          url:endpoint,byteSize:null});
+      }
+    }
+    // Never duplicate the same URL when both a Distribution and a DataService reference it.
+    const uniqueDistributions=[...new Map(distributions.filter(x=>x.url).map(x=>[x.url,x])).values()];
     const declaredId=pick(n,P.identifier)||subject;
     // Two catalogue records can declare the same identifier (reused DOIs); the record id must stay unique for the UI, relay and search.
     const id=usedIds.has(declaredId)?declaredId+"~"+createHash("sha1").update(subject).digest("hex").slice(0,6):declaredId;
@@ -126,7 +150,7 @@ export function catalogueFromNodes(nodes,{generatedAt=new Date().toISOString(),s
     const datasetLicense=vals(n,P.license).find(Boolean);
     const frequency=vals(n,P.frequency).find(Boolean);
     const spatial=vals(n,P.spatial).find(Boolean);
-    const formats=uniq(distributions.map(x=>x.format));
+    const formats=uniq(uniqueDistributions.map(x=>x.format));
     items.push({
       id:"national:"+id,
       provider:publisher,
@@ -137,7 +161,11 @@ export function catalogueFromNodes(nodes,{generatedAt=new Date().toISOString(),s
       datasetId:id,
       title,
       description:pick(n,P.description).slice(0,1200),
-      kind:"DCAT dataset",
+      kind:isService?"DCAT data service":"DCAT dataset",
+      serviceType:isService?"DCAT DataService":null,
+      endpointDescription:isService?firstResource(n,P.endpointDescription)||pick(n,P.endpointDescription):"",
+      servesDataset:isService?vals(n,P.servesDataset).filter(x=>x.resource).map(x=>x.v).slice(0,12):[],
+      conformsTo:isService?vals(n,P.conformsTo).map(x=>x.v).slice(0,12):[],
       formats:formats.slice(0,12),
       updatedAt:pick(n,P.modified)||pick(n,P.issued)||null,
       frequency:frequency?readableResource(frequency):"",
@@ -151,7 +179,7 @@ export function catalogueFromNodes(nodes,{generatedAt=new Date().toISOString(),s
       euThemes:uniq(vals(n,P.theme).map(x=>String(x.v).match(/data-theme\/([A-Z]+)$/)?.[1])),
       officialUrl:firstResource(n,P.landingPage)||(subject.startsWith("http")?subject:distributions[0]?.url||""),
       sourceRecord:subject,
-      distributions:distributions.slice(0,8),
+      distributions:uniqueDistributions.slice(0,8),
       enrichment:{score:20,level:"harvested",reasons:["national DCAT index"],schemaOrigin:"none",sampled:false}
     });
   }
@@ -179,7 +207,10 @@ export function thinNationalCatalogue(payload,maxDescription=320){
     generatedAt:payload.generatedAt,source:payload.source,itemCount:payload.items.length,thin:true,health:payload.health,profileSummary:payload.profileSummary||null,series:payload.series||[],
     items:payload.items.map(x=>({
       id:x.id,provider:x.provider,publisherUri:x.publisherUri,contactName:x.contactName||"",contactEmail:x.contactEmail||"",contactUrl:x.contactUrl||"",platform:x.platform,discovery:x.discovery,datasetId:x.datasetId,
-      title:x.title,description:String(x.description||"").slice(0,maxDescription),kind:x.kind,formats:(x.formats||[]).slice(0,4),
+      title:x.title,description:String(x.description||"").slice(0,maxDescription),
+      kind:x.kind,serviceType:x.serviceType||null,endpointDescription:x.endpointDescription||"",
+      conformsTo:(x.conformsTo||[]).slice(0,8),servesDataset:(x.servesDataset||[]).slice(0,8),
+      formats:(x.formats||[]).slice(0,4),
       updatedAt:x.updatedAt,frequency:x.frequency,geoCoverage:x.geoCoverage,recordCount:x.recordCount??null,recordCountKind:x.recordCountKind||null,
       fields:(x.fields||[]).slice(0,80),previewRows:(x.previewRows||[]).slice(0,8),schemaOrigin:x.schemaOrigin||"none",sampleOrigin:x.sampleOrigin||"none",
       tabularProfile:x.tabularProfile||null,extent:x.extent||{},themes:(x.themes||[]).slice(0,6),license:x.license||"",licenseFamily:x.licenseFamily||"unknown",euThemes:x.euThemes||[],geoScope:x.geoScope||"",dataKind:x.dataKind||"",topic:x.topic||"",seriesId:x.seriesId||"",

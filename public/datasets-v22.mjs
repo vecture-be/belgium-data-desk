@@ -19,6 +19,7 @@ import { createPublisherNamer, publisherReference } from "./dataset-publisher-v1
 import { summarizeChecks, trustChecks } from "./dataset-trust-v1.mjs";
 import { LICENSE_FAMILY_NOTE, normalizeLicense } from "./dataset-licence-v1.mjs";
 import { SCOPES, TOPIC_LABELS, inScope, scopeCounts, topicOf } from "./dataset-taxonomy-v1.mjs";
+import { isLdesEndpoint, isLdesDistribution, ldesCapability } from "./dataset-ldes-v1.mjs";
 
 const MODELED=[...ASSETS,...EXTRA_ATLAS_ASSETS,...COMPLETENESS_ASSETS,...COMPLETENESS_ASSETS_V2,...COMPLETENESS_ASSETS_V3,...COMPLETENESS_ASSETS_V4].map(a=>({...a,depth:"modelled"}));
 const SOURCES=[...BASE,...EXTRA_SOURCES].map(s=>({...s,...(SOURCE_OVERRIDES[s.id]||{})}));
@@ -26,6 +27,7 @@ const sourceBy=id=>SOURCES.find(s=>s.id===id);
 const modeledBy=id=>MODELED.find(a=>a.id===id);
 const canonicalFormatLabel=(value,url="")=>{
   const raw=String(value||"").trim(),hay=(raw+" "+url).toLowerCase();
+  if(isLdesEndpoint(url)||/\bldes\b|linked data event stream/i.test(raw))return"LDES";
   const map=[
     ["GeoJSON",/geojson|\.geojson(?:$|[?#])/],["JSON-LD",/json-ld|ld\+json/],["CSV",/\bcsv\b|text\/csv|file-type\/csv|\.csv(?:$|[?#])/],
     ["TSV",/\btsv\b|tab[- ]separated|\.tsv(?:$|[?#])/],["JSON",/\bjson\b|application\/json|file-type\/json|\.json(?:$|[?#])/],
@@ -66,6 +68,8 @@ const harvestToAsset=h=>{
     formats:[...new Set([...(h.formats||[]).map(f=>canonicalFormatLabel(f)),...(h.distributions||[]).map(x=>canonicalFormatLabel(x.format,x.url))].filter(Boolean))],
     schema:(h.fields||[]).map(x=>[x.name||x.label||"field",x.type||"field",x.description||x.label||"published field"]),
     distributions:(h.distributions||[]).map(x=>[x.name||x.format||"resource",canonicalFormatLabel(x.format,x.url),"publisher-defined","see source",x.url||h.officialUrl,Number.isFinite(Number(x.byteSize))?Number(x.byteSize):null]),
+    serviceType:h.serviceType||null,endpointDescription:h.endpointDescription||"",
+    servesDataset:h.servesDataset||[],conformsTo:h.conformsTo||[],
     versioning:"Machine-harvested publisher metadata; not manually version-audited.",
     caveat:depth==="structured"?"Field names/types come from a publisher-exposed schema. Observation grain and semantics are still not manually audited.":observedFile?"Field names and sample rows were observed by downloading a publisher file. They are not a publisher-declared schema, and inferred types can be imperfect.":schemaOrigin==="sample-observed"?"Fields were observed in a sample response, not supplied as an authoritative schema.":"Catalogue metadata only; schema and observation grain are not audited.",
     evidence:[h.officialUrl].filter(Boolean),description:h.description||"",provider:h.provider||"",publisherUri:h.publisherUri||null,contactName:h.contactName||"",contactEmail:h.contactEmail||"",contactUrl:h.contactUrl||"",officialUrl:h.officialUrl||"",platform:h.platform||"",discovery:h.discovery||"publisher",discoverySources:[h.discovery||"publisher"],sourceRecord:h.sourceRecord||null,updatedAt:h.updatedAt||null,dataProcessedAt:h.dataProcessedAt||null,metadataProcessedAt:h.metadataProcessedAt||null,catalogueModifiedAt:h.catalogueModifiedAt||null,
@@ -411,16 +415,19 @@ function businessKeyResult(k){
   return '<div class="key-verdict '+cls+'"><b>'+title+'</b><span>'+esc(k.fields.join(" + "))+'</span></div><div class="key-facts"><span><b>'+Number(k.rows||0).toLocaleString()+'</b> rows tested</span><span><b>'+Number(k.uniqueKeys||0).toLocaleString()+'</b> unique keys</span><span><b>'+Number(k.nullRows||0).toLocaleString()+'</b> null/incomplete keys</span><span><b>'+Number(k.duplicateRows||0).toLocaleString()+'</b> duplicate rows</span><span><b>'+Number(k.duplicateGroups||0).toLocaleString()+'</b> duplicate key groups</span></div>';
 }
 function distributionGroups(a){
-  const inspectable=(a.distributions||[]).filter(x=>distributionCapability(x).group==="inspectable"),other=(a.distributions||[]).filter(x=>distributionCapability(x).group!=="inspectable");
+  const streams=(a.distributions||[]).filter(isLdesDistribution);
+  const inspectable=(a.distributions||[]).filter(x=>!isLdesDistribution(x)&&distributionCapability(x).group==="inspectable");
+  const other=(a.distributions||[]).filter(x=>!isLdesDistribution(x)&&distributionCapability(x).group!=="inspectable");
   const card=d=>{const c=distributionCapability(d),bytes=formatBytes(d[5]),fmt=canonicalFormatLabel(d[1],d[4]),sqlFmt=({CSV:"csv",TSV:"tsv",JSON:"json",Parquet:"parquet"})[fmt],sqlFriendly=c.kind==="tabular"||sqlFmt==="parquet"||(sqlFmt==="json"&&/\.(?:json|jsonl|ndjson)(?:$|[?#])/i.test(d[4]||"")),readiness=analysisReadiness(a),canSql=["ready","possible"].includes(readiness.kind),sqlAction=sqlFmt&&sqlFriendly&&d[4]&&canSql?'<button type="button" data-sql-dist-url="'+esc(d[4])+'" data-sql-dist-format="'+sqlFmt+'" data-sql-dist-name="'+esc(a.title)+'">'+(readiness.kind==="ready"?"Analyze SQL":"Try SQL")+'</button>':"";return'<article><div><b>'+esc(d[0])+'</b><small>'+esc(d[1])+' · '+esc(c.label)+(bytes?' · '+esc(bytes):"")+(a.tabularProfile?.sourceUrl===d[4]?' · profiled':"")+'</small></div><div class="distribution-actions">'+sqlAction+'<a href="'+esc(d[4])+'" target="_blank" rel="noopener">'+(c.kind==="tabular"?"download/open ↗":"open ↗")+'</a></div></article>'};
-  return '<section class="compact-section distribution-group inspectable"><div class="section-cap"><h3>Previewable data</h3><span>'+inspectable.length+'</span></div>'+(inspectable.length?'<div class="distribution-list compact">'+inspectable.map(card).join("")+'</div>':'<div class="dataset-empty">No distribution can currently be previewed directly in the browser.</div>')+'</section>'+
-    (other.length?'<details class="distribution-other"><summary>Other downloads · '+other.length+' · PDF / ZIP / spreadsheets / unsupported formats</summary><div class="distribution-list compact">'+other.map(card).join("")+'</div></details>':"");
+  return (streams.length?'<section class="compact-section distribution-group ldes-distributions"><div class="section-cap"><h3>Published event stream</h3><span>'+streams.length+'</span></div><div class="distribution-list compact">'+streams.map(card).join("")+'</div></section>':"")+
+    '<section class="compact-section distribution-group inspectable"><div class="section-cap"><h3>Previewable files and APIs</h3><span>'+inspectable.length+'</span></div>'+(inspectable.length?'<div class="distribution-list compact">'+inspectable.map(card).join("")+'</div>':'<div class="dataset-empty">No directly previewable file or row API is advertised.</div>')+'</section>'+
+    (other.length?'<details class="distribution-other"><summary>Other downloads and resources · '+other.length+'</summary><div class="distribution-list compact">'+other.map(card).join("")+'</div></details>':"");
 }
 const seriesOf=a=>a.seriesId?state.nationalSeries.get(a.seriesId):null;
 function row(a,familyCount=1){
   const selectedAsset=by(state.selected),active=a.id===state.selected||(state.groupFamilies&&selectedAsset&&familyKey(a,srcLabel(a))===familyKey(selectedAsset,srcLabel(selectedAsset))),pinned=state.stack.has(a.id),id=esc(a.id);
   const label=a.depth==="modelled"?"CURATED":a.depth==="structured"?"PUBLISHER SCHEMA":a.discovery==="data.gov.be"?"NATIONAL DCAT":"HARVESTED";
-  const publisherId=publisherReference(a),evidence=datasetEvidence(a),analysis=analysisReadiness(a),previewable=(a.distributions||[]).some(x=>distributionCapability(x).group==="inspectable"),brief=briefMeta(a);
+  const publisherId=publisherReference(a),evidence=datasetEvidence(a),analysis=analysisReadiness(a),previewable=(a.distributions||[]).some(x=>distributionCapability(x).group==="inspectable"),brief=briefMeta(a),ldes=ldesCapability(a);
   const briefBits=[
     brief.grain&&!/not verified/i.test(brief.grain)?"ROW · "+brief.grain:"",
     brief.time!=="not clearly stated"?"TIME · "+brief.time:"",
@@ -429,7 +436,7 @@ function row(a,familyCount=1){
   ].filter(Boolean);
   return '<div class="asset-entry '+(active?"active":"")+'"><button type="button" class="asset-row '+(active?"active":"")+'" data-asset="'+id+'"><div class="asset-row-top"><span>'+esc(srcLabel(a))+'</span><em class="depth '+a.depth+'">'+label+'</em></div><b>'+esc(seriesOf(a)?.title||a.title)+'</b>'+
     (briefBits.length?'<div class="asset-brief-line">'+briefBits.slice(0,4).map(x=>'<span>'+esc(x)+'</span>').join("")+'</div>':"")+
-    '<div class="asset-line"><code>'+esc(a.datasetId)+'</code>'+(familyCount>1?'<span class="family-chip">'+(seriesOf(a)?'COLLECTION · '+(familyCount<seriesOf(a).count?familyCount.toLocaleString()+' of '+seriesOf(a).count.toLocaleString()+' match':seriesOf(a).count.toLocaleString()+' datasets')+(seriesOf(a).yearMin?' · '+seriesOf(a).yearMin+'–'+seriesOf(a).yearMax:''):'FAMILY · '+familyCount+' records')+'</span>':"")+(publisherId?'<span>publisher '+esc(publisherId)+'</span>':"")+'<span class="analysis-badge '+analysis.kind+'" title="'+esc(analysis.detail)+'">'+analysis.label+'</span>'+(previewable?'<span class="data-capability">PREVIEWABLE</span>':"")+''+licenceChip(a)+probeChip(a)+'<span class="evidence-chip">evidence '+evidence.score+'/100</span>'+(a.recordCount!=null?'<span>'+esc(rowCountLabel(a))+'</span>':"")+'</div></button><button type="button" class="asset-pin '+(pinned?"active":"")+'" data-dataset-pin="'+id+'" aria-pressed="'+pinned+'" aria-label="'+(pinned?"Unpin ":"Pin ")+esc(a.title)+'">'+(pinned?"✓ PINNED":"+ PIN")+'</button></div>';
+    '<div class="asset-line"><code>'+esc(a.datasetId)+'</code>'+(familyCount>1?'<span class="family-chip">'+(seriesOf(a)?'COLLECTION · '+(familyCount<seriesOf(a).count?familyCount.toLocaleString()+' of '+seriesOf(a).count.toLocaleString()+' match':seriesOf(a).count.toLocaleString()+' datasets')+(seriesOf(a).yearMin?' · '+seriesOf(a).yearMin+'–'+seriesOf(a).yearMax:''):'FAMILY · '+familyCount+' records')+'</span>':"")+(publisherId?'<span>publisher '+esc(publisherId)+'</span>':"")+'<span class="analysis-badge '+analysis.kind+'" title="'+esc(analysis.detail)+'">'+analysis.label+'</span>'+(previewable?'<span class="data-capability">PREVIEWABLE</span>':"")+(ldes.status==="publisher_declared"?'<span class="ldes-label" title="LDES endpoint listed in publisher metadata; operational availability and history not verified">LDES STREAM</span>':"")+licenceChip(a)+probeChip(a)+'<span class="evidence-chip">evidence '+evidence.score+'/100</span>'+(a.recordCount!=null?'<span>'+esc(rowCountLabel(a))+'</span>':"")+'</div></button><button type="button" class="asset-pin '+(pinned?"active":"")+'" data-dataset-pin="'+id+'" aria-pressed="'+pinned+'" aria-label="'+(pinned?"Unpin ":"Pin ")+esc(a.title)+'">'+(pinned?"✓ PINNED":"+ PIN")+'</button></div>';
 }
 
 function renderList(){
@@ -458,6 +465,7 @@ function apiDistribution(d){
   return /\/api\/explore\/v2\.1\/catalog\/datasets\/[^/]+\/records/.test(u)||/\/items(?:\?|$)/.test(u);
 }
 function distributionCapability(d){
+  if(isLdesDistribution(d))return{group:"stream",label:"LDES event stream",kind:"stream"};
   if(isTabularDistribution(d))return{group:"inspectable",label:"browser tabular",kind:"tabular"};
   if(apiDistribution(d))return{group:"inspectable",label:"browser API",kind:"api"};
   const hay=norm([d?.[0],d?.[1],d?.[4]].join(" "));
@@ -818,12 +826,23 @@ function renderJoinFinder(a){
   const target=by(state.joinTarget);
   return '<section class="join-finder"><div class="section-cap"><h3>Join Finder</h3><span>identifier-first · metadata-aware</span></div><div class="join-finder-search"><input id="joinFinderSearch" type="search" placeholder="Find another dataset to combine with…"><button id="joinFinderClear" type="button">Best matches</button></div><div id="joinFinderResults" class="join-candidates">'+joinCandidateMarkup(best)+'</div><div id="joinFinderPlan">'+renderJoinPlanLite(a,target)+'</div><p class="dk-note">Harvested-dataset suggestions are heuristic. The Join Finder never treats matching names alone as a safe key.</p></section>';
 }
+function renderLdesPanel(a){
+  const stream=ldesCapability(a);
+  if(stream.status==="none")return"";
+  if(stream.status==="mentioned_only")
+    return '<p class="ldes-mention">LDES is mentioned in this catalogue record, but no stream endpoint was captured. Follow the official source link; this is not yet classified as an accessible stream.</p>';
+  return '<section class="ldes-panel" aria-label="Linked Data Event Stream"><header><div><small>DELIVERY · PUBLISHER-DECLARED</small><h3>Linked Data Event Stream (LDES)</h3></div><span>STREAM</span></header>'+
+    '<p>The publisher lists a versioned data stream. An LDES consumer follows TREE links to synchronize members and can build its own queryable view.</p>'+
+    '<div class="ldes-endpoints">'+stream.endpoints.map(ep=>'<div><small>Publisher endpoint · '+esc(ep.format||"LDES")+'</small><a href="'+esc(ep.url)+'" target="_blank" rel="noopener noreferrer">'+esc(ep.url)+' ↗</a></div>').join("")+'</div>'+
+    (a.endpointDescription&&/^https:\/\//.test(a.endpointDescription)?'<a class="ldes-doc-link" href="'+esc(a.endpointDescription)+'" target="_blank" rel="noopener noreferrer">Publisher endpoint documentation ↗</a>':"")+
+    '<p class="ldes-limit"><b>What is verified here:</b> a publisher-described endpoint. <b>What is not:</b> live health, history completeness, record freshness, or a synchronized SQL/MCP mirror. This is not a CSV download or a browser preview.</p></section>';
+}
 function renderInspector(){
   const a=by(state.selected);if(!a)return;
   const modelled=a.depth==="modelled",observedFile=a.schemaOrigin==="observed-file-header",fresh=publisherFreshness(a),liveKind=livePreviewKind(a);
   const analysis=analysisReadiness(a),previewable=(a.distributions||[]).some(x=>distributionCapability(x).group==="inspectable");
   $("#assetInspector").innerHTML=
-    '<header class="asset-inspector-head"><div class="hierarchy"><span>'+esc(srcLabel(a))+'</span><i>›</i><strong>'+esc(a.datasetId)+'</strong></div><h2>'+esc(a.title)+'</h2><div class="dataset-actions"><button id="assetStackToggle" class="'+(state.stack.has(a.id)?"stacked":"")+'">'+(state.stack.has(a.id)?"✓ Pinned":"+ Pin")+'</button>'+(a.evidence?.[0]?'<a href="'+esc(a.evidence[0])+'" target="_blank" rel="noopener">Official ↗</a>':"")+'</div></header><div class="analysis-banner '+analysis.kind+'"><div><b>'+analysis.label+'</b><span>'+esc(analysis.detail)+'</span></div>'+(analysis.kind==="ready"||analysis.kind==="possible"?'<button type="button" data-analyze-asset="'+esc(a.id)+'">'+(analysis.kind==="ready"?"Analyze in SQL":"Try in SQL")+'</button>':"")+(previewable?'<span class="preview-flag">PREVIEWABLE</span>':"")+'</div>'+renderWhyResult(a)+renderDatasetBrief(a)+renderTrustPanel(a)+renderFamilySection(a)+provenanceChips(a)+datasetSignalPanel(a)+
+    '<header class="asset-inspector-head"><div class="hierarchy"><span>'+esc(srcLabel(a))+'</span><i>›</i><strong>'+esc(a.datasetId)+'</strong></div><h2>'+esc(a.title)+'</h2><div class="dataset-actions"><button id="assetStackToggle" class="'+(state.stack.has(a.id)?"stacked":"")+'">'+(state.stack.has(a.id)?"✓ Pinned":"+ Pin")+'</button>'+(a.evidence?.[0]?'<a href="'+esc(a.evidence[0])+'" target="_blank" rel="noopener">Official ↗</a>':"")+'</div></header><div class="analysis-banner '+analysis.kind+'"><div><b>'+analysis.label+'</b><span>'+esc(analysis.detail)+'</span></div>'+(analysis.kind==="ready"||analysis.kind==="possible"?'<button type="button" data-analyze-asset="'+esc(a.id)+'">'+(analysis.kind==="ready"?"Analyze in SQL":"Try in SQL")+'</button>':"")+(previewable?'<span class="preview-flag">PREVIEWABLE</span>':"")+'</div>'+renderWhyResult(a)+renderLdesPanel(a)+renderDatasetBrief(a)+renderTrustPanel(a)+renderFamilySection(a)+provenanceChips(a)+datasetSignalPanel(a)+
     '<p class="harvest-note"><b>Contains</b> '+esc(a.description||[a.kind,a.shape].filter(Boolean).join(" · "))+'</p><div class="compact-facts"><div><small>GRAIN</small><b>'+esc(a.grain)+'</b></div><div><small>'+(modelled?"TIME":a.depth==="structured"?"STRUCTURE":observedFile?"OBSERVED FILE":"METADATA")+'</small><b>'+esc(modelled?a.time:(a.depth==="structured"?(a.schema.length+" fields"+(a.recordCount!=null?" · "+Number(a.recordCount).toLocaleString()+" rows":"")):observedFile?(a.schema.length+" observed fields"+(a.recordCount!=null?" · "+rowCountLabel(a):"")):"catalogue only"))+'</b></div><div><small>DELIVERY</small><b>'+esc(a.formats.slice(0,3).join(" · ")||a.shape)+'</b></div><div title="'+esc(fresh.note||"")+'"><small>'+esc(fresh.label)+'</small><b>'+esc(fresh.value)+'</b></div></div>'+renderJoinFinder(a)+
     snapshotPreview(a)+distributionGroups(a)+ (liveKind?'<section class="live-preview-section"><div class="section-cap"><h3>'+ (liveKind==="tabular"?"Browser data profiler":"Live API preview") +'</h3><button id="previewBtn">'+(liveKind==="tabular"?"Preview sample":a.previewRows?.length?"Refresh live":"Preview 5 rows")+'</button></div><div id="livePreview"></div></section>':"")+feedbackCard(a,srcLabel(a))+
     '<div class="one-warning"><b>Watch</b> '+esc(a.caveat||"Check the publisher metadata and distribution conditions before use.")+'</div>'+

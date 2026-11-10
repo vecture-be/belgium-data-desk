@@ -4,7 +4,7 @@ export const TOPIC_LABELS={
   population:"Population & society",economy:"Economy & business",environment:"Environment & climate",agriculture:"Agriculture & food",
   education:"Education & culture",government:"Government & public sector",places:"Maps & places",other:"Other"
 };
-export const KIND_LABELS={dataset:"Dataset","map-service":"Map / web service",publication:"Publication (documents)",research:"Research supplement","metadata-only":"Metadata only"};
+export const KIND_LABELS={dataset:"Dataset","map-service":"Map / web service","data-service":"Data service (API / event stream)",publication:"Publication (documents)",research:"Research supplement","metadata-only":"Metadata only"};
 
 // "What do you want to see?" — the default view shows real datasets; the rest is one click away and always counted.
 export const SCOPES=[

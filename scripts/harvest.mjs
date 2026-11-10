@@ -284,8 +284,31 @@ function readHealthyNationalSnapshot(){
   }catch{return null}
 }
 
+// Publisher-documented DataService not necessarily present in the national DCAT Dataset dump.
+// A small, explicit source-backed record is better than inventing a downloadable file.
+// The date is the official *catalogue metadata* date, not latest stream data.
+function documentedPublicServices(){
+  const x={
+    id:"official-service:gipod-mobility-ldes",provider:"Digitaal Vlaanderen",
+    platform:"Flemish Datavindplaats",discovery:"documented-official-service",
+    serviceType:"DCAT DataService",kind:"DCAT data service",
+    datasetId:"gipod-geplande-mobiliteitshinder-publieke-informatie-ldes",
+    title:"GIPOD planned mobility hindrance — LDES",
+    description:"Public LDES service for planned mobility hindrances associated with works and events on the public domain, including expected detours and disruptions. Publisher declares the service in production. This catalogue record does not prove live uptime, synchronized history or current road conditions.",
+    officialUrl:"https://www.vlaanderen.be/datavindplaats/catalogus/gipod-geplande-mobiliteitshinder-publieke-informatie-ldes",
+    sourceRecord:"https://www.vlaanderen.be/datavindplaats/catalogus/gipod-geplande-mobiliteitshinder-publieke-informatie-ldes",
+    catalogueModifiedAt:"2024-05-02",updatedAt:"2024-05-02",
+    contactEmail:"digitaal.vlaanderen@vlaanderen.be",license:"modellicentie-gratis-hergebruik/v1.0",
+    formats:["LDES"],fields:[],recordCount:null,extent:{},themes:["Transport","Mobility"],
+    schemaOrigin:"none",sampleOrigin:"none",previewRows:[],
+    distributions:[{name:"Publisher's GIPOD LDES endpoint",format:"LDES",
+      url:"https://gipod.api.vlaanderen.be/api/v1/ldes/mobility-hindrances"}]
+  };
+  return[{...x,enrichment:quality(x)}];
+}
 const harvestedTitles=()=>new Set(items.filter(x=>x.platform==="OpenDataSoft").map(x=>normTitle(x.title)));
 const jobs=[
+  ["documented-official-service",documentedPublicServices],
   ["transportdata",harvestCkan],
   ["infrabel",()=>harvestOds("https://opendata.infrabel.be","Infrabel")],
   ["elia",()=>harvestOds("https://opendata.elia.be","Elia")],
