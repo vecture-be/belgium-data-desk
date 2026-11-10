@@ -30,5 +30,9 @@ jobs:
             if(r.counts.unique_valid<1)throw Error("No real members normalized");
             console.log(JSON.stringify({source:r.source,valid:r.counts.unique_valid,invalid:r.counts.invalid,
               sample:r.events.slice(0,3).map(e=>({kind:e.kind,member:e.member_id,published:e.published_at,
-                status:e.observed_status,planned_periods:e.planned_periods?.length}))}));
+                status:e.observed_status,planned_periods:e.planned_periods?.length})),
+              net_review_candidates:r.review_queue_count,
+              sample_review:r.review_queue.slice(0,5).map(x=>({id:x.entity_id,priority:x.review_priority,
+                fields:x.changed_fields,published:x.published_at,
+                versions:x.versions_in_sample,periods:x.planned_periods.length}))}));
           '
