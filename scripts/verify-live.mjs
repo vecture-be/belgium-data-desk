@@ -15,7 +15,7 @@ const rng=(()=>{let a=20261002;return()=>(a=(a*1664525+1013904223)%4294967296)/4
 const pick=(arr,n)=>Array.from({length:n},()=>arr[Math.floor(rng()*arr.length)]);
 
 const TOPICS=new Set(["geology","water","energy","transport","health","population","economy","environment","agriculture","education","government","places","other"]);
-const KINDS=new Set(["dataset","map-service","publication","research","metadata-only",""]);
+const KINDS=new Set(["dataset","data-service","map-service","publication","research","metadata-only",""]);
 const FAMILIES=new Set(["open","open-sharealike","non-commercial","no-derivatives","custom","unknown",""]);
 const TIERS=new Set(["ready","download","service","document","metadata","broken",""]);
 
