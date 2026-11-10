@@ -51,7 +51,7 @@ const card=buildCard(rec,p1,{now,file:{url:"https://example.be/pop.csv",format:"
 assert.equal(card.freshness.status,"overdue");
 assert.ok(card.facts.length>=5);for(const f of card.facts)assert.ok(f.text.length<300&&f.evidence,"fact with evidence: "+f.text);
 const text=card.facts.map(f=>f.text).join(" ");
-assert.match(text,/10 rows and 5 columns/);assert.match(text,/from 2019 to 2023/);assert.match(text,/NIS municipality codes \(80 % match the 2025 list; 20 % are pre-2025/);
+assert.match(text,/10 rows and 5 columns/);assert.match(text,/from 2019 to 2023/);assert.match(text,/NIS municipality codes \(8 of 10 values read match the 2025 list; 2 are pre-2025 codes/,"few values: counts, not percentages");
 assert.match(text,/'opmerking' is empty in 90 %/);assert.match(text,/'bron' has a single value/);
 assert.doesNotMatch(JSON.stringify(card),/undefined|NaN|\[object Object\]/);
 assert.ok(JSON.stringify(card).length<8000,"cards stay small");

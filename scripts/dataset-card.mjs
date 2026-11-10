@@ -59,7 +59,7 @@ function detectKey(name,values){
     if(codes.every(v=>/^\d{5}$/.test(v))){
       const shareOf=f=>codes.filter(f).length/codes.length;
       const cur=shareOf(v=>NIS.has(v)),old=shareOf(v=>MERGERS_2025[v]!==undefined);
-      if(cur+old>=0.9)return{kind:"nis_code",match_pct:pct(cur),...(old>0?{pre_2025_codes_pct:pct(old)}:{})};
+      if(cur+old>=0.9)return{kind:"nis_code",match_pct:pct(cur),...(old>0?{pre_2025_codes_pct:pct(old),pre_2025_codes:codes.filter(v=>MERGERS_2025[v]!==undefined).length}:{}),values_checked:codes.length};
     }
   }
   if(/post|zip|code_?postal|cp$|^pc$/.test(n)&&share(v=>/^\d{4}$/.test(v)&&+v>=1000&&+v<=9999)>=0.9)return{kind:"postcode",match_pct:pct(share(v=>/^\d{4}$/.test(v)))};
@@ -155,7 +155,10 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
     {declared:fresh.declared,last_change:fresh.last_change,overdue_days:fresh.overdue_days});
   else if(fresh.status==="current")add("It is declared to be updated "+fresh.declared+" and last changed on "+fresh.last_change+", within that cadence.",{declared:fresh.declared,last_change:fresh.last_change});
   for(const k of keys){
-    if(k.kind==="nis_code")add("Column '"+k.column+"' holds NIS municipality codes ("+k.match_pct+" % match the 2025 list"+(k.pre_2025_codes_pct?"; "+k.pre_2025_codes_pct+" % are pre-2025 codes of merged municipalities":"")+"), so it joins with Statbel figures.",k);
+    // with few values a percentage overstates the evidence: say "1 of 3 values" instead
+    if(k.kind==="nis_code")add("Column '"+k.column+"' holds NIS municipality codes ("+(k.values_checked<30
+        ?(k.values_checked-(k.pre_2025_codes||0))+" of "+k.values_checked+" values read match the 2025 list"+(k.pre_2025_codes?"; "+k.pre_2025_codes+" "+(k.pre_2025_codes>1?"are":"is a")+" pre-2025 code"+(k.pre_2025_codes>1?"s":"")+" of merged municipalities":"")
+        :k.match_pct+" % match the 2025 list"+(k.pre_2025_codes_pct?"; "+k.pre_2025_codes_pct+" % are pre-2025 codes of merged municipalities":""))+"), so it joins with Statbel figures.",k);
     else if(k.kind==="enterprise_number")add("Column '"+k.column+"' holds valid enterprise numbers (KBO/BCE check digits pass for "+k.match_pct+" %), so it joins with the enterprise register.",k);
     else if(k.kind==="postcode")add("Column '"+k.column+"' holds Belgian postcodes.",k);
   }
