@@ -22,6 +22,7 @@ Requires Node 22+. The interpreter needs no additional dependencies. The optiona
     node scripts/ldes-gipod-events.mjs --self-test
     npm install --no-save --package-lock=false @treecg/actor-init-ldes-client@4.0.9
     node scripts/ldes-gipod-collect.mjs --since 2026-11-09T00:00:00Z --limit 12 --out .cache/ldes-gipod
+    node scripts/ldes-gipod-review.mjs .cache/ldes-gipod/change-evidence.json > .cache/ldes-gipod/review.md
 
 Use the **same** --out and --since to resume a run via saved TREE client state. The timestamp is an entry point for GIPOD's fragment traversal, **not** a server-side filter and not proof that a time window is fully traversed. Some fetched members may have earlier generatedAtTime. Results explicitly filter candidate publication time and report records before since. The --limit argument is a **soft pause target**, not a network response/page size: the client can deliver a whole batch of 250 members before pausing. Every delivered member must be persisted, not silently truncated. This is why the storage ceiling is bounded at 1750 parsed members / 24 MiB: the collector fails closed rather than advancing its checkpoint if a batch cannot be retained.
 
@@ -41,7 +42,7 @@ A member's publisher GIPOD ID and version-position URI are used for identity and
 - In the 2026-11-05 starting-fragment sample, 160 per-version comparisons became **3 net per-entity change candidates**; two were geometry-only technical reviews, not editorial stories.
 - With the 2026-11-09 entry point, one fragment had 250 members and **zero net review candidates** in the *sample*. Not evidence that no changes occurred that day.
 - Resuming the same persisted client state across a second fragment yielded **500 stored members** and **31 net-change candidates**, of which **17 passed the *structural* editorial-review gate**. These are *unreviewed candidates*, not published news or verified traffic impacts.
-- A third fragment in that run exceeded the prior 7 MiB bounded capacity. The script refused to checkpoint the dropped records; that failure prompted increasing the ceiling and adding restart integrity checks. See GitHub Actions logs for the validation run. No claim that the aborted third fragment had complete coverage.
+- The original three-fragment run exceeded its 7 MiB capacity and correctly withheld its third checkpoint. After increasing the bounded capacity and adding immutable-member integrity checks, the **repeat three-fragment run succeeded**: **750 unique parsed members, zero parsing errors, zero dropped members, 419 observed revisions, 34 net-change candidates and 17 structurally editorial-review-eligible candidates**, with the cursor checkpointed each time. These are not 17 confirmed road closures or finished stories. See GitHub Actions One-time GIPOD LDES research proof run #11 for evidence.
 
 ## Evidence and quality gates
 
@@ -59,7 +60,7 @@ The output includes source IRIs, publisher timestamps, version relationships, ev
 
 ## Next product acceptance gates
 
-1. Demonstrate multiple persisted full-fragment continuations without dropped records and with an honest partial-coverage indicator.
+1. Multiple full-fragment continuations without dropped records have been demonstrated across 750 members. This still does not establish completeness for a timestamp range.
 2. Validate a few candidate before/after pairs against the publisher's own historical record API, including a nontrivial mobility-consequence or schedule edit. Current matching is at parsed-client semantics, not independently audited against every publisher object.
 3. Establish defensible **time-window completeness** and a source-ID-to-place lookup before powering public map, city subscriptions or story generation.
 4. Expose a read-only, evidence-driven search_changes MCP tool only after those gates. Add editorial publication separately, with source-version links, context, exact location and human-review or strongly verified story gates.
