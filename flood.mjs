@@ -34,11 +34,16 @@ export async function floodRisk(client,args,{assets}={}){
   const worst=Object.values(maps).filter(m=>m.class).sort((a,b)=>b.class.localeCompare(a.class))[0];
   const facts=[];
   const prone=Object.entries(maps).filter(([,m])=>m.class&&m.class!=="A");
-  facts.push(prone.length?"Flood-prone by the official VMM maps: "+prone.map(([,m])=>"class "+m.class+" ("+m.meaning+") "+m.flooding).join("; ")+".":"Not flood-prone on any of the three official VMM maps (class A: no flooding modelled from rivers, rain or the sea).");
-  if(Object.values(maps).some(m=>m.error))facts.push("Not checked: "+Object.entries(maps).filter(([,m])=>m.error).map(([k])=>k).join(", ")+" (the map service did not answer).");
+  // Only claim what was checked: a map whose service did not answer rules nothing out.
+  const failed=MAPS.filter(([k])=>maps[k].error),checked=MAPS.filter(([k])=>!maps[k].error);
+  facts.push(prone.length?"Flood-prone by the official VMM maps: "+prone.map(([,m])=>"class "+m.class+" ("+m.meaning+") "+m.flooding).join("; ")+"."
+    :!failed.length?"Not flood-prone on any of the three official VMM maps (class A: no flooding modelled from rivers, rain or the sea)."
+    :"Not flood-prone on the VMM map"+(checked.length>1?"s":"")+" that answered (class A, no flooding modelled "+checked.map(([,,d])=>d).join(" or ")+").");
+  if(failed.length)facts.push("Not checked: flooding "+failed.map(([,,d])=>d).join(" and ")+", because that map service did not answer; it is not ruled out. Try again later.");
   facts.push("These are the maps used for the legally required flood information when property in Flanders is sold or let, and for the water test; the official per-parcel (P) and per-building (G) scores are derived from them on waterinfo.vlaanderen.be.");
   return clean({key_facts:facts,location:clean({...loc,x_lambert72:loc.x,y_lambert72:loc.y,x:undefined,y:undefined,geocoded:undefined}),place,
-    maps,highest_class:worst?.class,
+    // the highest class is only known when every map answered, or when one that answered already shows a flood-prone class
+    maps,highest_class:!failed.length||prone.length?worst?.class:undefined,...(failed.length?{complete:false}:{}),
     note:"Classes A-D as published by VMM: A no flooding modelled, B small chance under climate change, C small chance, D medium chance. The maps are modelled on a grid and describe the location, not a building's floor level, defences or insurance. A point on the edge of a zone can differ from the parcel score.",
     provenance:{source:"Vlaamse Milieumaatschappij (VMM), overstromingsgevoelige gebieden (informatieplicht)",licence:"Modellicentie Gratis Hergebruik (Flemish free-reuse model licence)",
       services:MAPS.map(([,s])=>BASE+s+"/MapServer"),citation:"VMM, overstromingsgevoelige gebieden fluviaal, pluviaal en vanuit de zee (informatieplicht), geraadpleegd op "+new Date().toISOString().slice(0,10)+", via waterinfo.be."}});

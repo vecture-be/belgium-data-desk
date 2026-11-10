@@ -64,3 +64,14 @@ const small=makeDovClient({fetchImpl:async()=>new Response("{}"),hosts:["geo.irc
 await small.get("https://geo.irceline.be/a");assert.match((await small.get("https://geo.irceline.be/b")).error,/budget/);
 
 console.log(JSON.stringify({ok:true,tools:LIVE_TOOLS.length,replays:report}));
+
+// A map service that does not answer must not be reported as "not flood-prone": replay flood_risk with the river map failing.
+{
+  const flood=LIVE_TOOLS.find(t=>t.name==="flood_risk"),fx=readFixture("flood_risk"),replay=replayFetch(fx);
+  const fetchImpl=async url=>{if(/fluviaal/.test(url))throw Object.assign(new Error("timeout"),{name:"TimeoutError"});return replay(url)};
+  const out=await atTime(fx.recordedAt,()=>flood.run(makeDovClient({fetchImpl,hosts:flood.hosts}),fx.args,{assets}));
+  assert.doesNotMatch(out.key_facts[0],/any of the three/,"must not claim all three maps");
+  assert.match(out.key_facts.join(" "),/Not checked: flooding from rivers.*not ruled out/);
+  assert.equal(out.highest_class,undefined);assert.equal(out.complete,false);
+}
+console.log(JSON.stringify({ok:true,partial_answers:"flood_risk"}));

@@ -3,7 +3,7 @@
 // Live tools reach DOV, Statbel tables, IRCEL and VMM, so a failure can also mean an upstream service is down; the output says which.
 const origin=(process.argv[2]||"https://data.vecture.be").replace(/\/$/,"");
 const PROTOCOL="2025-06-18";
-let id=0,failed=0;
+let id=0,failed=0,warned=0;
 async function rpc(method,params){
   const t=Date.now();
   const r=await fetch(origin+"/mcp",{method:"POST",headers:{"content-type":"application/json",accept:"application/json, text/event-stream","mcp-protocol-version":PROTOCOL},body:JSON.stringify({jsonrpc:"2.0",id:++id,method,params})});
@@ -44,8 +44,10 @@ for(let [name,args] of CALLS){
   const err=r.status!==200||r.body?.error||res?.isError||parsed?.error;
   if(name==="search_datasets"){const items=parsed?.results||parsed?.items||[];datasetId=items[0]?.id}
   if(name==="search"){fetchId=parsed?.results?.[0]?.id}
-  console.log((err?"FAIL":"PASS")+" "+name+" "+r.ms+"ms "+(err?String(r.body?.error?.message||parsed?.error||r.text).slice(0,160):text.length+" chars"));
-  if(err)failed++;
+  // An official service that is down is reported by the tool as such; that is a warning about the source, not a broken deploy.
+  const msg=err?String(r.body?.error?.message||parsed?.error||r.text):"",upstream=err&&r.status===200&&/did not answer|could not be reached|try again in a minute|answered HTTP 5\d\d/i.test(msg);
+  console.log((upstream?"WARN":err?"FAIL":"PASS")+" "+name+" "+r.ms+"ms "+(err?msg.slice(0,160)+(upstream?" (upstream service down; not a deploy failure)":""):text.length+" chars"));
+  if(upstream)warned++;else if(err)failed++;
 }
-console.log(failed?failed+" failed":"all passed");
+console.log(failed?failed+" failed":"all passed"+(warned?" ("+warned+" upstream warning"+(warned>1?"s":"")+")":""));
 process.exit(failed?1:0);
