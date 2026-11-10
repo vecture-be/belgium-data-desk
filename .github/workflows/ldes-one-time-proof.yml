@@ -21,7 +21,7 @@ jobs:
       - name: Install separate optional LDES client
         run: npm install --no-save --package-lock=false @treecg/actor-init-ldes-client@4.0.9
       - name: Inspect a bounded public production stream sample
-        run: node scripts/ldes-gipod-collect.mjs --since 2026-11-05T00:00:00Z --limit 12 --out .cache/ldes-proof
+        run: node scripts/ldes-gipod-collect.mjs --since 2026-11-09T00:00:00Z --limit 12 --out .cache/ldes-proof
       - name: Prove real member mapping without publishing private or synthetic data
         run: |
           node --input-type=module -e '
@@ -32,7 +32,9 @@ jobs:
               sample:r.events.slice(0,3).map(e=>({kind:e.kind,member:e.member_id,published:e.published_at,
                 status:e.observed_status,planned_periods:e.planned_periods?.length})),
               net_review_candidates:r.review_queue_count,
+              editorial_review_candidates:r.editorial_review_count,
               sample_review:r.review_queue.slice(0,5).map(x=>({id:x.entity_id,priority:x.review_priority,
                 fields:x.changed_fields,published:x.published_at,
+                channel:x.review_channel,status:x.published_status?.label,
                 versions:x.versions_in_sample,periods:x.planned_periods.length}))}));
           '
