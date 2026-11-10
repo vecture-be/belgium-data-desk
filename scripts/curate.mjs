@@ -34,12 +34,13 @@ export const EU_THEMES={
 
 /* ---------- formats / kinds / tiers ---------- */
 const TABULAR=new Set(["CSV","TSV","JSON","JSONL","XLSX","XLS","Parquet","GeoJSON","ODS"]);
-const SERVICE=new Set(["WMS","WFS","WCS","WMTS","KML","OGC API Features","OGC API","Esri REST","Explore API 2.1","REST/JSON"]);
+const SERVICE=new Set(["WMS","WFS","WCS","WMTS","KML","OGC API Features","OGC API","Esri REST","Explore API 2.1","REST/JSON","LDES","Data service"]);
 const DOCUMENT=new Set(["PDF","HTML","DOC","DOCX","TXT"]);
 const DATAFILE=new Set(["ZIP","GZIP","GML","Shapefile","GeoPackage","GEOTIFF","XML","RDF","Turtle RDF","JSON LD","N3","DWCA","NetCDF","BIN","Other"]);
 export const formatClass=f=>TABULAR.has(f)?"tabular":SERVICE.has(f)?"service":DOCUMENT.has(f)?"document":DATAFILE.has(f)?"file":"file";
 const RESEARCH_TITLE=/^(replication (data|code)|supplementary|supplement(al)? (data|material)|data (for|from) (the )?(paper|article|study)|dataset (for|of) (the )?(paper|article|thesis)|raw data (for|of)|code (and data )?for)/i;
 export function kindOf(item){
+  if(item?.serviceType==="DCAT DataService"||item?.kind==="DCAT data service")return"data-service";
   const dists=item.distributions||[];
   if(!dists.length)return"metadata-only";
   if(/^national:doi:/i.test(item.id||"")||RESEARCH_TITLE.test(clean(item.title)))return"research";
@@ -62,7 +63,7 @@ export function accessTier(item,health={}){
   if(dists.some(d=>formatClass(d.format)==="service"))return"service";
   return"document";
 }
-export const TIER_LABELS={ready:"Ready to use",download:"Data download",service:"Map / service",document:"Document",metadata:"Metadata only",broken:"Link broken"};
+export const TIER_LABELS={ready:"Ready to use",download:"Data download",service:"Online service",document:"Document",metadata:"Metadata only",broken:"Link broken"};
 export const TIER_RANK={ready:5,download:4,service:3,document:2,metadata:1,broken:0};
 
 /* ---------- series / collections ---------- */
