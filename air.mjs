@@ -85,10 +85,10 @@ export async function airQuality(client,args,{assets}={}){
   const forecast=fc.values?fc.values.map((v,d)=>{const i=Math.round(v.GRAY_INDEX);return clean({date:bxl(d),day:d===0?"today":d===1?"tomorrow":null,belaqi:i>=1&&i<=10?i:null,label:BELAQI[i]||null})}):null;
   const standards={annual_ugm3:ANNUAL,who_24h_ugm3:DAILY_WHO,sources:"WHO global air quality guidelines (2021); EU limit values: Directive 2008/50/EC (current) and Directive (EU) 2024/2881 (from 2030)."};
   const facts=[];
-  if(current.no2_ugm3!=null)facts.push("This hour ("+current.hour_utc+"), modelled for the 4 km cell: NO2 "+current.no2_ugm3+", PM2.5 "+current.pm25_ugm3+", PM10 "+current.pm10_ugm3+", O3 "+current.o3_ugm3+" µg/m³.");
+  if(current.no2_ugm3!=null)facts.push("RIGHT NOW (how the air is this hour; modelled hourly for the 4 km cell, "+current.hour_utc+"): NO2 "+current.no2_ugm3+", PM2.5 "+current.pm25_ugm3+", PM10 "+current.pm10_ugm3+", O3 "+current.o3_ugm3+" µg/m³.");
   if(forecast?.[0]?.belaqi)facts.push("BelAQI forecast: today ("+forecast[0].date+") "+forecast[0].belaqi+" ("+forecast[0].label+")"+forecast.slice(1).filter(f=>f.belaqi).map(f=>", "+f.date+" "+f.belaqi+" ("+f.label+")").join("")+" on IRCEL's 1 (excellent) to 10 (horrible) scale.");
   const an=streetOut||annualOut;
-  if(an?.no2)facts.push("Annual mean "+an.year+" ("+(streetOut?"street level":"4 km background")+"): NO2 "+an.no2.ugm3+", PM2.5 "+an.pm25?.ugm3+", PM10 "+an.pm10?.ugm3+" µg/m³ – "+
+  if(an?.no2)facts.push("LONG-TERM (what living here means; annual mean "+an.year+", "+(streetOut?"modelled at street level, so busy roads count":"4 km background, not street level")+"): NO2 "+an.no2.ugm3+", PM2.5 "+an.pm25?.ugm3+", PM10 "+an.pm10?.ugm3+" µg/m³ – "+
     ["no2","pm25","pm10"].map(p=>an[p]&&(p==="no2"?"NO2":p==="pm25"?"PM2.5":"PM10")+" "+an[p].times_who_2021+"× the WHO guideline"+(an[p].above_eu_limit_2030?", above the EU 2030 limit":"")).filter(Boolean).join("; ")+".");
   if(last24?.above_who_24h?.length)facts.push("The last 24 hours are above the WHO 24-hour guideline for "+last24.above_who_24h.join(" and ")+".");
   // the nearest station with a current measurement (a nearer one may have been out of service for months)
