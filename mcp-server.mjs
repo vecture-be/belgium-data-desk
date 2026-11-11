@@ -8,6 +8,8 @@ import { detectDelimiter, encodingFor, parseDelimitedText } from "./scripts/tabu
 import { makeDovClient } from "./dov.mjs";
 import { LIVE_TOOLS, ROUTING, liveTool } from "./tools/index.mjs";
 import { toMcpTool } from "./lib/tool-contract.mjs";
+import { ISSUE_IDS, LANGS, contactPublisher } from "./contact.mjs";
+import { feedbackConfig, reportDataIssue } from "./feedback.mjs";
 
 export const MCP_VERSION="0.5.1";
 const SUPPORTED_PROTOCOLS=["2025-06-18","2025-03-26","2024-11-05"];
@@ -107,6 +109,30 @@ const TOOLS=[
     name:"catalogue_overview",title:"Catalogue overview",
     description:"Counts of the catalogue by scope and topic, the date it was built, and when file links were last checked: what is available and how fresh the evidence is.",
     inputSchema:{type:"object",properties:{}},annotations:{title:"Catalogue overview",readOnlyHint:true,destructiveHint:false,openWorldHint:false}
+  },
+  {
+    name:"contact_publisher",title:"Draft a message to a dataset's publisher",
+    description:"Prepare a message to the people who publish a dataset, for the user to send themselves: the contact the publisher declared in its catalogue record (never a guessed address), a polite draft in the publisher's language (Dutch, French, English or German) naming the dataset, file, issue and the evidence checked, and a mailto: link. Nothing is sent by this tool. Use it when the user wants to report a problem (stale data, broken link, missing units or metadata, wrong values) or ask the publisher a question. Run get_dataset or preview_dataset first and pass what they showed as evidence; the answer says what to check before writing. Show the draft to the user to edit and send; send one message per problem, not one per related dataset.",
+    inputSchema:{type:"object",properties:{
+      id:{type:"string",description:"Dataset id from search_datasets or get_dataset."},
+      issue:{type:"string",enum:ISSUE_IDS,description:"What the message is about: stale, access, metadata, units, values, missing, schema, licence or question."},
+      details:{type:"string",description:"What is wrong or what the user wants to know, in the user's words (at most 1,500 characters)."},
+      evidence:{type:"array",items:{type:"string"},maxItems:5,description:"Up to 5 facts checked with the other tools, each with its source, e.g. 'preview_dataset: TIMESTAMP_EXTRACT goes up to 2026-11-01, catalogue says 2019-01-21'."},
+      language:{type:"string",enum:LANGS,description:"Language of the draft; default the publisher's (Dutch for Flemish bodies, French for Walloon and Brussels ones, else English)."}
+    },required:["id","issue"]},annotations:{title:"Draft a message to a dataset's publisher",readOnlyHint:true,destructiveHint:false,openWorldHint:false}
+  },
+  {
+    name:"report_data_issue",title:"Report a data problem to its publisher (confirmed by email)",
+    description:"File a report about a dataset for the publisher, on the user's behalf. Call it only when the user has asked to report the problem through this service and has given their own email address. Nothing reaches the publisher until the user confirms: a confirmation link is emailed to them, and an unconfirmed report is deleted after 48 hours. Confirmed reports go out in one weekly digest per publisher, to the address declared in its catalogue record, merged with other reports of the same issue. Limits: 3 reports per person a day. To let the user send a message themselves instead, use contact_publisher.",
+    inputSchema:{type:"object",properties:{
+      id:{type:"string",description:"Dataset id from search_datasets or get_dataset."},
+      issue:{type:"string",enum:ISSUE_IDS,description:"What is wrong: stale, access, metadata, units, values, missing, schema, licence or question."},
+      details:{type:"string",description:"What is wrong, specifically (file, columns, rows or dates), 20 to 1,500 characters, in the user's words."},
+      evidence:{type:"array",items:{type:"string"},maxItems:5,description:"Up to 5 facts checked with the other tools, each with its source."},
+      reporter_email:{type:"string",description:"The user's own email address, given by the user for this report; the confirmation link is sent there."},
+      share_email_with_publisher:{type:"boolean",description:"Default false. True only if the user agrees that the publisher may see their address to reply."},
+      language:{type:"string",enum:LANGS,description:"Language of the report in the digest; default the publisher's."}
+    },required:["id","issue","details","reporter_email"]},annotations:{title:"Report a data problem to its publisher",readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:true}
   },
   // Live answer tools: one definition per file in tools/, listed in tools/index.mjs.
   ...LIVE_TOOLS.map(toMcpTool),
@@ -384,7 +410,10 @@ function writeMcpUsage(env,{method,tool="",args={},status="ok",durationMs=0,resu
 
 // Live tools (tools/): each gets its own bounded client, limited to the hosts and request budget its definition declares, and
 // reads static tables (place context, Statbel) through the same asset reader as the catalogue tools.
-export async function callTool(env,origin,name,args,{previewFile=null,dov=null}={}){
+/** Tools this server offers: report_data_issue only where sending is configured (feedback.mjs), so no client sees a tool that cannot work. */
+export const toolsFor=env=>TOOLS.filter(t=>t.name!=="report_data_issue"||feedbackConfig(env).on);
+
+export async function callTool(env,origin,name,args,{previewFile=null,dov=null,mailFetch=null}={}){
   const tool=liveTool(name);
   if(tool){
     if(!dov?.fetchImpl)return asText({error:"Live data access is not available on this server."});
@@ -397,6 +426,10 @@ export async function callTool(env,origin,name,args,{previewFile=null,dov=null}=
   if(name==="get_dataset")return asText(await getDataset(reader,args));
   if(name==="preview_dataset")return asText(await previewDataset(reader,args,previewFile));
   if(name==="catalogue_overview")return asText(await catalogueOverview(reader));
+  if(name==="contact_publisher"||name==="report_data_issue"){
+    const g=await getDataset(reader,{id:args?.id});if(g.error)return asText({error:g.error});
+    return asText(name==="contact_publisher"?contactPublisher(g,args||{},origin):await reportDataIssue(env,g,args||{},{origin,fetchImpl:mailFetch||fetch}));
+  }
   if(name==="search"){
     const r=await searchDatasets(reader,{query:args?.query,limit:10,scope:"datasets"});
     if(r.error)return asPlain({results:[]});
@@ -436,13 +469,13 @@ export async function handleMcp(request,env,options={}){
       const wanted=msg.params?.protocolVersion,version=SUPPORTED_PROTOCOLS.includes(wanted)?wanted:SUPPORTED_PROTOCOLS[0];
       writeMcpUsage(env,{method:"initialize"});
       return jsonResponse({jsonrpc:"2.0",id,result:{protocolVersion:version,capabilities:{tools:{listChanged:false}},serverInfo:{name:"belgium-open-data",title:"Belgian Open Data",version:MCP_VERSION},
-        instructions:"Belgian public data, answered from the official sources. For figures, use the answer tools: belgian_statistics (Statbel: population and income by municipality, province or region, rankings, inflation and health index, unemployment), air_quality (IRCEL-CELINE: now, forecast and annual means at an address), flood_risk (VMM's official flood-prone classes at an address in Flanders), and for the subsurface in Flanders subsurface_at_location, search_subsurface and get_subsurface_record (DOV). Their answers start with key_facts built from the data in the same answer; quote them with the reference date and cite the provenance block. To find datasets and files instead: search_datasets (Dutch, French or English; the official source first for common needs), get_dataset (licence, contact, link checks), preview_dataset (real columns and sample rows) and catalogue_overview. Catalogue results are metadata and link-check evidence, not statements about data correctness."}});
+        instructions:"Belgian public data, answered from the official sources. For figures, use the answer tools: belgian_statistics (Statbel: population and income by municipality, province or region, rankings, inflation and health index, unemployment), air_quality (IRCEL-CELINE: now, forecast and annual means at an address), flood_risk (VMM's official flood-prone classes at an address in Flanders), and for the subsurface in Flanders subsurface_at_location, search_subsurface and get_subsurface_record (DOV). Their answers start with key_facts built from the data in the same answer; quote them with the reference date and cite the provenance block. To find datasets and files instead: search_datasets (Dutch, French or English; the official source first for common needs), get_dataset (licence, contact, link checks), preview_dataset (real columns and sample rows) and catalogue_overview. To tell a publisher about a problem in its data, contact_publisher drafts a message the user sends from their own mailbox. Catalogue results are metadata and link-check evidence, not statements about data correctness."}});
     }
     case"ping":return jsonResponse({jsonrpc:"2.0",id,result:{}});
-    case"tools/list":return jsonResponse({jsonrpc:"2.0",id,result:{tools:TOOLS}});
+    case"tools/list":return jsonResponse({jsonrpc:"2.0",id,result:{tools:toolsFor(env)}});
     case"tools/call":{
-      const name=msg.params?.name,args=msg.params?.arguments||{},started=Date.now();
-      if(!TOOLS.some(t=>t.name===name))return rpcError(id,-32602,"Unknown tool '"+String(name).slice(0,64)+"'. Available: "+TOOLS.map(t=>t.name).join(", ")+".");
+      const name=msg.params?.name,args=msg.params?.arguments||{},started=Date.now(),tools=toolsFor(env);
+      if(!tools.some(t=>t.name===name))return rpcError(id,-32602,"Unknown tool '"+String(name).slice(0,64)+"'. Available: "+tools.map(t=>t.name).join(", ")+".");
       try{
         const result=await callTool(env,origin,name,args,options);
         writeMcpUsage(env,{method:"tools/call",tool:name,args,status:result?.isError?"error":"ok",durationMs:Date.now()-started,resultCount:usageResultCount(result)});
