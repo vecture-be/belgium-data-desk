@@ -18,6 +18,9 @@ export const DOV_ORIGIN="https://www.dov.vlaanderen.be",GEO_ORIGIN="https://geo.
 const HOSTS=new Set(["www.dov.vlaanderen.be","geo.api.vlaanderen.be","geo.irceline.be","bestat.statbel.fgov.be","statbel.fgov.be","inspirepub.waterinfo.be","best.pr.fedservices.be"]);
 // statbel.fgov.be also serves web pages behind a bot check; only its open-data file folder is allowed
 const PATH_ONLY={"statbel.fgov.be":"/sites/default/files/files/opendata/"};
+// Errors name the service that failed, so a VMM or Statbel timeout is not reported as a DOV one.
+const SERVICE_NAME={"www.dov.vlaanderen.be":"DOV","geo.api.vlaanderen.be":"The Flemish geolocation service","geo.irceline.be":"IRCEL-CELINE",
+  "bestat.statbel.fgov.be":"Statbel","statbel.fgov.be":"Statbel","inspirepub.waterinfo.be":"VMM's map service (waterinfo.be)","best.pr.fedservices.be":"The federal BeST address service"};
 const WFS=DOV_ORIGIN+"/geoserver/wfs",WMS=DOV_ORIGIN+"/geoserver/wms",EXPORT=DOV_ORIGIN+"/xdov/proxy/export",XSD=DOV_ORIGIN+"/xdov/schema/latest/xsd/kern/interpretatie/";
 const TIMEOUT_MS=12000,MAX_UPSTREAM=20,MAX_POINTS=500,NEAREST=5,DEEPEST=3,MAX_LAYERS=80,MAX_TEXT=240;
 const DAY=86400,HOUR=3600;
@@ -72,8 +75,8 @@ export function makeDovClient({fetchImpl=fetch,hosts=HOSTS,maxRequests=MAX_UPSTR
       try{
         r=await fetchImpl(u.href,{headers:{accept:"*/*","user-agent":"Belgium-Data-Desk/1.0 (+https://data.vecture.be)"},redirect:"manual",
           signal:AbortSignal.timeout(TIMEOUT_MS),cf:{cacheEverything:true,cacheTtl:ttl}});
-      }catch(e){return{error:e?.name==="TimeoutError"||e?.name==="AbortError"?"DOV did not answer within "+TIMEOUT_MS/1000+" s":"DOV could not be reached"}}
-      if(r.status!==200){r.body?.cancel?.().catch(()=>{});return{error:"DOV answered HTTP "+r.status,status:r.status}}
+      }catch(e){const svc=SERVICE_NAME[u.hostname]||u.hostname;const timeout=e?.name==="TimeoutError"||e?.name==="AbortError";return{error:timeout?svc+" did not answer within "+TIMEOUT_MS/1000+" s":svc+" could not be reached",transient:true,...(timeout?{timeout:true}:{})}}
+      if(r.status!==200){r.body?.cancel?.().catch(()=>{});return{error:(SERVICE_NAME[u.hostname]||u.hostname)+" answered HTTP "+r.status,status:r.status,...(r.status>=500||r.status===429?{transient:true}:{})}}
       const reader=r.body?.getReader(),parts=[];let size=0;
       if(reader)for(;;){
         const {done,value}=await reader.read();if(done)break;
@@ -89,7 +92,8 @@ export function makeDovClient({fetchImpl=fetch,hosts=HOSTS,maxRequests=MAX_UPSTR
 
 async function getJson(client,url,opts){
   const r=await client.get(url,opts);if(r.error)return r;
-  try{return{json:JSON.parse(r.text)}}catch{return{error:/^\s*</.test(r.text)?"DOV answered with an error page instead of data":"DOV answered with unreadable data"}}
+  let svc="DOV";try{svc=SERVICE_NAME[new URL(url).hostname]||svc}catch{}
+  try{return{json:JSON.parse(r.text)}}catch{return{error:/^\s*</.test(r.text)?svc+" answered with an error page instead of data":svc+" answered with unreadable data"}}
 }
 
 /** WFS GetFeature as JSON with only the named properties; returns {rows, matched} or {error}. */

@@ -9,7 +9,7 @@ import { makeDovClient } from "./dov.mjs";
 import { LIVE_TOOLS, ROUTING, liveTool } from "./tools/index.mjs";
 import { toMcpTool } from "./lib/tool-contract.mjs";
 
-export const MCP_VERSION="0.5.0";
+export const MCP_VERSION="0.5.1";
 const SUPPORTED_PROTOCOLS=["2025-06-18","2025-03-26","2024-11-05"];
 export const DOC_CHUNK=100,DETAIL_CHUNK=50;
 const MAX_LIMIT=20,MAX_QUERY_TOKENS=5,MAX_ASSET_READS=30,MAX_GROUP_WORDS=12,MAX_DOC_CHUNKS=8,CANDIDATE_POOL=60;
@@ -194,7 +194,8 @@ export async function searchDatasets(reader,args){
   for(const [idx] of candidates){
     const chunk=Math.floor(idx/DOC_CHUNK);
     if(!docChunks.has(chunk)){
-      if(docChunks.size>=MAX_DOC_CHUNKS){skipped++;continue}
+      // MAX_DOC_CHUNKS is the floor; when the token shards came from the isolate cache there is read budget left for more chunks.
+      if(docChunks.size>=MAX_DOC_CHUNKS&&(docChunks.size>=MAX_DOC_CHUNKS*2||reader.reads>=MAX_ASSET_READS-2)){skipped++;continue}
       docChunks.set(chunk,await reader.json("/mcp/d/"+chunk+".json")||[]);
     }
     const d=docChunks.get(chunk)[idx%DOC_CHUNK];
@@ -206,15 +207,22 @@ export async function searchDatasets(reader,args){
     const pubHits=tokens.filter(t=>pub.has(t)).length;
     // Unless the user names the place, a city or province publication is a worse answer than national or regional coverage of the same subject.
     const local=!pubHits&&LOCAL_PUBLISHER.test(d.p)?LOCAL_PENALTY:0;
-    scored.push({d,score:(covered.get(idx)||0)*COVERAGE_WEIGHT+match+(d.c?CURATED_BONUS:0)+pubHits*5-local-idx/1e6});
+    scored.push({d,idx,score:(covered.get(idx)||0)*COVERAGE_WEIGHT+match+(d.c?CURATED_BONUS:0)+pubHits*5-local-idx/1e6});
   }
   scored.sort((x,y)=>y.score-x.score);
   const results=[...pinned.map(d=>({...summary(d),authoritative_source:true})),...collapseCollections(scored)].slice(0,limit);
   const live=ROUTING.find(([re])=>tokens.some(t=>re.test(t)));
+  // A query word that no returned record matches (e.g. "batteries" in "solar panels photovoltaic batteries") is named, so the caller
+  // does not read the results as covering it. Pinned sources are matched by need, not by word, so only scored results count here.
+  const shownIdx=new Set(),shownIds=new Set(results.map(r=>r.id));for(const s of scored)if(shownIds.has(s.d.id))shownIdx.add(s.idx);
+  const absent=tokens.filter((t,i)=>![...shownIdx].some(x=>own[i].has(x)||related[i].has(x))&&!pinned.some(d=>tokenize(d.t+" "+d.s,{cap:40}).includes(t)));
+  const nowhere=absent.filter(t=>{const i=tokens.indexOf(t);return!own[i].size&&!related[i].size});
   return{query:q,scope,candidates_considered:counts.size,
     ...(live?{related_tool:{name:live[1],why:live[2]}}:{}),
     ...(pinned.length?{guidance:{need:authority.need,authoritative_source:authority.why,...(authority.caveat?{caveat:authority.caveat}:{})}}:{}),
-    ...(skipped?{note_partial:"Result set was capped to stay within the service budget; refine the query for more."}:{}),results,note:TRUST_NOTE};
+    ...(absent.length?{words_not_matched:absent,words_note:(nowhere.length?"No record in the catalogue matches "+nowhere.map(w=>"'"+w+"'").join(", ")+". ":"")+
+      (absent.length>nowhere.length?"No result shown matches "+absent.filter(w=>!nowhere.includes(w)).map(w=>"'"+w+"'").join(", ")+"; search for it on its own to see those records. ":"")+"These results cover the other words only."}:{}),
+    ...(skipped&&results.length<limit?{note_partial:"Fewer results than asked: some candidates were not scored to stay within the service budget. A shorter or more specific query finds them."}:{}),results,note:TRUST_NOTE};
 }
 
 async function loadRecord(reader,rawId){
@@ -228,16 +236,40 @@ async function loadRecord(reader,rawId){
 }
 // Files preview_dataset can read: CSV/TSV distributions that the harvest put in the catalogue relay index.
 const previewable=x=>(x.files||[]).filter(f=>f.r);
+// EU frequency vocabulary (publications.europa.eu/resource/authority/frequency) as words. A publisher that points at an unresolved
+// RDF blank node leaves an opaque id in the harvest: that is not a cycle, so it is reported as not stated.
+const CYCLE_WORDS={"1MIN":"every minute","5MIN":"every five minutes","10MIN":"every ten minutes","15MIN":"every fifteen minutes","30MIN":"every thirty minutes",
+  HOURLY:"hourly","12HRS":"twice a day",CONT:"continuously",CONTINUOUS:"continuously",UPDATE_CONT:"continuously",REAL_TIME:"in real time",DAILY:"daily",DAILY_2:"twice a day",
+  WEEKLY:"weekly",WEEKLY_2:"twice a week",WEEKLY_3:"three times a week",BIWEEKLY:"every two weeks",MONTHLY:"monthly",MONTHLY_2:"twice a month",MONTHLY_3:"three times a month",
+  BIMONTHLY:"every two months",QUARTERLY:"quarterly",ANNUAL_2:"twice a year",ANNUAL_3:"three times a year",ANNUAL:"yearly",BIENNIAL:"every two years",TRIENNIAL:"every three years",
+  QUADRENNIAL:"every four years",QUINQUENNIAL:"every five years",DECENNIAL:"every ten years",IRREG:"irregularly",AS_NEEDED:"as needed",NEVER:"never (a one-off release)",
+  NOT_PLANNED:"no updates planned",ARCHIVED:"archived, no further updates",OTHER:"other (not specified)",UNKNOWN:"unknown"};
+export function updateCycle(code){
+  const c=String(code||"").trim().toUpperCase();
+  if(!c)return{update_cycle:null,update_cycle_note:"The publisher does not state an update cycle."};
+  if(CYCLE_WORDS[c])return{update_cycle:CYCLE_WORDS[c],update_cycle_code:c};
+  if(/^[A-Z0-9_]{2,20}$/.test(c))return{update_cycle:c.toLowerCase().replace(/_/g," "),update_cycle_code:c};
+  return{update_cycle:null,update_cycle_note:"The publisher's metadata names an update cycle that cannot be resolved (an internal reference, not a code); treat it as not stated."};
+}
 
 export async function getDataset(reader,args){
   const rec=await loadRecord(reader,args?.id);if(rec.error)return{error:rec.error};
   const {d,x}=rec,auth=AUTHORITIES.find(a=>a.ids.includes(d.id)),card=await cardFor(reader,d.id);
-  return{id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,hand_reviewed:!!d.c,licence:{label:d.l||null,family:d.lf||"unknown"},updated:d.u||null,update_cycle:x.fq||null,
-    geography:x.g||null,landing_page:x.url||null,contact:{email:x.ce||null,url:x.cu||null},description:x.d||"",columns:x.cols||[],access_tier:d.tier||null,
+  const canPreview=previewable(x).length>0,cols=x.cols?.length?x.cols:(card?.columns||[]).map(c=>c.name).filter(Boolean);
+  // Say why a field is empty, so an empty value is not read as "no columns" or "link broken".
+  const fieldNotes={
+    updated:"Date the publisher last changed the catalogue record, not necessarily when the data was refreshed; files are often replaced without touching the record."+(canPreview?" preview_dataset compares it with dates in the file.":""),
+    ...(!cols.length?{columns:"The publisher declares no column list."+(canPreview?" preview_dataset reads the real columns from the file.":"")}:!x.cols?.length?{columns:"Read from the file by the weekly check (the publisher declares none)."}:{}),
+    ...(!x.pr?{link_check:"No conclusive weekly link-check result is recorded: the last check of its files was inconclusive (timeout, rate limit or the publisher blocking the checker) or its formats are not checked. This is not a sign of a broken link."+(canPreview?" preview_dataset reads the file live.":"")}:{}),
+    ...((x.files||[]).some(f=>!f.s)?{size_bytes:"Null where the publisher declares no file size."}:{}),
+    units:"Units are only known when the publisher states them in the description or column names; do not assume one."
+  };
+  return{id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,hand_reviewed:!!d.c,licence:{label:d.l||null,family:d.lf||"unknown"},updated:d.u||null,...updateCycle(x.fq),
+    geography:x.g||null,landing_page:x.url||null,contact:{email:x.ce||null,url:x.cu||null},description:x.d||"",columns:cols,access_tier:d.tier||null,
     ...(auth?{authoritative_source:{need:auth.need,why:auth.why,...(auth.caveat?{caveat:auth.caveat}:{})}}:{}),
-    preview_available:previewable(x).length>0,
+    preview_available:canPreview,
     web_url:reader.origin+"/?dataset="+encodeURIComponent(d.id),
-    link_check:x.pr?{checked_on:x.pr.at,files_checked:x.pr.n,files_ok:x.pr.ok,format_mismatches:x.pr.mm}:null,
+    link_check:x.pr?{checked_on:x.pr.at,files_checked:x.pr.n,files_ok:x.pr.ok,format_mismatches:x.pr.mm}:null,field_notes:fieldNotes,
     // LDES endpoints: "stream" = answered with LDES/TREE vocabulary when checked; not a statement about history completeness
     ...(x.sc?{stream_check:x.sc.map(s=>({endpoint:s.url,checked_on:s.at,result:s.result,...(s.status?{http_status:s.status}:{}),...(s.error?{error:s.error}:{})}))}:{}),
     files:(x.files||[]).map(f=>({format:f.f,url:f.u,size_bytes:f.s||null})),...(card?{card}:{}),note:TRUST_NOTE};
@@ -263,14 +295,28 @@ export async function previewDataset(reader,args,previewFile){
   if(truncated){const nl=text.lastIndexOf("\n");if(nl>0)text=text.slice(0,nl)}   // drop the partial last line
   if(/^\s*</.test(text)||/html/i.test(got.contentType||""))return{...base,file:{format:file.f,url:file.u},error:"The publisher answered with a web page instead of a CSV file; the download link may have moved. Check the landing page."};
   const delimiter=detectDelimiter(text,{url:file.u,format:file.f});
-  const parsed=parseDelimitedText(text,{delimiter,sampleRows:rows,inferRows:1000});
+  // Latest date per column over every row read (ISO or dd/mm/yyyy, never later than today): files are often refreshed without the
+  // catalogue record changing, and a date in the data later than the record's date shows it.
+  const latest=new Map(),today=new Date().toISOString().slice(0,10);
+  const onRow=(values,headers)=>{for(let i=0;i<values.length&&i<headers.length;i++){const v=String(values[i]??"").trim();
+    const m=/^(\d{4})-(\d{2})-(\d{2})(?:[T ]|$)/.exec(v)||((m2)=>m2&&[m2[0],m2[3],m2[2],m2[1]])(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s|$)/.exec(v));
+    if(!m||+m[1]<1900||+m[2]<1||+m[2]>12||+m[3]<1||+m[3]>31)continue;const iso=m[1]+"-"+m[2]+"-"+m[3];if(iso>today)continue;
+    if(!latest.has(headers[i])||latest.get(headers[i])<iso)latest.set(headers[i],iso)}};
+  const parsed=parseDelimitedText(text,{delimiter,sampleRows:rows,inferRows:1000,onRow});
   if(!parsed.headers.length)return{...base,file:{format:file.f,url:file.u},error:"The file is empty or could not be parsed as delimited text."};
   const cols=parsed.headers.slice(0,MAX_PREVIEW_COLUMNS);
   const sample=parsed.samples.map(r=>Object.fromEntries(cols.map(h=>[h,cut(r[h])])));
   // Belgian files often write 1.234,5: say so, so numbers are not misread.
   const commaDecimals=parsed.samples.some(r=>cols.some(h=>/^-?\d{1,3}(\.\d{3})*,\d+$|^-?\d+,\d+$/.test(String(r[h]??"").trim())));
+  const newest=[...latest].sort((p,q)=>q[1].localeCompare(p[1]))[0];
+  const catalogueDate=d.u||null,daysAfter=newest&&catalogueDate?Math.round((Date.parse(newest[1])-Date.parse(catalogueDate))/864e5):null;
+  const freshness=newest?{latest_date_in_rows_read:newest[1],column:newest[0],catalogue_updated:catalogueDate,
+    ...(daysAfter>30?{data_newer_than_catalogue_date:true,note:"The file holds dates up to "+newest[1]+" ("+newest[0]+"), later than the catalogue record's date "+catalogueDate+": the data has been refreshed since the record was last edited. Quote the date from the file, not the catalogue date."}:{})}:null;
+  // Measures only: identifiers, codes, years and flags have no unit.
+  const numeric=parsed.headers.slice(0,MAX_PREVIEW_COLUMNS).filter((h,i)=>/^(integer|number)$/.test(parsed.types[i]||"")&&!/(^|[_\s-])(id|code|nis|refnis|ins|postcode|zip|jaar|year|annee|indicator|flag|nr|nummer|number)([_\s-]|$)/i.test(String(h).trim()));
   const out={...base,file:{format:file.f,url:file.u,size_bytes:got.totalBytes||file.s||null},delimiter:DELIMITER_NAMES[delimiter]||delimiter,encoding,
-    ...(commaDecimals?{decimal_separator:"comma"}:{}),
+    ...(commaDecimals?{decimal_separator:"comma"}:{}),...(freshness?{freshness}:{}),
+    ...(numeric.length?{units:"Units are not part of the file. Numeric columns ("+numeric.slice(0,6).join(", ")+(numeric.length>6?", ...":"")+") have the unit the publisher states on the landing page or in the column name, if any; if none is stated, say the unit is not declared rather than guessing."}:{}),
     columns:cols.map((h,i)=>({name:h,type:parsed.types[i]||"string"})),...(parsed.headers.length>cols.length?{columns_omitted:parsed.headers.length-cols.length}:{}),
     rows:sample,rows_read:parsed.rowCount,whole_file_read:!truncated,
     note:(truncated?"Only the first "+Math.round(PREVIEW_BYTES/1024)+" KiB were read: rows_read counts rows in that part, not in the whole file. ":"")+"Values are shown as published; types are inferred from the rows read."};

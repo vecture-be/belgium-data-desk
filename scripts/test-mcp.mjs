@@ -72,7 +72,12 @@ assert.equal((await rpc("tools/call",{name:"search_datasets",arguments:{query:"?
 
 const g=(await rpc("tools/call",{name:"get_dataset",arguments:{id:"national:1"}})).body.result.structuredContent;
 assert.equal(g.publisher,"Statbel");assert.equal(g.hand_reviewed,false);assert.equal(g.link_check.files_ok,1);assert.deepEqual(g.columns,["nis","pop"]);assert.equal(g.files[0].url,"https://statbel.example/pop.csv");assert.equal(g.preview_available,false);
+assert.equal(g.update_cycle,null);assert.match(g.update_cycle_note,/does not state/);assert.equal(g.field_notes.columns,undefined);assert.equal(g.field_notes.link_check,undefined);
 assert.equal((await rpc("tools/call",{name:"get_dataset",arguments:{id:"nope"}})).body.result.isError,true);
+// a query word no record matches is named instead of silently dropped
+const sb=(await rpc("tools/call",{name:"search_datasets",arguments:{query:"bevolking batterijen"}})).body.result.structuredContent;
+assert.deepEqual(sb.words_not_matched,["batterijen"]);assert.match(sb.words_note,/No record in the catalogue matches 'batterijen'/);
+assert.equal(s1.words_not_matched,undefined);
 const ov=(await rpc("tools/call",{name:"catalogue_overview",arguments:{}})).body.result.structuredContent;
 assert.equal(ov.links_last_checked,"2026-10-02");assert.match(ov.note,/Evidence, not correctness/);
 
@@ -146,21 +151,28 @@ for(const a of AUTHORITIES){assert.ok(a.ids.length&&a.why&&a.need&&a.when.length
   assert.match((await call("preview_dataset",{id:"national:p1"})).structuredContent.error,/No previewable CSV/);
 
   // preview_dataset through the real worker preview path: catalogue relay id only, Belgian CSV dialect, bounded read
-  const pv=[{id:"national:pv",title:"Gemeentelijke cijfers",provider:"Statbel",dataKind:"dataset",topic:"population",tier:"ready",distributions:[d("CSV","https://statbel.example/gem.csv")]}];
+  const pv=[{id:"national:pv",title:"Gemeentelijke cijfers",provider:"Statbel",dataKind:"dataset",topic:"population",tier:"ready",updatedAt:"2019-01-21",frequency:"b6d53d524c494e5a9b37bec45c748bf71265-3958c17a2fbfa500",distributions:[d("CSV","https://statbel.example/gem.csv")]}];
   const {createHash}=await import("node:crypto");
   const rid="f_"+createHash("sha256").update("https://statbel.example/gem.csv").digest("hex").slice(0,32);
   const index={[rid]:{url:"https://statbel.example/gem.csv",hosts:["statbel.example"]}};
   const vdir=fs.mkdtempSync(path.join(os.tmpdir(),"mcp-pv-")),vb=buildIndex(pv,{relay:{[rid]:{}}});
   writeIndex(path.join(vdir,"mcp"),vb,{records:1,ranges:vb.ranges});
   const venv=dirEnv(vdir);
-  const csv="﻿REFNIS;Gemeente;Inwoners;Dichtheid\n11001;Aartselaar;14.512;1.340,5\n11002;Antwerpen;536.079;2.623,1\n11004;Boechout;13.749;670,2\n";
+  const csv="﻿REFNIS;Gemeente;Inwoners;Dichtheid;TIMESTAMP_EXTRACT\n11001;Aartselaar;14.512;1.340,5;2026-11-01 03:00:00\n11002;Antwerpen;536.079;2.623,1;2026-11-01 03:00:00\n11004;Boechout;13.749;670,2;2026-10-01\n";
   const seen=[];
   const fetchImpl=async(url,init)=>{seen.push({url,range:init.headers.range});return new Response(csv,{status:200,headers:{"content-type":"text/csv","content-length":String(new TextEncoder().encode(csv).length)}})};
   const vcall=mcpCall(venv,{previewFile:makePreviewFile({},{index,fetchImpl})});
-  assert.equal((await vcall("get_dataset",{id:"national:pv"})).structuredContent.preview_available,true);
+  const gv=(await vcall("get_dataset",{id:"national:pv"})).structuredContent;
+  assert.equal(gv.preview_available,true);
+  // an unresolved blank-node frequency is "not stated", and empty fields say why they are empty
+  assert.equal(gv.update_cycle,null);assert.match(gv.update_cycle_note,/cannot be resolved/);
+  assert.match(gv.field_notes.columns,/preview_dataset reads the real columns/);assert.match(gv.field_notes.link_check,/not a sign of a broken link/);assert.match(gv.field_notes.updated,/not necessarily when the data was refreshed/);
   const p=(await vcall("preview_dataset",{id:"national:pv",rows:2})).structuredContent;
   assert.equal(p.delimiter,"semicolon");assert.equal(p.decimal_separator,"comma");assert.equal(p.whole_file_read,true);
-  assert.deepEqual(p.columns.map(c=>c.name),["REFNIS","Gemeente","Inwoners","Dichtheid"]);
+  assert.deepEqual(p.columns.map(c=>c.name),["REFNIS","Gemeente","Inwoners","Dichtheid","TIMESTAMP_EXTRACT"]);
+  // dates in the file later than the catalogue date are reported; numeric columns come with a units warning
+  assert.equal(p.freshness.latest_date_in_rows_read,"2026-11-01");assert.equal(p.freshness.column,"TIMESTAMP_EXTRACT");assert.equal(p.freshness.data_newer_than_catalogue_date,true);
+  assert.match(p.units,/Inwoners/);assert.match(p.units,/not declared rather than guessing/);
   assert.equal(p.rows.length,2);assert.equal(p.rows[1].Gemeente,"Antwerpen");assert.equal(p.rows_read,3);
   assert.equal(seen[0].url,"https://statbel.example/gem.csv");assert.equal(seen[0].range,"bytes=0-65535","reads only the first 64 KiB");
   // a web page instead of CSV, an unknown id, an id outside the relay index: actionable errors, no crash

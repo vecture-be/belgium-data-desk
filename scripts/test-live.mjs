@@ -53,8 +53,13 @@ assert.equal(rk.within,"Provincie Limburg / Province de Limbourg");assert.equal(
 assert.ok(rk.results[0].value>=rk.results[1].value);
 const has=(await S({places:["Hasselt"],topic:"income",with_context:false})).places[0].income;
 assert.equal(has.average_net_taxable_income_per_inhabitant_eur,26226,"(2,127,572,222 + 221,885,020) / (80,828 + 8,757)");
-for(const [bad,re] of [[{places:["Leuvn"]},/Did you mean: Leuven/],[{places:["Leuven"],year:2010},/available for 2019/],[{rank_by:"wealth"},/rank_by must be/],[{rank_by:"population",within:"Leuven"},/within must be/],[{},/Give places/],[{topic:"weather"},/topic must be/]])
+for(const [bad,re] of [[{places:["Leuvn"]},/Did you mean: Leuven/],[{places:["Leuven"],year:2010},/available for 2019/],[{rank_by:"wealth"},/rank_by must be/],[{rank_by:"population",within:"Leuven"},/within must be/],[{topic:"weather"},/topic must be/]])
   assert.match((await S(bad)).error,re,JSON.stringify(bad));
+// no places: 'population' ranks Belgium's municipalities by population, 'income' by income per inhabitant, the default profile is Belgium's
+const natPop=await S({topic:"population"});assert.equal(natPop.topic,"ranking");assert.match(natPop.defaulted_to,/by population/);assert.equal(natPop.results[0].municipality.split(" / ")[0],"Antwerpen");
+assert.ok(natPop.results[0].value>=natPop.results[1].value);
+assert.match((await S({topic:"income"})).defaulted_to,/income per inhabitant/);
+const prof=await S({});assert.equal(prof.places[0].type,"country");assert.ok(!prof.defaulted_to);
 const sum=await municipalitySummary(assets,"Brussel");assert.equal(sum.nis_code,"21004","a geocoder's municipality name is the municipality");
 
 // prices: Statbel's CPI file (a zip), current base = the one with the published inflation rate for the latest month
@@ -118,5 +123,14 @@ const fl=await floodRisk(makeDovClient({fetchImpl:fake([[u=>u.pathname.startsWit
 assert.deepEqual(Object.fromEntries(Object.entries(fl.maps).map(([k,v])=>[k,v.class])),{river:"D",rain:"A",sea:"C"},"no feature = A; overlapping polygons: the highest class");
 assert.equal(fl.highest_class,"D");assert.match(fl.key_facts[0],/class D \(medium chance of flooding\) from rivers/);
 assert.match((await floodRisk(makeDovClient({fetchImpl:fake([])}),{latitude:50.6326,longitude:5.5797},{assets})).error,/outside the Flemish Region, which these maps cover/);
+// a map that times out is asked once more; the error names VMM (not DOV) and the answer says how to retry
+const timeout=()=>{const e=new Error("timed out");e.name="TimeoutError";throw e};
+let riverCalls=0;const flaky=u=>{if(u.pathname.includes("fluviaal")&&++riverCalls===1)timeout();return ident(u)};
+const fr=await floodRisk(makeDovClient({fetchImpl:fake([[u=>u.pathname.startsWith("/geolocation"),geo],[u=>u.hostname==="inspirepub.waterinfo.be",flaky],[u=>u.pathname==="/VRBG2025/wfs",vrbg]])}),{latitude:50.879,longitude:4.701},{assets});
+assert.equal(riverCalls,2);assert.equal(fr.maps.river.class,"D");assert.equal(fr.complete,undefined);
+const down=u=>{if(u.pathname.includes("fluviaal"))timeout();return ident(u)};
+const fd=await floodRisk(makeDovClient({fetchImpl:fake([[u=>u.pathname.startsWith("/geolocation"),geo],[u=>u.hostname==="inspirepub.waterinfo.be",down],[u=>u.pathname==="/VRBG2025/wfs",vrbg]])}),{latitude:50.879,longitude:4.701},{assets});
+assert.equal(fd.complete,false);assert.match(fd.maps.river.error,/^VMM's map service \(waterinfo\.be\) did not answer within 12 s \(asked twice\)$/);
+assert.deepEqual(fd.retry.maps,["river"]);assert.equal(fd.highest_class,"C","a class C answer from the sea map is already flood-prone");
 
 console.log(JSON.stringify({ok:true,live:"coordinates/addresses/statbel-tables/statistics/prices/labour/air/flood"}));

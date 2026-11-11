@@ -219,7 +219,7 @@ export async function municipalitySummary(assets,nisOrName){
 
 // ---------- the tool ----------
 export async function belgianStatistics(client,args,{assets}={}){
-  const a=args||{},topic=a.topic||"profile";
+  const a={...(args||{})},topic=a.topic||"profile";
   if(!["profile","population","income","prices","labour"].includes(topic))return{error:"topic must be profile, population, income, prices or labour."};
   if(topic==="prices"){const p=await prices(client);return p.error?p:clean({key_facts:["Inflation "+p.inflation_pct+" % in "+p.latest_month+" (CPI "+p.cpi.value+", base "+p.cpi.base+"); health index "+p.health_index+", smoothed health index "+p.smoothed_health_index+"."],topic,...p,provenance:provenance(["prices"],{file:SOURCES.prices.file})})}
   if(topic==="labour"){const l=await labour(client);if(l.error)return l;const be=l.by_area.find(x=>x.area==="Belgium");
@@ -227,10 +227,17 @@ export async function belgianStatistics(client,args,{assets}={}){
   if(!assets)return{error:"Statistics tables are not available on this server."};
   const P=await places(assets);if(!P)return{error:"Statistics tables could not be read; try again shortly."};
   const year=a.year!=null?Math.round(num(a.year)):undefined,incomeYear=a.income_year!=null?Math.round(num(a.income_year)):undefined;
-  if(a.rank_by){
-    const rk=await ranking(P,assets,{...a,year,income_year:incomeYear});if(rk.error)return rk;
-    return clean({key_facts:[rk.results.slice(0,3).map(x=>x.rank+". "+x.municipality+" ("+x.value+")").join("; ")+" — "+rk.indicator+", "+rk.within+", "+rk.reference+"."],topic:"ranking",...rk,
-      definitions:/income/.test(a.rank_by)?DEF.income:DEF.population,provenance:provenance(/income/.test(a.rank_by)?["income"]:["population"])});
+  // No places and no ranking: 'population' or 'income' alone means the national picture, so rank the municipalities of Belgium by it
+  // (largest population / highest income per inhabitant) instead of refusing; 'profile' alone means Belgium's profile.
+  const noPlaces=!a.rank_by&&!(Array.isArray(a.places)?a.places.length:a.places);
+  const defaulted=noPlaces&&topic!=="profile"?{rank_by:topic==="income"?"income_per_inhabitant":"population",within:a.within||"Belgium"}:null;
+  if(noPlaces&&topic==="profile")a.places=["Belgium"];
+  if(a.rank_by||defaulted){
+    const rk=await ranking(P,assets,{...a,...defaulted,year,income_year:incomeYear});if(rk.error)return rk;
+    const rankBy=defaulted?.rank_by||a.rank_by;
+    return clean({key_facts:[rk.results.slice(0,3).map(x=>x.rank+". "+x.municipality+" ("+x.value+")").join("; ")+" — "+rk.indicator+", "+rk.within+", "+rk.reference+"."],topic:"ranking",
+      ...(defaulted?{defaulted_to:"No places were given, so this ranks municipalities in "+defaulted.within+" by "+defaulted.rank_by.replace(/_/g," ")+". Pass places for specific municipalities, provinces or regions, or rank_by for another indicator."}:{}),...rk,
+      definitions:/income/.test(rankBy)?DEF.income:DEF.population,provenance:provenance(/income/.test(rankBy)?["income"]:["population"])});
   }
   const names=(Array.isArray(a.places)?a.places:a.places?[a.places]:[]).slice(0,6);
   if(!names.length)return{error:"Give places (municipalities, provinces, regions or 'Belgium'; up to 6), or rank_by to rank municipalities, or topic 'prices' or 'labour'."};
