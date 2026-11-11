@@ -89,17 +89,17 @@ const SEARCH_SCHEMA={type:"object",properties:{
 const TOOLS=[
   {
     name:"search_datasets",title:"Search Belgian open datasets",
-    description:"Search Belgian open data (about 21,700 records from federal, regional and local publishers: hand-reviewed national registers, data.gov.be and directly harvested portals) in Dutch, French or English. For common needs such as population, the enterprise register (KBO/BCE), air quality, unemployment or train punctuality, the official reference source is listed first, marked authoritative_source, with a guidance block saying who publishes it and the usual pitfalls. Scope 'datasets' (default) means data files and APIs; map layers, PDF publications, research supplements and metadata-only records are separate scopes. Results are catalogue metadata and link-check evidence, not statements about data correctness.",
+    description:"Search Belgian open data (about 21,700 records from federal, regional and local publishers: hand-reviewed national registers, data.gov.be and directly harvested portals) in Dutch, French or English. For common needs such as population, the enterprise register (KBO/BCE), air quality, unemployment or train punctuality, the official reference source is listed first, marked authoritative_source, with a guidance block saying who publishes it and the usual pitfalls. Scope 'datasets' (default) means data files and APIs; map layers, PDF publications, research supplements and metadata-only records are separate scopes. Results are catalogue metadata and link-check evidence, not statements about data correctness. Examples: {\"query\":\"bevolking per gemeente\"}; {\"query\":\"thuisbatterij\"}; {\"query\":\"census 2021\",\"open_licence_only\":true}; {\"query\":\"wegenregister\",\"scope\":\"maps\"}; {\"query\":\"luchtkwaliteit\",\"topic\":\"environment\",\"limit\":5}.",
     inputSchema:SEARCH_SCHEMA,annotations:{title:"Search Belgian open datasets",readOnlyHint:true,destructiveHint:false,openWorldHint:false}
   },
   {
     name:"get_dataset",title:"Get one dataset record",
-    description:"Full catalogue record for one dataset id from search_datasets: publisher, licence and what it allows, update cycle, contact, description, file links, publisher-declared columns, link-check evidence, and whether preview_dataset can read the file. For files checked weekly it adds a dataset card computed from the file itself: whether it is overdue against its declared update cycle, the period the data covers, join keys (NIS municipality codes incl. pre-2025 codes, enterprise numbers, postcodes, coordinates), sparse and constant columns, column changes since the last check, and quotable facts each with its evidence.",
+    description:"Full catalogue record for one dataset id from search_datasets: publisher, licence and what it allows, update cycle, contact, description, file links, publisher-declared columns, link-check evidence, and whether preview_dataset can read the file. For files checked weekly it adds a dataset card computed from the file itself: whether it is overdue against its declared update cycle, the period the data covers, join keys (NIS municipality codes incl. pre-2025 codes, enterprise numbers, postcodes, coordinates), sparse and constant columns, column changes since the last check, and quotable facts each with its evidence. Fields the publisher leaves empty are listed under not_declared_by_publisher with the source page; for analysis over the whole file, the analysis block gives download links and the domains a sandbox must allow. Example: {\"id\":\"national:d04b704a-1672-4567-bf0d-9a9452618812\"}.",
     inputSchema:{type:"object",properties:{id:{type:"string",description:"Dataset id as returned by search_datasets."}},required:["id"]},annotations:{title:"Get one dataset record",readOnlyHint:true,destructiveHint:false,openWorldHint:false}
   },
   {
     name:"preview_dataset",title:"Preview the rows of a dataset file",
-    description:"Read the first rows of a dataset's CSV/TSV file directly from the publisher and return the column names, inferred column types, the delimiter and encoding, and up to 20 sample rows as published. Works for datasets whose get_dataset record shows preview_available: true. Reads at most the first 64 KiB of the file, so it shows structure and example values, not totals over the whole file.",
+    description:"Read the first rows of a dataset's CSV/TSV file directly from the publisher and return the column names, inferred column types, the delimiter and encoding, and up to 20 sample rows as published. Works for datasets whose get_dataset record shows preview_available: true. Reads at most the first 64 KiB of the file, so it shows structure and example values, not totals over the whole file; for those, its analysis block gives the download links, a DuckDB query in the file's own dialect and the domains to allow in a sandbox. Example: {\"id\":\"national:d04b704a-1672-4567-bf0d-9a9452618812\",\"rows\":5}.",
     inputSchema:{type:"object",properties:{
       id:{type:"string",description:"Dataset id as returned by search_datasets or get_dataset."},
       rows:{type:"integer",minimum:1,maximum:MAX_PREVIEW_ROWS,description:"Number of sample rows, default 10."}
@@ -112,7 +112,7 @@ const TOOLS=[
   },
   {
     name:"contact_publisher",title:"Draft a message to a dataset's publisher",
-    description:"Prepare a message to the people who publish a dataset, for the user to send themselves: the contact the publisher declared in its catalogue record (never a guessed address), a polite draft in the publisher's language (Dutch, French, English or German) naming the dataset, file, issue and the evidence checked, and a mailto: link. Nothing is sent by this tool. Use it when the user wants to report a problem (stale data, broken link, missing units or metadata, wrong values) or ask the publisher a question. Run get_dataset or preview_dataset first and pass what they showed as evidence; the answer says what to check before writing. Show the draft to the user to edit and send; send one message per problem, not one per related dataset.",
+    description:"Prepare a message to the people who publish a dataset, for the user to send themselves: the contact the publisher declared in its catalogue record (never a guessed address), a polite draft in the publisher's language (Dutch, French, English or German) naming the dataset, file, issue and the evidence checked, and a mailto: link. Nothing is sent by this tool. Use it when the user wants to report a problem (stale data, broken link, missing units or metadata, wrong values) or ask the publisher a question. Run get_dataset or preview_dataset first and pass what they showed as evidence; the answer says what to check before writing. Show the draft to the user to edit and send; send one message per problem, not one per related dataset. Example: {\"id\":\"national:d04b704a-1672-4567-bf0d-9a9452618812\",\"issue\":\"metadata\",\"details\":\"The record says 2019 but the file has 2026 data.\"}.",
     inputSchema:{type:"object",properties:{
       id:{type:"string",description:"Dataset id from search_datasets or get_dataset."},
       issue:{type:"string",enum:ISSUE_IDS,description:"What the message is about: stale, access, metadata, units, values, missing, schema, licence or question."},
@@ -152,7 +152,8 @@ const TOOLS=[
 const TRUST_NOTE="Evidence, not correctness: tier 'ready' means a file link answered with the declared format when checked (see link_check); topic is auto-assigned; SQL analysis runs in the visitor's browser, not here. Relay paths serve CSV/TSV up to 8 MiB.";
 const SCOPE_OF_KIND={"map-service":"maps",publication:"publications",research:"research","metadata-only":"metadata"};
 const isOpen=doc=>doc.lf==="open"||doc.lf==="open-sharealike";
-const summary=d=>({id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,formats:d.f,licence:d.l||null,licence_family:d.lf||"unknown",access_tier:d.tier||null,updated:d.u||null,hand_reviewed:!!d.c,landing_page:d.w||null,snippet:d.s||""});
+const NOT_DECLARED="not declared by the publisher";
+const summary=d=>({id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,formats:d.f,licence:d.l||NOT_DECLARED,licence_family:d.lf||"unknown",access_tier:d.tier||null,updated:d.u||null,hand_reviewed:!!d.c,landing_page:d.w||null,snippet:d.s||""});
 
 async function postings(reader,token,shards){
   const shard=tokenShard(token);
@@ -165,7 +166,7 @@ function collapseCollections(scored){
   const out=[],seen=new Map();
   for(const x of scored){
     if(x.d.sid&&seen.has(x.d.sid)){seen.get(x.d.sid).more_in_collection=(seen.get(x.d.sid).more_in_collection||0)+1;continue}
-    const s=summary(x.d);if(x.d.sid)seen.set(x.d.sid,s);out.push(s);
+    const s={...summary(x.d),...(x.partial?{matches_only:x.partial}:{})};if(x.d.sid)seen.set(x.d.sid,s);out.push(s);
   }
   return out;
 }
@@ -233,7 +234,8 @@ export async function searchDatasets(reader,args){
     const pubHits=tokens.filter(t=>pub.has(t)).length;
     // Unless the user names the place, a city or province publication is a worse answer than national or regional coverage of the same subject.
     const local=!pubHits&&LOCAL_PUBLISHER.test(d.p)?LOCAL_PENALTY:0;
-    scored.push({d,idx,score:(covered.get(idx)||0)*COVERAGE_WEIGHT+match+(d.c?CURATED_BONUS:0)+pubHits*5-local-idx/1e6});
+    const coveredWords=tokens.filter((t,i)=>own[i].has(idx)||related[i].has(idx));
+    scored.push({d,idx,...(coveredWords.length<tokens.length?{partial:coveredWords}:{}),score:(covered.get(idx)||0)*COVERAGE_WEIGHT+match+(d.c?CURATED_BONUS:0)+pubHits*5-local-idx/1e6});
   }
   scored.sort((x,y)=>y.score-x.score);
   const results=[...pinned.map(d=>({...summary(d),authoritative_source:true})),...collapseCollections(scored)].slice(0,limit);
@@ -248,6 +250,7 @@ export async function searchDatasets(reader,args){
     ...(pinned.length?{guidance:{need:authority.need,authoritative_source:authority.why,...(authority.caveat?{caveat:authority.caveat}:{})}}:{}),
     ...(absent.length?{words_not_matched:absent,words_note:(nowhere.length?"No record in the catalogue matches "+nowhere.map(w=>"'"+w+"'").join(", ")+". ":"")+
       (absent.length>nowhere.length?"No result shown matches "+absent.filter(w=>!nowhere.includes(w)).map(w=>"'"+w+"'").join(", ")+"; search for it on its own to see those records. ":"")+"These results cover the other words only."}:{}),
+    ...(results.some(r=>r.matches_only)?{partial_matches:"Results with matches_only match only those words of the query, not all of it (e.g. 'home' without 'battery'); they are listed because few records match every word."}:{}),
     ...(skipped&&results.length<limit?{note_partial:"Fewer results than asked: some candidates were not scored to stay within the service budget. A shorter or more specific query finds them."}:{}),results,note:TRUST_NOTE};
 }
 
@@ -272,10 +275,27 @@ const CYCLE_WORDS={"1MIN":"every minute","5MIN":"every five minutes","10MIN":"ev
   NOT_PLANNED:"no updates planned",ARCHIVED:"archived, no further updates",OTHER:"other (not specified)",UNKNOWN:"unknown"};
 export function updateCycle(code){
   const c=String(code||"").trim().toUpperCase();
-  if(!c)return{update_cycle:null,update_cycle_note:"The publisher does not state an update cycle."};
+  if(!c)return{update_cycle:"not declared by the publisher",update_cycle_declared:false};
   if(CYCLE_WORDS[c])return{update_cycle:CYCLE_WORDS[c],update_cycle_code:c};
   if(/^[A-Z0-9_]{2,20}$/.test(c))return{update_cycle:c.toLowerCase().replace(/_/g," "),update_cycle_code:c};
-  return{update_cycle:null,update_cycle_note:"The publisher's metadata names an update cycle that cannot be resolved (an internal reference, not a code); treat it as not stated."};
+  return{update_cycle:"not declared by the publisher",update_cycle_declared:false,update_cycle_note:"The publisher's metadata names an update cycle that cannot be resolved (an internal reference, not a code)."};
+}
+
+/** How to analyse the whole file: preview and card read only its start. Download links (the publisher's, and the relay for sandboxes
+ *  that allow few domains), the in-browser SQL page, and the exact domains a network allowlist needs. */
+function analysisFor(x,origin,id,dialect=null){
+  const files=x.files||[];
+  // the whole file: a relayed CSV/TSV, else a CSV/TSV link, else the first link (an API page with a row limit is a last resort)
+  const f=files.find(y=>y.r)||files.find(y=>/csv|tsv/i.test(y.f||"")&&!/[?&]limit=/.test(y.u))||files.find(y=>!/[?&]limit=/.test(y.u))||files[0];if(!f)return null;
+  const relayFile=(x.files||[]).find(y=>y.r),host=u=>{try{return new URL(u).hostname}catch{return null}};
+  const relayUrl=relayFile?origin+"/api/dataset-file/"+relayFile.r:null;
+  const hosts=[...new Set([host(f.u),relayUrl&&host(origin)].filter(Boolean))];
+  const src=relayUrl||f.u,delim=dialect?.delimiter,dec=dialect?.decimal==="comma";
+  return{whole_file:"preview_dataset and the dataset card read only the start of the file. For counts, sums or min/max over all rows, download the file and analyse it locally (Python, R, DuckDB or a spreadsheet), or open web_sql, which runs SQL over the whole file in the browser.",
+    download:f.u,...(relayUrl?{download_via_relay:relayUrl,relay_note:"The same file through "+host(origin)+" (CSV/TSV up to 8 MiB), for sandboxes that cannot reach the publisher's server."}:{}),
+    web_sql:origin+"/?dataset="+encodeURIComponent(id),
+    hosts_to_allow:hosts,sandbox_note:"In a sandbox with a network allowlist the download fails unless "+(hosts.length>1?"one of these domains is":"this domain is")+" allowed: "+hosts.join(", ")+". Say so to the user rather than reporting the file as broken.",
+    ...(/csv|tsv/i.test(relayFile?.f||f.f)?{duckdb:"SELECT COUNT(*) FROM read_csv('"+src+"'"+(delim?", delim='"+(delim==="\t"?"\\t":delim)+"'":"")+(dec?", decimal_separator=','":"")+", header=true);"}:{})};
 }
 
 export async function getDataset(reader,args){
@@ -290,8 +310,18 @@ export async function getDataset(reader,args){
     ...((x.files||[]).some(f=>!f.s)?{size_bytes:"Null where the publisher declares no file size."}:{}),
     units:"Units are only known when the publisher states them in the description or column names; do not assume one."
   };
-  return{id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,hand_reviewed:!!d.c,licence:{label:d.l||null,family:d.lf||"unknown"},updated:d.u||null,...updateCycle(x.fq),
+  const cycle=updateCycle(x.fq),source=x.url||d.w||null;
+  // Fields the publisher's own record leaves empty: named as gaps in the source, with the page where the publisher may say more.
+  const gaps=[!d.l&&"licence",cycle.update_cycle_declared===false&&"update cycle",!cols.length&&"column list",!x.ce&&!x.cu&&"contact",!d.u&&"update date"].filter(Boolean);
+  const profile=card?.file?{rows:card.file.rows,rows_exact:!!card.file.rows_exact,...(card.file.rows_exact?{}:{rows_note:"Rows in the first "+Math.round((card.file.bytes_read||0)/1024)+" KiB read by the weekly check; the whole file has more."}),
+    ...(card.coverage?.time?{period:{from:card.coverage.time.from,to:card.coverage.time.to,column:card.coverage.time.column}}:{}),profiled_at:card.profiled_at}:null;
+  return{id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,hand_reviewed:!!d.c,
+    licence:{label:d.l||NOT_DECLARED,family:d.lf||"unknown",...(x.lsrc?{source:"The publisher's licence, from the harvested record "+x.lsrc+" of the same dataset."}:{}),...(!d.l&&source?{check:source}:{})},
+    updated:d.u||null,...cycle,
+    ...(gaps.length?{not_declared_by_publisher:{fields:gaps,source_page:source,note:"These are gaps in the publisher's own catalogue record, not faults in this tool. The source page may give them."}}:{}),
+    ...(profile?{data_profile:profile}:{}),
     geography:x.g||null,landing_page:x.url||null,contact:{email:x.ce||null,url:x.cu||null},description:x.d||"",columns:cols,access_tier:d.tier||null,
+    ...(analysisFor(x,reader.origin,d.id)?{analysis:analysisFor(x,reader.origin,d.id)}:{}),
     ...(auth?{authoritative_source:{need:auth.need,why:auth.why,...(auth.caveat?{caveat:auth.caveat}:{})}}:{}),
     preview_available:canPreview,
     web_url:reader.origin+"/?dataset="+encodeURIComponent(d.id),
@@ -345,6 +375,7 @@ export async function previewDataset(reader,args,previewFile){
     ...(numeric.length?{units:"Units are not part of the file. Numeric columns ("+numeric.slice(0,6).join(", ")+(numeric.length>6?", ...":"")+") have the unit the publisher states on the landing page or in the column name, if any; if none is stated, say the unit is not declared rather than guessing."}:{}),
     columns:cols.map((h,i)=>({name:h,type:parsed.types[i]||"string"})),...(parsed.headers.length>cols.length?{columns_omitted:parsed.headers.length-cols.length}:{}),
     rows:sample,rows_read:parsed.rowCount,whole_file_read:!truncated,
+    ...(truncated?{analysis:analysisFor(x,reader.origin,d.id,{delimiter,decimal:commaDecimals?"comma":"point"})}:{}),
     note:(truncated?"Only the first "+Math.round(PREVIEW_BYTES/1024)+" KiB were read: rows_read counts rows in that part, not in the whole file. ":"")+"Values are shown as published; types are inferred from the rows read."};
   // Keep the answer proportionate: drop sample rows until it fits the text budget.
   while(out.rows.length>1&&JSON.stringify(out).length>MAX_PREVIEW_TEXT)out.rows.pop();
@@ -411,6 +442,15 @@ function writeMcpUsage(env,{method,tool="",args={},status="ok",durationMs=0,resu
 // Live tools (tools/): each gets its own bounded client, limited to the hosts and request budget its definition declares, and
 // reads static tables (place context, Statbel) through the same asset reader as the catalogue tools.
 /** Tools this server offers: report_data_issue only where sending is configured (feedback.mjs), so no client sees a tool that cannot work. */
+/** An address without a house number is geocoded to a point on the street (or in the municipality): say so in the first key fact,
+ *  not only in the location note, so the answer is not quoted as being about one building. */
+export function withPrecision(out){
+  const loc=out?.location,p=loc?.precision;
+  if(!Array.isArray(out?.key_facts)||(p!=="street"&&p!=="municipality"))return out;
+  const what=loc.matched_address?"'"+loc.matched_address+"'":"The address";
+  return{...out,key_facts:[(p==="street"?"Street-level, approximate: ":"Municipality-level, approximate: ")+what+" matched a "+p+", not a building (no house number), so this answer is for one point "+(p==="street"?"on that street":"in that municipality")+". Give the house number for a building-level answer.",...out.key_facts]};
+}
+
 export const toolsFor=env=>TOOLS.filter(t=>t.name!=="report_data_issue"||feedbackConfig(env).on);
 
 export async function callTool(env,origin,name,args,{previewFile=null,dov=null,mailFetch=null}={}){
@@ -419,7 +459,7 @@ export async function callTool(env,origin,name,args,{previewFile=null,dov=null,m
     if(!dov?.fetchImpl)return asText({error:"Live data access is not available on this server."});
     if(dov.rateLimit&&!(await dov.rateLimit()))return asText({error:"Too many live-data requests right now; try again in a minute."});
     const client=makeDovClient({fetchImpl:dov.fetchImpl,hosts:tool.hosts,maxRequests:tool.maxRequests});
-    return asText(await tool.run(client,args||{},{assets:makeReader(env,origin)}));
+    return asText(withPrecision(await tool.run(client,args||{},{assets:makeReader(env,origin)})));
   }
   const reader=makeReader(env,origin);
   if(name==="search_datasets")return asText(await searchDatasets(reader,args));

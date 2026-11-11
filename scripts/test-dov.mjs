@@ -227,7 +227,8 @@ assert.deepEqual(gp.by_aquifer[0],{aquifer:"A0620: Zand van Brussel",permits:2,l
 assert.equal(gp.nearest[0].operator,"not named (private person or unregistered operator)");assert.equal(gp.nearest[0].sector,"Fokken van varkens");
 assert.ok(!JSON.stringify(L2).includes("Janssens"),"a private name never appears anywhere in the answer");
 assert.equal(L2.nearby.soil_profiles.nearest[0].id,"bodemlocatie/1964-007478");
-assert.ok(L2.key_facts.some(f=>/3 groundwater abstraction permit\(s\) within 1000 m, licensed for 2\.43 million m³ a year, mostly from A0620/.test(f)));
+// the nearest pumping well's distance is in the key fact, not only in the nearby block
+assert.ok(L2.key_facts.some(f=>new RegExp("^3 groundwater abstraction permit\\(s\\) \\(pumping wells\\) within 1000 m; nearest "+gp.nearest[0].distance_m+" m away.*; licensed for 2\\.43 million m³ a year in total, mostly from A0620").test(f)),JSON.stringify(L2.key_facts));
 assert.ok(L2.key_facts.some(f=>/^Modelled column \(3D model, not observed\): Lid van Dilsen/.test(f)));
 assert.ok(L2.key_facts.includes("Not in a drinking-water protection zone."));
 // soil profile: horizons in order with Munsell colour assembled, lab values matched to the horizon by depth, other profiles at the same

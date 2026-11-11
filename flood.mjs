@@ -14,10 +14,13 @@ const MAPS=[["river","overstromingsgevoelige_gebieden_fluviaal","from rivers and
 const CLASS=[["A","Geen overstroming gemodelleerd","no flooding modelled"],["B","Kleine kans op overstromingen onder klimaatverandering","small chance of flooding under climate change"],
   ["C","Kleine kans op overstromingen","small chance of flooding"],["D","Middelgrote kans op overstromingen","medium chance of flooding"]];
 
-async function identify(client,service,x,y){
+// Each map is given 7 s, then asked once more: a slow map costs about 14 s, and the other maps answer meanwhile. Answers that arrive are
+// cached for 7 days by the request address, so calling again for the same place only asks the map that failed.
+const MAP_TIMEOUT_MS=7000;
+async function identify(client,service,x,y,timeoutMs=MAP_TIMEOUT_MS){
   const q=new URLSearchParams({geometry:x+","+y,geometryType:"esriGeometryPoint",sr:"31370",layers:"all",tolerance:"0",
     mapExtent:[x-50,y-50,x+50,y+50].join(","),imageDisplay:"100,100,96",returnGeometry:"false",f:"json"});
-  const r=await getJson(client,BASE+service+"/MapServer/identify?"+q,{maxBytes:64*1024,ttl:7*DAY});
+  const r=await getJson(client,BASE+service+"/MapServer/identify?"+q,{maxBytes:64*1024,ttl:7*DAY,timeoutMs});
   if(r.error)return{error:r.error,...(r.transient?{transient:true}:{})};
   if(r.json?.error)return{error:"VMM's map service answered: "+String(r.json.error.message||"error").slice(0,80)};
   // no feature at the point means class A (the maps only contain flood-prone areas); the highest class wins if polygons overlap
@@ -47,7 +50,7 @@ export async function floodRisk(client,args,{assets}={}){
   facts.push("These are the maps used for the legally required flood information when property in Flanders is sold or let, and for the water test; the official per-parcel (P) and per-building (G) scores are derived from them on waterinfo.vlaanderen.be.");
   return clean({key_facts:facts,location:clean({...loc,x_lambert72:loc.x,y_lambert72:loc.y,x:undefined,y:undefined,geocoded:undefined}),place,
     // the highest class is only known when every map answered, or when one that answered already shows a flood-prone class
-    maps,highest_class:!failed.length||prone.length?worst?.class:undefined,...(failed.length?{complete:false,retry:{after_seconds:60,maps:failed.map(([k])=>k),how:"Call flood_risk again with the same address; map answers that did arrive are cached, so mainly the missing map is asked again."}}:{}),
+    maps,highest_class:!failed.length||prone.length?worst?.class:undefined,...(failed.length?{complete:false,retry:{after_seconds:60,maps:failed.map(([k])=>k),how:"Call flood_risk again with the same address. The maps that answered are cached for 7 days, so only the missing map is asked again and the call is quick."}}:{}),
     note:"Classes A-D as published by VMM: A no flooding modelled, B small chance under climate change, C small chance, D medium chance. The maps are modelled on a grid and describe the location, not a building's floor level, defences or insurance. A point on the edge of a zone can differ from the parcel score.",
     provenance:{source:"Vlaamse Milieumaatschappij (VMM), overstromingsgevoelige gebieden (informatieplicht)",licence:"Modellicentie Gratis Hergebruik (Flemish free-reuse model licence)",
       services:MAPS.map(([,s])=>BASE+s+"/MapServer"),citation:"VMM, overstromingsgevoelige gebieden fluviaal, pluviaal en vanuit de zee (informatieplicht), geraadpleegd op "+new Date().toISOString().slice(0,10)+", via waterinfo.be."}});

@@ -64,7 +64,7 @@ export function toDocs(it,relay){
     return{f:formatLabel(d.format||""),u:d.url,...(d.byteSize?{s:d.byteSize}:{}),...(relay&&relay[r]?{r}:{})};
   });
   const detail={fq:it.frequency||"",g:it.geoCoverage||"",url:it.officialUrl||"",ce:it.contactEmail||"",cu:it.contactUrl||"",d:desc.slice(0,600),
-    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.probe?{pr:it.probe}:{}),...(it.streamCheck?{sc:it.streamCheck}:{}),files};
+    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.licenseFrom?{lsrc:it.licenseFrom}:{}),...(it.probe?{pr:it.probe}:{}),...(it.streamCheck?{sc:it.streamCheck}:{}),files};
   return{light,detail};
 }
 
@@ -80,8 +80,21 @@ function markSameTitle(items){
   });
 }
 
+/** Hand-reviewed records carry no licence of their own; when a harvested record points at the same landing page or file, its licence
+ *  is the publisher's, so the curated record shows it too (with where it came from). */
+export function inheritCuratedLicences(items){
+  const key=u=>{try{const p=new URL(u);return(p.host+p.pathname).replace(/\/+$/,"").toLowerCase()}catch{return""}};
+  const byUrl=new Map();
+  for(const x of items)if(!x.curated&&(x.license||x.licenseUri))for(const u of [x.officialUrl,...(x.distributions||[]).map(d=>d?.url)])if(key(u)&&!byUrl.has(key(u)))byUrl.set(key(u),x);
+  return items.map(x=>{
+    if(!x.curated||x.license)return x;
+    const m=[x.officialUrl,...(x.distributions||[]).map(d=>d?.url)].map(key).filter(Boolean).map(k=>byUrl.get(k)).find(Boolean);
+    return m?{...x,license:m.license||"",licenseUri:m.licenseUri||"",licenseFamily:m.licenseFamily||"",licenseFrom:m.id}:x;
+  });
+}
+
 export function buildIndex(rawItems,{relay=null}={}){
-  const items=markSameTitle(rawItems);
+  const items=markSameTitle(inheritCuratedLicences(rawItems));
   const ranked=items.slice().sort((a,b)=>rankOf(b)-rankOf(a)||String(a.title).localeCompare(String(b.title)));
   const built=ranked.map(it=>toDocs(it,relay)),docs=built.map(b=>b.light),details=built.map(b=>b.detail),postings=new Map(),ids=new Map();
   docs.forEach((d,i)=>{

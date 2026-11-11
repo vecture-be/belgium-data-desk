@@ -130,7 +130,7 @@ const fr=await floodRisk(makeDovClient({fetchImpl:fake([[u=>u.pathname.startsWit
 assert.equal(riverCalls,2);assert.equal(fr.maps.river.class,"D");assert.equal(fr.complete,undefined);
 const down=u=>{if(u.pathname.includes("fluviaal"))timeout();return ident(u)};
 const fd=await floodRisk(makeDovClient({fetchImpl:fake([[u=>u.pathname.startsWith("/geolocation"),geo],[u=>u.hostname==="inspirepub.waterinfo.be",down],[u=>u.pathname==="/VRBG2025/wfs",vrbg]])}),{latitude:50.879,longitude:4.701},{assets});
-assert.equal(fd.complete,false);assert.match(fd.maps.river.error,/^VMM's map service \(waterinfo\.be\) did not answer within 12 s \(asked twice\)$/);
+assert.equal(fd.complete,false);assert.match(fd.maps.river.error,/^VMM's map service \(waterinfo\.be\) did not answer within 7 s \(asked twice\)$/);
 assert.deepEqual(fd.retry.maps,["river"]);assert.equal(fd.highest_class,"C","a class C answer from the sea map is already flood-prone");
 
 console.log(JSON.stringify({ok:true,live:"coordinates/addresses/statbel-tables/statistics/prices/labour/air/flood"}));

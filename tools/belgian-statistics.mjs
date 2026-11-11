@@ -23,6 +23,7 @@ export default defineTool({
   run:belgianStatistics,
   examples:[
     {args:{places:["Gent"],topic:"population"},note:"How many people live in Ghent?",replay:true},
+    {args:{topic:"population"},note:"The largest municipalities in Belgium (no places: ranks by population)"},
     {args:{rank_by:"income_per_inhabitant",within:"Limburg",limit:5},note:"Which municipalities in Limburg have the highest income per inhabitant?"},
     {args:{topic:"prices"},note:"What is the current inflation and health index?"},
     {args:{topic:"labour"},note:"What is the unemployment rate in each region?"}

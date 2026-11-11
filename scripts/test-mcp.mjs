@@ -3,8 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildIndex, writeIndex } from "./build-mcp-index.mjs";
-import { handleMcp, idShard, prefixKey, publicOrigin, tokenize, tokenShard } from "../mcp-server.mjs";
+import { buildIndex, inheritCuratedLicences, writeIndex } from "./build-mcp-index.mjs";
+import { handleMcp, idShard, prefixKey, publicOrigin, tokenize, tokenShard, withPrecision } from "../mcp-server.mjs";
 import worker, { makePreviewFile } from "../worker.mjs";
 import { AUTHORITIES, authoritiesFor } from "../public/dataset-authority-v1.mjs";
 import { expandWord } from "../public/dataset-synonyms-v1.mjs";
@@ -12,6 +12,9 @@ import { expandWord } from "../public/dataset-synonyms-v1.mjs";
 assert.deepEqual(tokenize("Bevolking per gemeente — population of the Région"),["bevolking","gemeente","population","region"]);
 assert.equal(prefixKey("bevolking"),"~bevolk");assert.equal(prefixKey("gas"),null);
 assert.equal(tokenShard("~bevolk"),"be");assert.equal(idShard("national:x").length,2);
+// a hand-reviewed record without a licence takes the publisher licence of a harvested record of the same dataset
+{const [cur]=inheritCuratedLicences([{id:"curated:x",curated:true,license:"",officialUrl:"https://p.example/ds/a/?flg=en",distributions:[]},{id:"harvest:x",license:"CC BY 4.0",licenseFamily:"open",officialUrl:"https://p.example/ds/a/"},{id:"harvest:y",license:"CC0",officialUrl:"https://p.example/ds/b/"}]);
+ assert.equal(cur.license,"CC BY 4.0");assert.equal(cur.licenseFrom,"harvest:x");}
 
 const d=(format,url)=>({format,url,name:format});
 const items=[
@@ -72,7 +75,7 @@ assert.equal((await rpc("tools/call",{name:"search_datasets",arguments:{query:"?
 
 const g=(await rpc("tools/call",{name:"get_dataset",arguments:{id:"national:1"}})).body.result.structuredContent;
 assert.equal(g.publisher,"Statbel");assert.equal(g.hand_reviewed,false);assert.equal(g.link_check.files_ok,1);assert.deepEqual(g.columns,["nis","pop"]);assert.equal(g.files[0].url,"https://statbel.example/pop.csv");assert.equal(g.preview_available,false);
-assert.equal(g.update_cycle,null);assert.match(g.update_cycle_note,/does not state/);assert.equal(g.field_notes.columns,undefined);assert.equal(g.field_notes.link_check,undefined);
+assert.equal(g.update_cycle,"not declared by the publisher");assert.deepEqual(g.not_declared_by_publisher.fields,["update cycle","contact","update date"]);assert.match(g.not_declared_by_publisher.note,/not faults in this tool/);assert.equal(g.licence.label,"CC BY");assert.equal(g.analysis.download,"https://statbel.example/pop.csv");assert.deepEqual(g.analysis.hosts_to_allow,["statbel.example"]);assert.equal(g.field_notes.columns,undefined);assert.equal(g.field_notes.link_check,undefined);
 assert.equal((await rpc("tools/call",{name:"get_dataset",arguments:{id:"nope"}})).body.result.isError,true);
 // a query word no record matches is named instead of silently dropped
 const sb=(await rpc("tools/call",{name:"search_datasets",arguments:{query:"bevolking batterijen"}})).body.result.structuredContent;
@@ -165,7 +168,7 @@ for(const a of AUTHORITIES){assert.ok(a.ids.length&&a.why&&a.need&&a.when.length
   const gv=(await vcall("get_dataset",{id:"national:pv"})).structuredContent;
   assert.equal(gv.preview_available,true);
   // an unresolved blank-node frequency is "not stated", and empty fields say why they are empty
-  assert.equal(gv.update_cycle,null);assert.match(gv.update_cycle_note,/cannot be resolved/);
+  assert.equal(gv.update_cycle,"not declared by the publisher");assert.ok(gv.not_declared_by_publisher.fields.includes("licence"));assert.equal(gv.licence.label,"not declared by the publisher");assert.ok(gv.analysis.download_via_relay.startsWith("https://desk.example/api/dataset-file/f_"));assert.deepEqual(gv.analysis.hosts_to_allow,["statbel.example","desk.example"]);assert.match(gv.update_cycle_note,/cannot be resolved/);
   assert.match(gv.field_notes.columns,/preview_dataset reads the real columns/);assert.match(gv.field_notes.link_check,/not a sign of a broken link/);assert.match(gv.field_notes.updated,/not necessarily when the data was refreshed/);
   const p=(await vcall("preview_dataset",{id:"national:pv",rows:2})).structuredContent;
   assert.equal(p.delimiter,"semicolon");assert.equal(p.decimal_separator,"comma");assert.equal(p.whole_file_read,true);
@@ -193,4 +196,11 @@ if(fs.existsSync(realManifest)){
   if(m.records>1000)assert.deepEqual(AUTHORITIES.flatMap(a=>a.ids).filter(id=>!(id in (m.pins||{}))),[],"authority ids missing from the index");
 }
 
+// an address without a house number: the first key fact says the answer is street-level and approximate
+const sp=withPrecision({key_facts:["Class A."],location:{precision:"street",matched_address:"Kapellestraat, Zottegem"}});
+assert.match(sp.key_facts[0],/^Street-level, approximate: 'Kapellestraat, Zottegem' matched a street/);assert.equal(sp.key_facts[1],"Class A.");
+assert.equal(withPrecision({key_facts:["x"],location:{precision:"building"}}).key_facts.length,1);
+// home batteries point to the Fluvius storage register; used-battery collection does not
+assert.equal(authoritiesFor(["home","battery"])[0]?.ids[0],"curated:fluvius-storage-systems");assert.equal(authoritiesFor(["thuisbatterij"])[0]?.ids[0],"curated:fluvius-storage-systems");
+assert.notEqual(authoritiesFor(["used","batteries","collection"])[0]?.ids[0],"curated:fluvius-storage-systems");
 console.log(JSON.stringify({ok:true,mcp:"search/get/preview/overview/authority",tools:12}));

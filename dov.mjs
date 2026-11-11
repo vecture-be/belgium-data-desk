@@ -66,7 +66,8 @@ export function makeDovClient({fetchImpl=fetch,hosts=HOSTS,maxRequests=MAX_UPSTR
   const allowed=new Set(hosts),budget=Math.min(maxRequests,MAX_UPSTREAM);
   return{
     get used(){return used},
-    async get(url,{maxBytes=1<<20,ttl=HOUR,binary=false}={}){
+    async get(url,{maxBytes=1<<20,ttl=HOUR,binary=false,timeoutMs=TIMEOUT_MS}={}){
+      const wait=Math.min(TIMEOUT_MS,Math.max(1000,timeoutMs));
       let u;try{u=new URL(url)}catch{return{error:"bad upstream address"}}
       if(u.protocol!=="https:"||!allowed.has(u.hostname)||u.username||u.password||(PATH_ONLY[u.hostname]&&!u.pathname.startsWith(PATH_ONLY[u.hostname])))return{error:"upstream host not allowed"};
       if(used>=budget)return{error:"request budget for this answer is used up"};
@@ -74,8 +75,8 @@ export function makeDovClient({fetchImpl=fetch,hosts=HOSTS,maxRequests=MAX_UPSTR
       let r;
       try{
         r=await fetchImpl(u.href,{headers:{accept:"*/*","user-agent":"Belgium-Data-Desk/1.0 (+https://data.vecture.be)"},redirect:"manual",
-          signal:AbortSignal.timeout(TIMEOUT_MS),cf:{cacheEverything:true,cacheTtl:ttl}});
-      }catch(e){const svc=SERVICE_NAME[u.hostname]||u.hostname;const timeout=e?.name==="TimeoutError"||e?.name==="AbortError";return{error:timeout?svc+" did not answer within "+TIMEOUT_MS/1000+" s":svc+" could not be reached",transient:true,...(timeout?{timeout:true}:{})}}
+          signal:AbortSignal.timeout(wait),cf:{cacheEverything:true,cacheTtl:ttl}});
+      }catch(e){const svc=SERVICE_NAME[u.hostname]||u.hostname;const timeout=e?.name==="TimeoutError"||e?.name==="AbortError";return{error:timeout?svc+" did not answer within "+wait/1000+" s":svc+" could not be reached",transient:true,...(timeout?{timeout:true}:{})}}
       if(r.status!==200){r.body?.cancel?.().catch(()=>{});return{error:(SERVICE_NAME[u.hostname]||u.hostname)+" answered HTTP "+r.status,status:r.status,...(r.status>=500||r.status===429?{transient:true}:{})}}
       const reader=r.body?.getReader(),parts=[];let size=0;
       if(reader)for(;;){
@@ -163,6 +164,7 @@ async function resolveLocation(client,args,{area="flanders"}={}){
     if(hit?.Location){
       loc={x:round(num(hit.Location.X_Lambert72)),y:round(num(hit.Location.Y_Lambert72)),latitude:round(num(hit.Location.Lat_WGS84),6),longitude:round(num(hit.Location.Lon_WGS84),6),
         input:"address",matched_address:hit.FormattedAddress||null,match_type:hit.LocationType||null,municipality:hit.Municipality||null,geocoded:true};
+      loc.precision=hit.Housenumber!=null?"building":hit.Thoroughfarename?"street":"municipality";
       if(hit.Housenumber==null)loc.note="The address matched a street or municipality, not a building: the point is approximate.";
     }else if(area==="belgium"){
       loc=await bestGeocode(client,address);
@@ -351,8 +353,10 @@ export function keyFacts(r){
   const b=nb.boreholes;if(b?.count)f.push(b.count+" borehole(s) within "+r.radius_m+" m; nearest "+b.nearest[0].distance_m+" m away, "+(b.nearest[0].depth_m??"?")+" m deep"+(b.deepest_others?.[0]?"; deepest nearby "+b.deepest_others[0].depth_m+" m":"")+".");
   else if(b&&!b.error)f.push("No borehole within "+r.radius_m+" m; the modelled column is the best estimate.");
   const w=nb.groundwater_wells;if(w?.count)f.push(w.count+" groundwater monitoring screen(s) within "+r.radius_m+" m (nearest "+w.nearest[0].distance_m+" m, "+(w.nearest[0].aquifer||"aquifer unknown")+").");
+  else if(w&&!w.error)f.push("No groundwater monitoring screen within "+r.radius_m+" m.");
   const s=r.groundwater_status_nearest;if(s?.level_class)f.push("Shallow groundwater now: "+s.level_class+", "+s.trend+" (status well "+s.well+", "+Math.round(s.distance_m/100)/10+" km away, "+s.date+").");
-  const p=nb.groundwater_permits;if(p?.count)f.push(p.count+" groundwater abstraction permit(s) within "+p.radius_m+" m, licensed for "+fmtM3(p.licensed_m3_per_year)+" a year"+(p.by_aquifer?.[0]?", mostly from "+p.by_aquifer[0].aquifer:"")+".");
+  const p=nb.groundwater_permits;if(p?.count)f.push(p.count+" groundwater abstraction permit(s) (pumping wells) within "+p.radius_m+" m"+(p.nearest?.[0]?.distance_m!=null?"; nearest "+p.nearest[0].distance_m+" m away"+(p.nearest[0].depth_m!=null?", licensed to "+p.nearest[0].depth_m+" m deep":""):"")+"; licensed for "+fmtM3(p.licensed_m3_per_year)+" a year in total"+(p.by_aquifer?.[0]?", mostly from "+p.by_aquifer[0].aquifer:"")+".");
+  else if(p&&!p.error)f.push("No groundwater abstraction permit (pumping well) within "+p.radius_m+" m.");
   const sp=nb.soil_profiles;if(sp?.count)f.push(sp.count+" described soil profile(s) within "+sp.radius_m+" m (nearest "+sp.nearest[0].distance_m+" m).");
   return f;
 }

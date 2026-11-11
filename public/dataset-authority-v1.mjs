@@ -129,6 +129,14 @@ export const AUTHORITIES=[
     caveat:"Fluvius covers Flanders; Wallonia (ORES, RESA) and Brussels (Sibelga) are served by other distribution operators."
   },
   {
+    need:"home batteries and energy storage",
+    when:[["battery","batteries","batterij","batterijen","thuisbatterij","thuisbatterijen","thuisaccu","accu","batterie","energieopslag","energieopslagsystemen"]],
+    unless:["used","collection","collect","collecte","inzameling","inzamelpunt","recycling","recyclage","bebat","afval","waste","piles"],
+    ids:["curated:fluvius-storage-systems"],
+    why:"Fluvius publishes the energy storage systems, including home batteries, connected to its distribution grid in Flanders.",
+    caveat:"Flanders only (the Fluvius grid). Collection points for used batteries (Bebat) are a different subject."
+  },
+  {
     need:"solar power",
     when:[["solar","zonne","zonnepanelen","zonnepaneel","zonnestroom","photovoltaic","photovoltaique","fotovoltaisch","pv","solaire"]],
     ids:["curated:elia-ods087","curated:fluvius-local-production-municipality"],
