@@ -63,6 +63,12 @@ assert.equal(new Set(twoSeries.map(s=>s.id)).size,twoSeries.length,"series ids a
 assert.equal(topicOf({title:"Teleworking days",provider:"Infrabel",euThemes:["TRAN"]}),"transport");
 assert.equal(topicOf({title:"Aantal erfloze nalatenschappen",provider:"FPS Finance",euThemes:["ECON","GOVE"]}),"economy");
 assert.equal(topicOf({title:"Weekbericht 5",provider:"Statbel",euThemes:["TECH"]}),"other");
+// ENVI is a catch-all: a title that is clearly about energy, water or soil wins; emissions and climate stay environment
+assert.equal(topicOf({title:"Renewable energies in the Brussels-Capital Region",provider:"Brugel",euThemes:["ENVI"]}),"energy");
+assert.equal(topicOf({title:"INSPIRE - Hydrographie en Wallonie (BE)",provider:"SPW",euThemes:["ENVI"]}),"water");
+assert.equal(topicOf({title:"Greenhouse gas emissions (i65)",provider:"Brussels Environment",euThemes:["ENVI"]}),"environment");
+assert.equal(topicOf({title:"Wind speed - 2085",provider:"Belgian Climate Centre",euThemes:["ENVI"]}),"environment");
+assert.equal(topicOf({title:"Natura 2000 sites",provider:"ANB",euThemes:["ENVI"]}),"environment");
 assert.equal(topicOf({title:"T02Kd Formatie van Kattendijk",provider:"Databank Ondergrond Vlaanderen (DOV)",euThemes:["TECH","REGI"]}),"geology");
 assert.equal(topicOf({title:"Gemeentegrenzen",provider:"NGI",euThemes:["GOVE","REGI"]}),"places");
 assert.equal(topicOf({title:"Zonne-energie installaties",provider:"X",euThemes:[]}),"energy");

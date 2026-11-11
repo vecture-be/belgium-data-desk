@@ -47,6 +47,8 @@ export const CONCEPTS=[
   ["waste","afval","dechets","recycling","recyclage","recyclage","huisvuil","containerpark","recyparc"],
   ["quality","kwaliteit","qualite"],
   ["solar","zonne","zonnepanelen","zonnepaneel","zonnestroom","photovoltaique","photovoltaic","photovoltaics","fotovoltaisch","pv","solaire"],
+  ["panels","panelen","paneel","panneaux","panneau"],
+  ["batteries","battery","batterij","batterijen","thuisbatterij","thuisbatterijen","batterie","accu","accus"],
   ["environment","milieu","environnement","environmental","ecologie","ecology"],
   ["health","gezondheid","sante","zorg","soins","care","healthcare","gezondheidszorg"],
   ["hospital","ziekenhuis","ziekenhuizen","hopital","hopitaux","hospitals"],

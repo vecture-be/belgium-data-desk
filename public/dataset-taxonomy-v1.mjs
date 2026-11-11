@@ -45,12 +45,28 @@ const TOPIC_RULES=[
 const EU_TO_TOPIC={AGRI:"agriculture",ECON:"economy",EDUC:"education",ENER:"energy",ENVI:"environment",HEAL:"health",JUST:"government",SOCI:"population",TRAN:"transport",INTR:"government"};
 // Publishers whose whole catalogue sits in one topic.
 const PUBLISHER_TOPIC=[[/databank ondergrond|\bdov\b/,"geology"],[/sciensano|departement zorg|fps health/,"health"],[/infrabel|sncb|nmbs|de lijn|\bstib\b|\btec\b|transportdata|mobility/,"transport"],[/\belia\b|fluvius/,"energy"]];
+const ENVI_KEEP=/\b(emissi\w*|uitstoot|broeikas\w*|greenhouse|climat\w*|klimaat\w*|pollution|vervuiling|verontreiniging)\b/;
+const ENERGY_STRONG=/\b(energi\w*|electric\w*|elektric\w*|electricite|photovolta\w*|fotovolta\w*|zonnepanel\w*|warmtekaart|fluvius|elia)\b/;
+/** For a record whose only specific EU theme is ENVI: the energy, water, geology or agriculture topic its title clearly names, else null.
+ *  Titles about emissions or climate stay environment ("Greenhouse gas emissions", "Wind speed - 2085"). Exported so the index builder
+ *  can refine topics stored by an earlier harvest. */
+export function enviOverride(item){
+  const eu=SPECIFIC_EU.filter(c=>(item.euThemes||[]).includes(c));
+  if(eu.length!==1||eu[0]!=="ENVI")return null;
+  const t=norm(item.title);if(ENVI_KEEP.test(t))return null;
+  if(ENERGY_STRONG.test(t))return"energy";
+  const own=TOPIC_RULES.find(([,,re])=>re.test(t))?.[0];
+  return["water","geology","agriculture"].includes(own)?own:null;
+}
 const SPECIFIC_EU=["ENER","TRAN","HEAL","AGRI","EDUC","ENVI","SOCI","ECON","JUST","INTR"];
 // Order of trust: publisher-declared EU theme → title keywords (title only, never the publisher name) → publisher default → weak EU codes.
 export function topicOf(item){
   const title=norm([item.title,(item.themes||[]).filter(t=>!/^[A-Z]{4}$/.test(t)).join(" ")].join(" ")),provider=norm(item.provider);
   const eu=SPECIFIC_EU.filter(c=>(item.euThemes||[]).includes(c));
   const byTitle=TOPIC_RULES.find(([,,re])=>re.test(title))?.[0];
+  // ENVI is the catch-all many publishers tag on energy, water and soil records: a title that clearly names one of those wins over it
+  // ("Renewable energies in the Brussels-Capital Region" is energy, not environment).
+  const refined=enviOverride(item);if(refined)return refined;
   if(eu.length===1)return EU_TO_TOPIC[eu[0]];
   if(eu.length>1){const topics=eu.map(c=>EU_TO_TOPIC[c]);return topics.includes(byTitle)?byTitle:topics[0]}
   if(byTitle)return byTitle;

@@ -18,7 +18,7 @@ async function identify(client,service,x,y){
   const q=new URLSearchParams({geometry:x+","+y,geometryType:"esriGeometryPoint",sr:"31370",layers:"all",tolerance:"0",
     mapExtent:[x-50,y-50,x+50,y+50].join(","),imageDisplay:"100,100,96",returnGeometry:"false",f:"json"});
   const r=await getJson(client,BASE+service+"/MapServer/identify?"+q,{maxBytes:64*1024,ttl:7*DAY});
-  if(r.error)return{error:r.error};
+  if(r.error)return{error:r.error,...(r.transient?{transient:true}:{})};
   if(r.json?.error)return{error:"VMM's map service answered: "+String(r.json.error.message||"error").slice(0,80)};
   // no feature at the point means class A (the maps only contain flood-prone areas); the highest class wins if polygons overlap
   const codes=(r.json?.results||[]).map(x=>Number(x.attributes?.gridcode)).filter(n=>n>=0&&n<=3);
@@ -28,9 +28,13 @@ async function identify(client,service,x,y){
 export async function floodRisk(client,args,{assets}={}){
   const w=await resolveLocation(client,args);if(w.error)return{error:w.error.replace("which is the area DOV covers","which these maps cover"),...(w.location?{location:w.location}:{})};
   const loc=w.loc;
-  const [res,place]=await Promise.all([Promise.all(MAPS.map(([,s])=>identify(client,s,Math.round(loc.x),Math.round(loc.y)))),placeContext(client,assets,loc).catch(()=>null)]);
-  if(res.every(r=>r.error))return{error:"VMM's flood maps did not answer; try again in a minute.",location:loc};
-  const maps=Object.fromEntries(MAPS.map(([k,,desc],i)=>{const r=res[i];if(r.error)return[k,{error:r.error}];const c=CLASS[r.code];return[k,{class:c[0],label_nl:c[1],meaning:c[2],flooding:desc}]}));
+  const ask=s=>identify(client,s,Math.round(loc.x),Math.round(loc.y));
+  const [res,place]=await Promise.all([Promise.all(MAPS.map(([,s])=>ask(s))),placeContext(client,assets,loc).catch(()=>null)]);
+  // A map that timed out or answered 5xx is asked once more (the services are slow under load, rarely down), within the request budget.
+  let retried=0;
+  await Promise.all(res.map(async(r,i)=>{if(r.error&&r.transient){retried++;const again=await ask(MAPS[i][1]);res[i]=again.error?{...again,retried:true}:again}}));
+  if(res.every(r=>r.error))return{error:"VMM's flood maps did not answer"+(retried?" (asked twice)":"")+"; try again in a minute.",retry_after_seconds:60,location:loc};
+  const maps=Object.fromEntries(MAPS.map(([k,,desc],i)=>{const r=res[i];if(r.error)return[k,{error:r.error+(r.retried?" (asked twice)":"")}];const c=CLASS[r.code];return[k,{class:c[0],label_nl:c[1],meaning:c[2],flooding:desc}]}));
   const worst=Object.values(maps).filter(m=>m.class).sort((a,b)=>b.class.localeCompare(a.class))[0];
   const facts=[];
   const prone=Object.entries(maps).filter(([,m])=>m.class&&m.class!=="A");
@@ -39,11 +43,11 @@ export async function floodRisk(client,args,{assets}={}){
   facts.push(prone.length?"Flood-prone by the official VMM maps: "+prone.map(([,m])=>"class "+m.class+" ("+m.meaning+") "+m.flooding).join("; ")+"."
     :!failed.length?"Not flood-prone on any of the three official VMM maps (class A: no flooding modelled from rivers, rain or the sea)."
     :"Not flood-prone on the VMM map"+(checked.length>1?"s":"")+" that answered (class A, no flooding modelled "+checked.map(([,,d])=>d).join(" or ")+").");
-  if(failed.length)facts.push("Not checked: flooding "+failed.map(([,,d])=>d).join(" and ")+", because that map service did not answer; it is not ruled out. Try again later.");
+  if(failed.length)facts.push("Not checked: flooding "+failed.map(([,,d])=>d).join(" and ")+", because that map service did not answer"+(retried?" (asked twice)":"")+"; it is not ruled out. Call flood_risk again in a minute for the missing map.");
   facts.push("These are the maps used for the legally required flood information when property in Flanders is sold or let, and for the water test; the official per-parcel (P) and per-building (G) scores are derived from them on waterinfo.vlaanderen.be.");
   return clean({key_facts:facts,location:clean({...loc,x_lambert72:loc.x,y_lambert72:loc.y,x:undefined,y:undefined,geocoded:undefined}),place,
     // the highest class is only known when every map answered, or when one that answered already shows a flood-prone class
-    maps,highest_class:!failed.length||prone.length?worst?.class:undefined,...(failed.length?{complete:false}:{}),
+    maps,highest_class:!failed.length||prone.length?worst?.class:undefined,...(failed.length?{complete:false,retry:{after_seconds:60,maps:failed.map(([k])=>k),how:"Call flood_risk again with the same address; map answers that did arrive are cached, so mainly the missing map is asked again."}}:{}),
     note:"Classes A-D as published by VMM: A no flooding modelled, B small chance under climate change, C small chance, D medium chance. The maps are modelled on a grid and describe the location, not a building's floor level, defences or insurance. A point on the edge of a zone can differ from the parcel score.",
     provenance:{source:"Vlaamse Milieumaatschappij (VMM), overstromingsgevoelige gebieden (informatieplicht)",licence:"Modellicentie Gratis Hergebruik (Flemish free-reuse model licence)",
       services:MAPS.map(([,s])=>BASE+s+"/MapServer"),citation:"VMM, overstromingsgevoelige gebieden fluviaal, pluviaal en vanuit de zee (informatieplicht), geraadpleegd op "+new Date().toISOString().slice(0,10)+", via waterinfo.be."}});

@@ -11,7 +11,7 @@ export default defineTool({
   }},
   source:{publisher:"Vlaamse Milieumaatschappij (VMM), via waterinfo.be",licence:"Modellicentie Gratis Hergebruik",url:"https://www.waterinfo.be"},
   hosts:["inspirepub.waterinfo.be",...GEOCODER_HOSTS],
-  maxRequests:8,
+  maxRequests:11,
   run:floodRisk,
   examples:[
     {args:{address:"Grote Markt 1, 3000 Leuven"},note:"Is the Grote Markt in Leuven flood-prone?",replay:true},

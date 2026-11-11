@@ -9,7 +9,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { mergeDiscoveredAssets } from "../public/dataset-discovery-v1.mjs";
-import { SCOPES, scopeCounts, scopeOf, TOPIC_LABELS, topicOf } from "../public/dataset-taxonomy-v1.mjs";
+import { SCOPES, enviOverride, scopeCounts, scopeOf, TOPIC_LABELS, topicOf } from "../public/dataset-taxonomy-v1.mjs";
 import { normalizeLicense } from "../public/dataset-licence-v1.mjs";
 import { AUTHORITIES } from "../public/dataset-authority-v1.mjs";
 import { DETAIL_CHUNK, DOC_CHUNK, idShard, prefixKey, tokenShard, tokenize } from "../mcp-server.mjs";
@@ -56,7 +56,7 @@ const rankOf=it=>(5-SCOPE_ORDER[scopeOf(it)])*10000+(it.curated?5000:0)+(TIER_RA
 export function toDocs(it,relay){
   const lic=it.licenseFamily?{label:it.license,family:it.licenseFamily}:normalizeLicense(it.licenseUri||it.license);
   const desc=stripHtml(it.description),formats=(it.formats||[]).map(formatLabel).filter(Boolean).slice(0,5);
-  const light={id:it.id,t:clean(it.title),p:clean(it.provider),k:it.dataKind||"dataset",tp:it.topic||topicOf(it),f:formats,l:lic.label||"",lf:lic.family||"unknown",
+  const light={id:it.id,t:clean(it.title),p:clean(it.provider),k:it.dataKind||"dataset",tp:(!it.curated&&it.topic==="environment"&&enviOverride(it))||it.topic||topicOf(it),f:formats,l:lic.label||"",lf:lic.family||"unknown",
     u:(it.dataProcessedAt||it.updatedAt||"").slice(0,10),tier:it.tier||"",sid:it.seriesId||"",s:desc.slice(0,160),w:it.officialUrl||"",...(it.curated?{c:1}:{})};
   const seen=new Set();
   const files=(it.distributions||[]).filter(d=>d?.url&&/^https:/i.test(d.url)&&!seen.has(d.url)&&seen.add(d.url)).slice(0,4).map(d=>{
