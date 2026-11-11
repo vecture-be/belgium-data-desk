@@ -19,6 +19,14 @@
   "vars": {
     "PUBLIC_ORIGIN": "https://data.vecture.be"
   },
+  // Report queue for report_data_issue (feedback.mjs). Sending stays off until the MAIL_API_KEY and FEEDBACK_SECRET secrets and the
+  // FEEDBACK_MAIL_FROM var are set; FEEDBACK_DIGEST=send releases the weekly publisher digests (default: held).
+  "durable_objects": {
+    "bindings": [{ "name": "FEEDBACK", "class_name": "FeedbackDesk" }]
+  },
+  "migrations": [{ "tag": "v1-feedback", "new_sqlite_classes": ["FeedbackDesk"] }],
+  // Mondays 07:00 UTC: queue clean-up and the weekly digest.
+  "triggers": { "crons": ["0 7 * * 1"] },
   "analytics_engine_datasets": [
     {
       "binding": "MCP_USAGE",

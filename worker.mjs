@@ -1,5 +1,8 @@
 import { RELAY_INDEX } from "./relay-index.mjs";
-import { handleMcp } from "./mcp-server.mjs";
+import { handleMcp, publicOrigin } from "./mcp-server.mjs";
+import { handleFeedbackHttp, runDigest } from "./feedback.mjs";
+// The report queue (feedback.mjs): a Durable Object class must be exported from the Worker's main module.
+export { FeedbackDesk } from "./feedback.mjs";
 
 const MAX_RELAY_BYTES=8*1024*1024;
 const PREVIEW_RELAY_BYTES=512*1024;
@@ -171,6 +174,11 @@ export default{
     if(url.pathname.startsWith("/api/dataset-file/"))return proxyDatasetFile(request,env);
     if(url.pathname==="/mcp")return handleMcp(request,env,{previewFile:makePreviewFile(env),dov:{fetchImpl:(u,init)=>fetch(u,init),rateLimit:()=>dovRateLimit(env)}});
     if(url.pathname==="/api/publisher-file")return errorResponse("This URL-based proxy has been removed. Use a catalogue-backed dataset relay ID.",410);
+    if(url.pathname.startsWith("/feedback/"))return handleFeedbackHttp(request,env);
     return env.ASSETS.fetch(request);
+  },
+  // Weekly (wrangler.jsonc triggers): clean up the report queue and send the publisher digests when FEEDBACK_DIGEST=send.
+  async scheduled(event,env,ctx){
+    ctx.waitUntil(runDigest(env,{origin:publicOrigin(env,new Request("https://data.vecture.be/"))}).catch(()=>null));
   }
 };

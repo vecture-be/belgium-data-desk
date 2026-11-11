@@ -41,7 +41,7 @@ assert.equal(init.body.result.protocolVersion,"2025-03-26");assert.ok(init.body.
 const note=await worker.fetch(new Request("https://desk.example/mcp",{method:"POST",body:JSON.stringify({jsonrpc:"2.0",method:"notifications/initialized"})}),env);
 assert.equal(note.status,202);
 const list=await rpc("tools/list");
-assert.deepEqual(list.body.result.tools.map(t=>t.name).sort(),["air_quality","belgian_statistics","catalogue_overview","fetch","flood_risk","get_dataset","get_subsurface_record","preview_dataset","search","search_datasets","search_subsurface","subsurface_at_location"]);
+assert.deepEqual(list.body.result.tools.map(t=>t.name).sort(),["air_quality","belgian_statistics","catalogue_overview","contact_publisher","fetch","flood_risk","get_dataset","get_subsurface_record","preview_dataset","search","search_datasets","search_subsurface","subsurface_at_location"]);
 // Anthropic directory requirements: every tool has a title, readOnlyHint/destructiveHint annotations and a name of at most 64 characters.
 assert.ok(list.body.result.tools.every(t=>t.title&&t.annotations.title&&t.annotations.readOnlyHint===true&&t.annotations.destructiveHint===false&&t.name.length<=64));
 // only preview_dataset (a publisher's server) and the two DOV tools (DOV's services) reach outside (openWorldHint); the rest answer from the static index

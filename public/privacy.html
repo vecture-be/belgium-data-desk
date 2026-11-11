@@ -12,7 +12,7 @@
 <main>
   <p><a href="/">← Belgium Data Desk</a></p>
   <h1>Privacy</h1>
-  <p class="mut">Last updated 1 November 2026. Belgium Data Desk is operated by Vecture (<a href="https://vecture.be">vecture.be</a>).</p>
+  <p class="mut">Last updated 11 November 2026. Belgium Data Desk is operated by Vecture (<a href="https://vecture.be">vecture.be</a>).</p>
 
   <h2>The website</h2>
   <p>Belgium Data Desk has no accounts, no advertising and no analytics or tracking scripts. Dataset profiling and SQL analysis run inside your browser; files you choose or drop stay on your device. Your pins and preferences are kept in your browser’s local storage and never sent to us.</p>
@@ -28,13 +28,17 @@
   <p>Search words and dataset ids are not kept after the answer is sent. The aggregate usage counters described above are kept for up to three months in Cloudflare’s analytics storage and are then deleted automatically.</p>
 
   <h2>Sharing</h2>
-  <p>We do not sell, rent or share data with anyone, and there is no advertising. The only third party involved is our hosting provider, below.</p>
+  <p>We do not sell, rent or share data with anyone, and there is no advertising. The only third parties involved are our hosting provider, below, and, for reports you ask us to forward, our email provider and the publisher you write to.</p>
 
   <h2>Our hosting provider</h2>
   <p>The service runs on Cloudflare Workers. Like any web host, Cloudflare processes standard request information (such as IP address and request time) to deliver the service and keep it secure, under its own privacy terms. We do not receive or keep this information as a log of individual users.</p>
 
   <h2>Fetching public files</h2>
   <p>For some publisher files the site offers a bounded relay so your browser can read them. The relay only fetches files that are already listed in the public catalogue, forwards no cookies or personal headers to the publisher, and does not store the files.</p>
+
+  <h2 id="reports">Messages and reports to publishers</h2>
+  <p><b>Drafts you send yourself.</b> The <code>contact_publisher</code> tool only prepares a message and a mail link addressed to the contact the publisher declared in its own catalogue record. Nothing is sent by us; you send it from your own mailbox, and we do not store the draft.</p>
+  <p><b>Reports we forward</b> (the <code>report_data_issue</code> tool, offered only when this service is switched on). When you ask an assistant to file a report, we receive the dataset id, the problem you describe and the email address you give. We email you a confirmation link; nothing reaches the publisher unless you open it and press Confirm, and an unconfirmed report is deleted after 48 hours. Confirmed reports are sent once a week to the publisher’s declared contact address, merged with other reports of the same problem. Your email address is passed to the publisher only if you chose that; it is deleted from our queue as soon as the weekly digest is sent. To enforce the limits (3 reports a day, 10 in 30 days) we keep a keyed hash of your address for 31 days, and the report text itself, without your address, for up to a year, listed publicly without personal data at <a href="/feedback/open.json">/feedback/open.json</a>. Emails are delivered by our email provider (Resend), which processes the recipient address to deliver them. The legal basis is your request (consent), which you can withdraw by ignoring or deleting an unconfirmed report, or by writing to us to delete a confirmed one. Publishers can stop the digests with the link in each one.</p>
 
   <h2>Personal data in the catalogue</h2>
   <p>The catalogue contains publisher contact points (for example a department’s email address) exactly as the publishers publish them in open-data catalogues. If you believe a contact detail should not be shown, tell the publisher or contact us and we will remove it from our copy.</p>
