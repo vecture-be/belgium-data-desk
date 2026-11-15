@@ -23,6 +23,7 @@ The public service combines a searchable catalogue, browser-based analysis and r
 | `flood_risk` | VMM's official flood-prone maps (Flanders) |
 | `river_levels` | waterinfo.be (VMM, HIC): live river, canal and tide levels against watch and alarm levels (Flanders) |
 | `weather` | KMI/IRM: measured weather now, last 24 hours and 7 days, ALARO forecast for 48 hours |
+| `train_punctuality` | Infrabel: punctuality of a station, a train yesterday, an IC line or the network, with causes, cancellations and today so far |
 | `subsurface_at_location`, `search_subsurface`, `get_subsurface_record` | Databank Ondergrond Vlaanderen: soil, geology, boreholes, groundwater |
 | `search`, `fetch` | Same catalogue, in the shape ChatGPT deep research expects |
 

@@ -150,5 +150,56 @@
     ],
     "source": "https://statbel.fgov.be/en/open-data/real-estate-sales-according-nature-property-deed-sale-belgium",
     "why": "Statbel deed-of-sale statistics; a new publication can revise it, then update the value with the source."
+  },
+  {
+    "question": "How punctual were Belgian trains in October 2026?",
+    "tool": "train_punctuality",
+    "args": {
+      "month": "2026-10"
+    },
+    "expect": [
+      {
+        "path": "month",
+        "equals": "2026-10"
+      },
+      {
+        "path": "national.on_time_pct",
+        "equals": 91.2
+      },
+      {
+        "path": "national.trains",
+        "equals": 118108
+      },
+      {
+        "path": "national.with_cancellations_pct",
+        "equals": 88.3
+      }
+    ],
+    "source": "https://opendata.infrabel.be/explore/dataset/nationale-stiptheid-per-maand/",
+    "why": "Infrabel publishes a month once; a change means the dataset or the month filter changed, or the figure was mixed up with the neutralised one (94.3)."
+  },
+  {
+    "question": "How punctual were trains at Leuven station in October 2026?",
+    "tool": "train_punctuality",
+    "args": {
+      "station": "Louvain",
+      "month": "2026-10"
+    },
+    "expect": [
+      {
+        "path": "station.ptcar_no",
+        "equals": 715
+      },
+      {
+        "path": "month.on_time_pct",
+        "equals": 90.4
+      },
+      {
+        "path": "month.trains",
+        "equals": 11701
+      }
+    ],
+    "source": "https://opendata.infrabel.be/explore/dataset/maandelijkse-stiptheid-per-stopplaats/",
+    "why": "Checks the French name resolves to the right stop and the per-stop month is read, not the national figure."
   }
 ]

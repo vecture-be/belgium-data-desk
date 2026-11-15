@@ -9,6 +9,7 @@ import airQuality from "./air-quality.mjs";
 import floodRisk from "./flood-risk.mjs";
 import riverLevels from "./river-levels.mjs";
 import weather from "./weather.mjs";
+import trainPunctuality from "./train-punctuality.mjs";
 import realEstatePrices from "./real-estate-prices.mjs";
 
 export const LIVE_TOOLS=Object.freeze([
@@ -20,7 +21,8 @@ export const LIVE_TOOLS=Object.freeze([
   floodRisk,
   realEstatePrices,
   riverLevels,
-  weather
+  weather,
+  trainPunctuality
 ]);
 
 const byName=new Map();
