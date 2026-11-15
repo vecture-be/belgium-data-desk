@@ -6,6 +6,8 @@ Belgium Data Desk is a catalogue of about 21,700 Belgian open-data records (data
 
 Hosted instance: **https://data.vecture.be** · MCP endpoint: `https://data.vecture.be/mcp` (no account, read-only)
 
+Listed in the official [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.vecture-be%2Fbelgium-data-desk/versions/latest) as `io.github.vecture-be/belgium-data-desk`, so registry-aware clients and directories can find it by name.
+
 ```bash
 claude mcp add --transport http belgium-open-data https://data.vecture.be/mcp
 ```
