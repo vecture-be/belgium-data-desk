@@ -76,6 +76,8 @@ export function matchStation(stops,input){
   // the name as given first; then translated whole ("Antwerp"), then by its first part ("Luik-Guillemins" -> "liege-guillemins").
   // Translating first would break real names that start with an exonym ("Louvain-la-Neuve" is not "Leuven-la-Neuve").
   const tries=[q0,ALIAS[q0],q0.includes("-")&&ALIAS[q0.split("-")[0]]?ALIAS[q0.split("-")[0]]+q0.slice(q0.indexOf("-")):null].filter((x,i,a)=>x&&a.indexOf(x)===i);
+  // exact names for every spelling before any partial match: "Louvain" must reach Leuven (exonym) before it prefixes Louvain-la-Neuve
+  for(const q of tries){const ex=stops.filter(s=>[s.nl,s.fr,s.en].map(fold).includes(q));if(ex.length)return{stop:ex.sort((a,b)=>(b.tel||0)-(a.tel||0))[0]}}
   let ambiguous=null;
   for(const q of tries){const m=matchOne(stops,q,input);if(m.stop)return m;if(m.error&&!ambiguous&&m.ambiguous)ambiguous=m}
   return ambiguous||{error:"No passenger station called '"+input+"' in Infrabel's list. Use the name on the station (Dutch or French), e.g. 'Leuven', 'Bruxelles-Midi', 'Gent-Sint-Pieters', or give an address."};
