@@ -18,6 +18,8 @@ const CALLS=[
   ["belgian_statistics",{places:["Gent"],topic:"population"}],
   ["air_quality",{address:"Grote Markt 1, 1000 Brussel"}],
   ["flood_risk",{address:"Grote Markt 1, 3000 Leuven"}],
+  ["river_levels",{station:"Korbeek-Dijle"}],
+  ["weather",{address:"Grote Markt 1, 3000 Leuven"}],
   ["subsurface_at_location",{address:"Grote Markt 1, 3000 Leuven"}],
   ["search_subsurface",{record_type:"boreholes",municipality:"Leuven",limit:3}],
   ["get_subsurface_record",{id:"boring/2016-140688"}],
