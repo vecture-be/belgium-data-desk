@@ -7,6 +7,7 @@ import searchSubsurface from "./search-subsurface.mjs";
 import belgianStatistics from "./belgian-statistics.mjs";
 import airQuality from "./air-quality.mjs";
 import floodRisk from "./flood-risk.mjs";
+import realEstatePrices from "./real-estate-prices.mjs";
 
 export const LIVE_TOOLS=Object.freeze([
   subsurfaceAtLocation,
@@ -14,7 +15,8 @@ export const LIVE_TOOLS=Object.freeze([
   searchSubsurface,
   belgianStatistics,
   airQuality,
-  floodRisk
+  floodRisk,
+  realEstatePrices
 ]);
 
 const byName=new Map();

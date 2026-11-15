@@ -263,3 +263,6 @@ export async function belgianStatistics(client,args,{assets}={}){
     boundaries:P.data.meta.boundaries,
     provenance:provenance(topic==="population"?["population"]:topic==="income"?["income"]:["population","income"],{tables_built:P.data.meta.built})});
 }
+
+/** Place resolution shared with other Statbel-based tools (tools/real-estate-prices.mjs): names, NIS codes, 2025 mergers. */
+export const _statbelPlaces={places,resolvePlace,label};

@@ -21,6 +21,7 @@ export const CONCEPTS=[
   ["poverty","armoede","pauvrete","risk of poverty","deprivation"],
   ["housing","woning","woningen","logement","logements","wonen","habitat","dwelling","dwellings","huisvesting"],
   ["price","prijs","prijzen","prix","inflation","inflatie","cpi","consumptieprijzen"],
+  ["estate","vastgoed","vastgoedprijzen","vastgoedprijs","immobilier","immobiliers","immobiliere","immo","onroerend","onroerende","woningprijzen","huizenprijzen"],
   ["tax","belasting","belastingen","impot","impots","fiscal","fiscaal","taxes","fiscalite"],
   ["budget","begroting","begrotingen","budgets","public finance","overheidsfinancien","finances"],
   ["enterprise","enterprises","company","companies","onderneming","ondernemingen","entreprise","entreprises","kbo","bce","crossroads","kruispuntbank","vkbo","ondernemingsnummer","business","businesses","bedrijf","bedrijven","firm","vat","btw","tva","numero"],

@@ -52,5 +52,7 @@
   { "q": "jaarrekeningen bedrijven", "expect": "jaarrekening|account|NBB|National Bank", "best": "National Bank", "heldout": true },
   { "q": "code INS communes", "expect": "INS|NIS|REFNIS|commune", "best": "REFNIS|Statbel|Territorial", "heldout": true },
   { "q": "consommation électricité", "expect": "consommation|consumption|verbruik|électricité|electric", "best": "Fluvius|consumption|consommation", "heldout": true },
-  { "q": "taux de chômage", "expect": "chômage|unemploy|werkloos", "best": "unemploy|chômage|werkloos|ONEM|RVA", "heldout": true }
+  { "q": "taux de chômage", "expect": "chômage|unemploy|werkloos", "best": "unemploy|chômage|werkloos|ONEM|RVA", "heldout": true },
+  { "q": "vastgoedprijzen per gemeente", "expect": "real estate|vastgoed|immobili", "best": "Real estate sales|Sales of real estate|Vastgoed" },
+  { "q": "prix immobilier commune", "expect": "immobili|real estate|vastgoed" }
 ]
