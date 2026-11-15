@@ -33,7 +33,7 @@ const fcRun=T-36e5;
 const vmmFc=Array.from({length:4*60},(_,i)=>{const t=fcRun-12*36e5+i*15*60e3,h=(t-T)/36e5;return[new Date(t).toISOString(),h<=0?24.18:24.18+2.15*Math.min(1,h/48)]});
 const hicTide=Array.from({length:12*60},(_,i)=>{const t=T-36e5+i*5*60e3,h=(t-T)/36e5;return[new Date(t).toISOString(),round2(2.6+2.5*Math.cos((h+0.5)/12.42*2*Math.PI))]});
 function round2(x){return Math.round(x*100)/100}
-function kiwis({hicDown=false,noForecast=false}={}){
+function kiwis({hicDown=false,noForecast=false,fcTimeout=false}={}){
   return async url=>{
     const u=new URL(url),p=P(url),host=u.hostname;
     if(host==="hicws.vlaanderen.be"&&hicDown)throw Object.assign(new Error("t"),{name:"TimeoutError"});
@@ -43,6 +43,7 @@ function kiwis({hicDown=false,noForecast=false}={}){
       {ts_id:503,station_no:"S01_42A8",parametertype_name:"H_voorspeld",timestamp:"2021-07-01T05:00:00+02:00"}]);
     if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id==="506056")return json(noForecast?[]:[{ts_id:601,station_no:"zes21a-1066",parametertype_name:"W_voorspeld",timestamp:new Date(T-36e5).toISOString()}]);
     if(p.request==="getTimeseriesValues"&&!p.period&&!p.from){
+      if(fcTimeout)throw Object.assign(new Error("t"),{name:"TimeoutError"});
       assert.ok(!p.to,"forecast values are asked without a window (HIC answers nothing with one)");
       const ids=p.ts_id.split(",");
       assert.ok(!ids.includes("503"),"a stale forecast run is not read");
@@ -101,6 +102,13 @@ const river=(args,opts)=>atTime(NOW,()=>{const client=makeDovClient({fetchImpl:k
 { // without forecasts the answer is unchanged in shape
   const out=await river({station:"L08_097"},{noForecast:true});
   assert.equal(out.gauges[0].level_forecast,undefined);assert.doesNotMatch(out.key_facts[0],/VMM forecast/);
+  assert.equal(out.complete,undefined,"no forecast published is not a partial answer");
+}
+{ // a forecast that times out is said to be missing (and the answer marked partial), never silently left out
+  const out=await river({station:"L08_097"},{fcTimeout:true});
+  assert.equal(out.gauges[0].level_forecast,undefined);assert.equal(out.complete,false);assert.deepEqual(out.search.forecasts_not_answering,["VMM"]);
+  assert.match(out.key_facts.at(-1),/^The VMM water-level forecast could not be read just now \(waterinfo\.be \(VMM\) did not answer within \d+ s\); the levels above are measured only/);
+  assert.deepEqual(checkAnswer(out),[]);
 }
 { // above the watch level: said plainly, with a negative margin
   const out=await river({station:"Ichtegem"});

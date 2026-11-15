@@ -132,7 +132,7 @@ async function forecastLayer(client,key){
   const f=FORECAST[key];
   const r=await getJson(client,url(KIWIS[key],{request:"getTimeseriesValueLayer",timeseriesgroup_id:f.group,metadata:"true",
     md_returnfields:"ts_id,station_no,parametertype_name"}),{maxBytes:1<<20,ttl:LIVE_TTL});
-  if(r.error||!Array.isArray(r.json))return{};
+  if(r.error||!Array.isArray(r.json))return{by:{},error:r.error||"no forecast list"};
   const by={};
   for(const row of r.json){
     const run=Date.parse(row.timestamp);if(!row.station_no||!Number.isFinite(run))continue;
@@ -140,15 +140,15 @@ async function forecastLayer(client,key){
     const cur=(by[row.station_no]||(by[row.station_no]={}))[k];
     if(!cur||run>cur.run)by[row.station_no][k]={ts_id:String(row.ts_id),run,param:row.parametertype_name};
   }
-  return by;
+  return{by};
 }
 /** Values of forecast series (one request). Asked without a period, a KT series answers its whole latest run (VMM with ~36 h of
  *  hindcast before it); HIC answers nothing at all when a from/to window is given, so none is. */
 async function forecastValues(client,key,ids){
-  if(!ids.length)return{};
+  if(!ids.length)return{values:{}};
   const r=await getJson(client,url(KIWIS[key],{request:"getTimeseriesValues",ts_id:ids.join(","),returnfields:"Timestamp,Value",metadata:"true",md_returnfields:"ts_id"}),{maxBytes:2<<20,ttl:LIVE_TTL});
-  if(r.error||!Array.isArray(r.json))return{};
-  return Object.fromEntries(r.json.map(t=>[String(t.ts_id),(t.data||[]).filter(d=>typeof d[1]==="number").map(([t2,v])=>[Date.parse(t2),v])]));
+  if(r.error||!Array.isArray(r.json))return{values:{},error:r.error||"no forecast values"};
+  return{values:Object.fromEntries(r.json.map(t=>[String(t.ts_id),(t.data||[]).filter(d=>typeof d[1]==="number").map(([t2,v])=>[Date.parse(t2),v])]))};
 }
 /** High and low waters of a tide forecast. A turn is the extreme of the 3 hours either side and stands at least 30 cm above (below)
  *  the other end of that window: values come rounded to the centimetre, so a flat low water wiggles (0.11, 0.10, 0.11) and a plain
@@ -355,13 +355,15 @@ export async function riverLevels(client,args,{assets}={}){
   const provs=[...new Set(picked.map(x=>x.s.provider))],now=Date.now();
   const details=await Promise.all(provs.map(async k=>{
     const ss=picked.filter(x=>x.s.provider===k).map(x=>x.s);
-    const [hist,status,lt,fby]=await Promise.all([history(client,k,ss.map(s=>s.ts_id)),statusLayer(client,k),longTerm(client,k,ss),FORECAST[k]?forecastLayer(client,k):Promise.resolve({})]);
+    const [hist,status,lt,fl]=await Promise.all([history(client,k,ss.map(s=>s.ts_id)),statusLayer(client,k),longTerm(client,k,ss),FORECAST[k]?forecastLayer(client,k):Promise.resolve({by:{}})]);
     // only fresh runs are read: a stale run would be dropped anyway
-    const ids=ss.flatMap(s=>{const f=fby[s.station_no];return f?.level&&now-f.level.run<=FC_STALE_H*36e5?[f.level.ts_id,f.rain?.ts_id].filter(Boolean):[]});
-    const values=await forecastValues(client,k,ids);
-    return[k,{hist,status,lt,fc:{by:fby,values}}];
+    const ids=ss.flatMap(s=>{const f=fl.by[s.station_no];return f?.level&&now-f.level.run<=FC_STALE_H*36e5?[f.level.ts_id,f.rain?.ts_id].filter(Boolean):[]});
+    const fv=await forecastValues(client,k,ids);
+    return[k,{hist,status,lt,fc:{by:fl.by,values:fv.values},fcError:fl.error||fv.error||null}];
   }));
   const D=Object.fromEntries(details);
+  // a forecast that could not be read is said to be missing: silence would read as "no forecast for this gauge"
+  const fcFailed=provs.filter(k=>D[k].fcError).map(k=>KIWIS[k].short);
   const views=picked.map(({s,d})=>{const x=D[s.provider];return view(s,d,x.hist,x.status?.by?.[s.provider==="spw"?null:s.station_no],x.lt?.[s.station_no],
     s.provider==="spw"&&s.basin?x.status?.by?.[s.basin]?.["00-Statut.InfoCrue.O"]:null,x.fc)});
   const facts=views.map(fact);
@@ -370,13 +372,15 @@ export async function riverLevels(client,args,{assets}={}){
   const noThr=views.filter(v=>!v.thresholds||v.thresholds.below_watch_cm==null&&v.thresholds.below_alarm_cm==null).length;
   if(views.length>1)facts.push((watch.length?watch.length+" of these "+views.length+" gauges are at or above a published threshold":"None of these "+views.length+" gauges is at or above a published watch or alarm level")+
     (noThr?" ("+(noThr===views.length?"none of them publishes one":noThr+" of them "+(noThr===1?"publishes":"publish")+" none")+")":"")+(fcw.length?"; a forecast raises the status at "+fcw.map(v=>v.name).join(", "):"")+".");
+  if(fcFailed.length)facts.push("The "+fcFailed.join(" and ")+" water-level forecast could not be read just now ("+D[provs.find(k=>D[k].fcError)].fcError+"); the levels above are measured only, so ask again in a minute for the forecast.");
   const place=loc?await placeContext(client,assets,loc).catch(()=>null):null;
   if(/Waals|Wallon/i.test(place?.region||""))facts.push("This place is in Wallonia: its own river gauges (SPW, hydrometrie.wallonie.be) are not included, because SPW's terms forbid passing that data on; the gauges above are Flemish ones nearby.");
   else if(/Brussel|Bruxelles/i.test(place?.region||""))facts.push("Brussels' own gauges (Flowbru) are not included; the gauges above are on the canal and around the region.");
   const d=new Date().toISOString().slice(0,10);
-  return clean({key_facts:facts.slice(0,10),
+  return clean({key_facts:facts.slice(0,10),complete:fcFailed.length?false:null,
     location:loc?clean({...loc,x_lambert72:loc.x,y_lambert72:loc.y,x:undefined,y:undefined,geocoded:undefined}):null,place,
-    search:clean({mode,radius_km:mode==="station"?null:radius,river:river||null,gauges_reporting_now:pool.length,gauges_not_reporting:retired,services_not_answering:failed.length?failed:null}),
+    search:clean({mode,radius_km:mode==="station"?null:radius,river:river||null,gauges_reporting_now:pool.length,gauges_not_reporting:retired,services_not_answering:failed.length?failed:null,
+      forecasts_not_answering:fcFailed.length?fcFailed:null}),
     gauges:views,
     definitions:{level_m_taw:"Water level in metres above the Belgian reference level TAW/DNG (Tweede Algemene Waterpassing = Deuxième Nivellement Général). Levels at different gauges are not comparable as depths: each river bed has its own height.",
       level_above_gauge_zero_m:"The gauge's own reading above its zero; level_m_taw = reading + gauge_zero_m_taw.",
