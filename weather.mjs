@@ -19,13 +19,58 @@
 //   between samples can be missed; rain totals are exact (accumulation differences).
 // - Synop precipitation is reported only at 00/06/12/18 UTC with a period code (1 = 6 h, 2 = 12 h, ...); a "last 24 hours" total is
 //   assembled from non-overlapping periods, or not given.
-// - KMI's weather warnings are not part of its open data; this tool says so instead of implying "no warning".
+// - KMI's weather warnings are not in opendata.meteo.be; KMI publishes them through EUMETNET's MeteoAlarm feed, read here (below).
+//
+// Official warnings: MeteoAlarm's Belgium feed (feeds.meteoalarm.org, the CAP warnings KMI sends, per province plus the coast). Its terms
+// (meteoalarm.org, Terms and Conditions §5, read 2026-11-15) allow redistribution under CC BY 4.0 with conditions this tool meets: the
+// warning text goes out unchanged next to any summary, KMI is named, the time of issue is given, www.meteoalarm.org is linked, MeteoAlarm's
+// disclaimer is included verbatim, and the delay stays under five minutes (60-second edge cache). Pitfalls handled:
+// - the feed keeps warnings past their end time; a warning counts only while `expires` is in the future
+// - green ("no particular awareness") is an issued state, not a warning; "no warning" is said only when the feed was actually read
+// - KMI warns per province (NUTS2); the two Brabants and Brussels share one area (BE004), and the coast is a zone of its own (BE801)
 import { _dov } from "./dov.mjs";
 import { placeContext } from "./place.mjs";
 const {getJson,resolveLocation,clean,round,num,DAY}=_dov;
 
 const K="https://opendata.meteo.be/service";
-export const WEATHER_HOSTS=Object.freeze(["opendata.meteo.be"]);
+const MA="https://feeds.meteoalarm.org/api/v1/warnings/feeds-belgium";
+export const WEATHER_HOSTS=Object.freeze(["opendata.meteo.be","feeds.meteoalarm.org"]);
+export const MA_DISCLAIMER="Time delays between this website and the www.meteoalarm.org website are possible. For the most up-to-date awareness information as published by the participating National Meteorological and Hydrological Services, please refer to www.meteoalarm.org.";
+// KMI's warning area for a municipality: the first digits of its NIS code give the province
+const AREA_BY_NIS=[[/^1/,"BE21","province of Antwerp"],[/^2[1-5]/,"BE004","Brabant (Brussels, Flemish Brabant and Walloon Brabant)"],[/^3/,"BE25","province of West Flanders"],
+  [/^4/,"BE23","province of East Flanders"],[/^5/,"BE32","province of Hainaut"],[/^6/,"BE33","province of Liège"],[/^7/,"BE22","province of Limburg"],
+  [/^8/,"BE34","province of Luxembourg"],[/^9/,"BE35","province of Namur"]];
+// the coastal municipalities, which also fall in KMI's coastal warning zone
+const COAST_NIS=new Set(["38008","38014","38016","35011","35013","35002","35029","31004","31005","31043"]);
+export function warningAreas(nis){
+  const n=String(nis||"");const a=AREA_BY_NIS.find(([re])=>re.test(n));if(!a)return[];
+  return[{code:a[1],name:a[2]},...(COAST_NIS.has(n)?[{code:"BE801",name:"coastal zone"}]:[])];
+}
+const LEVEL={1:"green",2:"yellow",3:"orange",4:"red"};
+/** The warnings in force or announced for the given areas (all of Belgium when none), from MeteoAlarm's Belgium feed. One request. */
+export async function kmiWarnings(client,areas,now=Date.now()){
+  const r=await getJson(client,MA,{maxBytes:4<<20,ttl:60});
+  if(r.error)return{error:r.error};
+  if(!Array.isArray(r.json?.warnings))return{error:"MeteoAlarm answered without a warning list"};
+  const codes=new Set(areas.map(a=>a.code)),out=[];
+  for(const w of r.json.warnings){
+    const a=w.alert||{};if(a.status!=="Actual"||a.msgType==="Cancel")continue;
+    const infos=a.info||[],en=infos.find(i=>/^en/.test(i.language||""))||infos[0];if(!en)continue;
+    const geo=(en.area||[]).flatMap(x=>(x.geocode||[]).map(g=>g.value));
+    if(codes.size&&!geo.some(g=>codes.has(g)))continue;
+    const exp=Date.parse(en.expires);if(!(exp>now))continue;
+    const p=Object.fromEntries((en.parameter||[]).map(x=>[x.valueName,x.value]));
+    const lvl=num(String(p.awareness_level||"").split(";")[0]),type=String(p.awareness_type||"").split(";")[1]?.trim()||en.event||null;
+    const onset=Date.parse(en.onset||en.effective)||now;
+    const orig=lang=>{const i=infos.find(x=>x.language===lang);return i?clean({headline:i.headline,event:i.event,description:i.description,instruction:i.instruction}):null};
+    out.push({level:lvl,colour:LEVEL[lvl]||null,type,area:(en.area||[]).map(x=>x.areaDesc).join(", "),area_codes:geo,onset,expires:exp,sent:a.sent||null,
+      in_force:onset<=now,identifier:a.identifier||null,severity:en.severity||null,certainty:en.certainty||null,urgency:en.urgency||null,web:en.web||null,
+      original:clean({"en-GB":orig("en-GB"),"nl-BE":orig("nl-BE"),"fr-BE":orig("fr-BE"),"de-DE":orig("de-DE")})});
+  }
+  // the highest level first, then the earliest start
+  out.sort((x,y)=>(y.level??0)-(x.level??0)||x.onset-y.onset);
+  return{warnings:out};
+}
 const FC_STEPS=[0,3,6,9,12,15,18,21,24,36,48];
 const LAYERS=["2_m_temperature","2_m_Max_temp_since_ppp","2_m_Min_temp_since_ppp","Total_precipitation","10_m_u__wind_component","10_m_v__wind_component",
   "SBL_Zonal_gust","SBL_Meridian_gust","Inst_flx_Tot_Cld_cover","2m_Relative_humidity","Large_scale_snow","Convective_snow"].map(l=>"alaro:"+l);
@@ -87,19 +132,20 @@ function summarise(steps,from,to){
 export async function weather(client,args,{assets}={}){
   const w=await resolveLocation(client,args,{area:"belgium"});if(w.error)return{error:w.error,...(w.location?{location:w.location}:{})};
   const loc=w.loc,now=Date.now(),h0=Math.floor(now/HOUR_MS)*HOUR_MS;
-  const [syn,aws,run]=await Promise.all([stations(client,"synop"),stations(client,"aws"),alaroRun(client)]);
+  // warnings and the place first: the forecast samples come last, so a tight request budget can only shorten the forecast
+  const [syn,aws,run,warn,place]=await Promise.all([stations(client,"synop"),stations(client,"aws"),alaroRun(client),kmiWarnings(client,[],now),
+    placeContext(client,assets,loc).catch(()=>null)]);
   const near=list=>(list.rows||[]).map(s=>({...s,d:hav(loc.latitude,loc.longitude,s.lat,s.lon)})).sort((a,b)=>a.d-b.d);
   // the 7-day summary comes from the nearest automatic station, but not from one so far away that it describes another region
   const synNear=near(syn).slice(0,2),awsNear=near(aws).find(s=>s.d<=40);
   const since=iso(h0-27*HOUR_MS).replace("Z",":00Z"),day0=new Date(h0-8*24*HOUR_MS).toISOString().slice(0,10)+"T00:00:00Z";
   const steps=run.error?[]:FC_STEPS.map(h=>h0+h*HOUR_MS).filter(t=>t>=run.start&&t<=run.end);
-  const [obs,daily,fc,place]=await Promise.all([
+  const [obs,daily,fc]=await Promise.all([
     synNear.length?wfs(client,"synop","synop_data",{cql:"code IN ("+synNear.map(s=>s.code).join(",")+") AND timestamp >= '"+since+"'",count:120,ttl:900,
       props:["code","timestamp","temp","temp_min","temp_max","precip_quantity","precip_range","wind_speed","wind_speed_unit","wind_direction","wind_peak_speed","humidity_relative","pressure","cloudiness"]}):Promise.resolve({error:"no synoptic station list"}),
     awsNear?wfs(client,"aws","aws_1day",{cql:"code = "+awsNear.code+" AND timestamp >= '"+day0+"'",count:20,ttl:3*3600,
       props:["code","timestamp","precip_quantity","temp_max","temp_min","temp_avg","sun_duration","wind_gusts_speed"]}):Promise.resolve(null),
-    inBatches(steps,4,t=>alaroAt(client,loc.latitude,loc.longitude,t)),
-    placeContext(client,assets,loc).catch(()=>null)
+    inBatches(steps,4,t=>alaroAt(client,loc.latitude,loc.longitude,t))
   ]);
   if((obs.error||!obs.rows?.length)&&!fc.some(x=>!x.error))return{error:"KMI's open-data services did not answer"+(obs.error?" ("+obs.error+")":"")+"; try again in a minute.",location:loc};
 
@@ -147,7 +193,27 @@ export async function weather(client,args,{assets}={}){
   const firstRain=fsteps.find(x=>(x.precip_mm??0)>=0.5);
   const fcErr=fc.find(x=>x.error)?.error||run.error;
 
+  // ---- official warnings for this place's KMI warning area(s)
+  const areas=warningAreas(place?.nis_code),codes=new Set(areas.map(a=>a.code));
+  const mine=warn.error?null:warn.warnings.filter(x=>!codes.size||x.area_codes.some(c=>codes.has(c)));
+  const active=(mine||[]).filter(x=>x.level>=2),areaName=areas.length?areas.map(a=>a.name).join(" and "):"Belgium (the place could not be matched to a warning area)";
+  const warnings=mine?clean({area:areaName,area_codes:areas.map(a=>a.code),
+    summary:active.length?active.length+" warning"+(active.length>1?"s":"")+" of yellow or higher":"no yellow, orange or red warning",
+    items:mine.slice(0,8).map(x=>clean({level:x.colour,level_code:x.level,hazard:x.type,area:x.area,status:x.in_force?"in force":"announced",
+      from_utc:iso(x.onset),from_local:local(x.onset,{day:true}),until_utc:iso(x.expires),until_local:local(x.expires,{day:true}),issued:x.sent,
+      severity:x.severity,certainty:x.certainty,urgency:x.urgency,identifier:x.identifier,more:x.web,original_text:x.original})),
+    source:"Royal Meteorological Institute of Belgium (KMI/IRM), via EUMETNET – MeteoAlarm (www.meteoalarm.org)",
+    disclaimer:MA_DISCLAIMER}):{error:warn.error,note:"The warnings could not be read; this does not mean there is none. See www.meteo.be or www.meteoalarm.org."};
   const facts=[];
+  if(mine){
+    if(active.length){
+      const fmt=x=>x.colour.toUpperCase()+" warning for "+String(x.type||"weather").toLowerCase()+" ("+(x.in_force?"in force":"from "+local(x.onset,{day:true}))+" until "+local(x.expires,{day:true})+")";
+      const head="OFFICIAL KMI WARNING"+(active.length>1?"S":"")+" for "+areaName+": "+active.slice(0,3).map(fmt).join("; ")+(active.length>3?"; and "+(active.length-3)+" more":"");
+      const issued=" (issued "+(active[0].sent?local(Date.parse(active[0].sent),{day:true}):"at a time not stated")+", via MeteoAlarm; full text under warnings)";
+      const txt=String(active[0].original?.["en-GB"]?.description||"").trim(),quote=txt?". KMI: \""+(txt.length>220?txt.slice(0,220).replace(/\s+\S*$/,"")+" …":txt)+"\"":"";
+      facts.push((head+quote+issued).length<=590?head+quote+issued+".":head+issued+".");
+    }else facts.push("No yellow, orange or red KMI weather warning in force or announced for "+areaName+" (MeteoAlarm, read "+local(now)+" Brussels time).");
+  }else facts.push("KMI's weather warnings could not be read just now ("+warn.error+"); this does not mean there is none: check www.meteo.be or www.meteoalarm.org.");
   if(now_)facts.push("NOW (measured at KMI station "+station.name+", "+round(station.d,1)+" km away, "+now_.time_local+" Brussels time): "+[now_.temp_c+" °C",now_.sky,
     now_.wind_kmh!=null?"wind "+(now_.wind_from?now_.wind_from+" ":"")+now_.wind_kmh+" km/h"+(now_.gust_kmh!=null?" with gusts to "+now_.gust_kmh+" km/h":""):null,
     now_.humidity_pct!=null?"humidity "+now_.humidity_pct+" %":null].filter(Boolean).join(", ")+".");
@@ -159,18 +225,19 @@ export async function weather(client,args,{assets}={}){
   if(!fsteps.length||fsteps.length<2)facts.push("The KMI forecast could not be read just now"+(fcErr?" ("+fcErr+")":"")+"; only observations are given.");
   else if(firstRain||covered)facts.push(firstRain?"First rain of 0.5 mm or more expected in the 3-hour period ending "+firstRain.time_local+" (Brussels time) ("+firstRain.precip_mm+" mm).":"No period with 0.5 mm of rain or more in the forecast (to "+fsteps.at(-1).time_local+").");
   if(week)facts.push("LAST 7 DAYS at KMI station "+week.station+" ("+week.distance_km+" km): "+week.total_precip_mm+" mm of rain on "+week.days_with_rain+" days with 1 mm or more; warmest day "+week.warmest+", coldest night "+week.coldest+".");
-  facts.push("Official weather warnings are not part of KMI's open data and are not included: check meteo.be for warnings.");
 
   const d=new Date().toISOString().slice(0,10);
   return clean({key_facts:facts,
     location:clean({...loc,x_lambert72:loc.x,y_lambert72:loc.y,x:undefined,y:undefined,geocoded:undefined}),place,
     observed:now_?clean({station:station.name,station_code:station.code,distance_km:round(station.d,1),station_altitude_m:station.altitude,now:now_,last_24h:last24}):{error:obs.error||"no synoptic station within reach reported in the last 3 hours"},
+    warnings,
     last_7_days:week,
     forecast:fsteps.length?clean({model:"ALARO (KMI's limited-area model), deterministic single run: no probabilities",run_utc:iso(run.start),run_ends_utc:iso(run.end),
       next_24h:next24,following_24h:after,steps:fsteps.map(({t,...x})=>x),
       sampling:"Values at the listed times; precipitation is the total since the previous listed time (exact); temperature extremes come from the samples and the model's max/min over the hour before each, so short peaks between samples can be missed."}):{error:fcErr||"no forecast steps"},
     note:"Observations are from the nearest station that reported, not from the address itself; elevation and coast or city effects can make the address differ. Times are given in UTC and Brussels time.",
-    provenance:{source:"Royal Meteorological Institute of Belgium (KMI/IRM), open data",licence:"CC BY 4.0",
-      datasets:["synoptic observations (synop)","automatic weather stations, daily (aws_1day)","ALARO forecast model"],
-      citation:"KMI/IRM open data (synop, AWS, ALARO), CC BY 4.0, retrieved "+d+" from https://opendata.meteo.be."}});
+    provenance:{source:"Royal Meteorological Institute of Belgium (KMI/IRM), open data; warnings via EUMETNET – MeteoAlarm",licence:"CC BY 4.0 (warnings: MeteoAlarm terms, equivalent to CC BY 4.0)",
+      datasets:["synoptic observations (synop)","automatic weather stations, daily (aws_1day)","ALARO forecast model","KMI warnings in the MeteoAlarm Belgium feed"],
+      warnings_link:"https://www.meteoalarm.org",
+      citation:"KMI/IRM open data (synop, AWS, ALARO), CC BY 4.0, retrieved "+d+" from https://opendata.meteo.be; warnings: KMI/IRM via EUMETNET – MeteoAlarm (www.meteoalarm.org)."}});
 }

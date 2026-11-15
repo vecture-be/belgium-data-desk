@@ -201,5 +201,92 @@
     ],
     "source": "https://opendata.infrabel.be/explore/dataset/maandelijkse-stiptheid-per-stopplaats/",
     "why": "Checks the French name resolves to the right stop and the per-stop month is read, not the national figure."
+  },
+  {
+    "question": "How punctual is the commute from Leuven to Brussels-Central?",
+    "tool": "train_punctuality",
+    "args": {
+      "from_station": "Leuven",
+      "to_station": "Bruxelles-Central"
+    },
+    "expect": [
+      {
+        "path": "mode",
+        "equals": "journey"
+      },
+      {
+        "path": "journey.from",
+        "equals": "Leuven"
+      },
+      {
+        "path": "journey.to",
+        "equals": "Brussel-Centraal"
+      },
+      {
+        "path": "outbound.trains",
+        "between": [
+          30,
+          250
+        ]
+      },
+      {
+        "path": "outbound.scheduled_minutes_fastest",
+        "between": [
+          15,
+          35
+        ]
+      }
+    ],
+    "source": "https://opendata.infrabel.be/explore/dataset/ruwe-gegevens-van-stiptheid-d-1/",
+    "why": "Both names resolve (French name for Brussels-Central), direct trains are found in yesterday's data and the journey time is a real Leuven-Brussels time (passing trains excluded)."
+  },
+  {
+    "question": "Are there official weather warnings for Leuven?",
+    "tool": "weather",
+    "args": {
+      "address": "Grote Markt 1, 3000 Leuven"
+    },
+    "expect": [
+      {
+        "path": "warnings.area_codes.0",
+        "equals": "BE004"
+      },
+      {
+        "path": "warnings.source",
+        "matches": "MeteoAlarm"
+      },
+      {
+        "path": "warnings.disclaimer",
+        "matches": "www.meteoalarm.org"
+      },
+      {
+        "path": "key_facts.0",
+        "matches": "KMI weather warning|OFFICIAL KMI WARNING"
+      }
+    ],
+    "source": "https://feeds.meteoalarm.org/api/v1/warnings/feeds-belgium",
+    "why": "Leuven is in KMI's Brabant warning area (BE004); the warnings come first, with MeteoAlarm's required attribution and disclaimer."
+  },
+  {
+    "question": "When is high tide in the Scheldt at Antwerp?",
+    "tool": "river_levels",
+    "args": {
+      "station": "zes21a-1066"
+    },
+    "expect": [
+      {
+        "path": "gauges.0.tidal",
+        "equals": true
+      },
+      {
+        "path": "gauges.0.level_forecast.next_high_waters.0.level_m_taw",
+        "between": [
+          3,
+          8
+        ]
+      }
+    ],
+    "source": "https://www.waterinfo.be",
+    "why": "HIC's tide forecast for Antwerpen tij is read as high and low waters (high water at Antwerp is about 4.5-6 m TAW)."
   }
 ]

@@ -2,8 +2,8 @@
 // answers shaped like the real KiWIS and KMI GeoServer responses (recorded fixtures cover the real shapes; these cover the edge cases).
 import assert from "node:assert/strict";
 import { makeDovClient } from "../dov.mjs";
-import { riverLevels, RIVER_HOSTS } from "../rivers.mjs";
-import { weather, WEATHER_HOSTS } from "../weather.mjs";
+import { riverLevels, RIVER_HOSTS, forecastOf } from "../rivers.mjs";
+import { weather, WEATHER_HOSTS, warningAreas, kmiWarnings, MA_DISCLAIMER } from "../weather.mjs";
 import { atTime } from "../lib/fixtures.mjs";
 import { checkAnswer } from "../lib/tool-contract.mjs";
 
@@ -26,10 +26,28 @@ const vmmLayer=[
 ];
 const hicLayer=[{ts_id:9,timestamp:at(5),ts_value:0.7,station_latitude:51.2213,station_longitude:4.3977,ts_name:"Pv",station_no:"zes21a-1066",station_name:"Antwerpen tij/Zeeschelde",ts_unitsymbol:"m",Portal_Rivier:"Zeeschelde",GAUGE_DATUM:"0.0",dataowner:"HIC"}];
 const series=(f,n=105,stepMin=15)=>Array.from({length:n},(_,i)=>{const m=(n-1-i)*stepMin;return[at(m),f(m/60)]});
-function kiwis({hicDown=false}={}){
+// forecasts: VMM run 1 h ago for L08_097, rising 0.15 -> 2.30 above the gauge zero (24.18 -> 26.33 m TAW) over 48 h, so it crosses the
+// watch level (26.15) and not the alarm level (26.50); catchment rain 0 -> 41.5 mm. A second VMM run (Ichtegem) stopped years ago.
+// HIC: the Antwerp tide forecast (W_voorspeld), two high waters a day.
+const fcRun=T-36e5;
+const vmmFc=Array.from({length:4*60},(_,i)=>{const t=fcRun-12*36e5+i*15*60e3,h=(t-T)/36e5;return[new Date(t).toISOString(),h<=0?24.18:24.18+2.15*Math.min(1,h/48)]});
+const hicTide=Array.from({length:12*60},(_,i)=>{const t=T-36e5+i*5*60e3,h=(t-T)/36e5;return[new Date(t).toISOString(),round2(2.6+2.5*Math.cos((h+0.5)/12.42*2*Math.PI))]});
+function round2(x){return Math.round(x*100)/100}
+function kiwis({hicDown=false,noForecast=false}={}){
   return async url=>{
     const u=new URL(url),p=P(url),host=u.hostname;
     if(host==="hicws.vlaanderen.be"&&hicDown)throw Object.assign(new Error("t"),{name:"TimeoutError"});
+    if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id==="179890")return json(noForecast?[]:[
+      {ts_id:501,station_no:"L08_097",parametertype_name:"H_voorspeld",timestamp:new Date(fcRun).toISOString()},
+      {ts_id:502,station_no:"L08_097",parametertype_name:"NcatchCum_voorspeld",timestamp:new Date(fcRun).toISOString()},
+      {ts_id:503,station_no:"S01_42A8",parametertype_name:"H_voorspeld",timestamp:"2021-07-01T05:00:00+02:00"}]);
+    if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id==="506056")return json(noForecast?[]:[{ts_id:601,station_no:"zes21a-1066",parametertype_name:"W_voorspeld",timestamp:new Date(T-36e5).toISOString()}]);
+    if(p.request==="getTimeseriesValues"&&!p.period&&!p.from){
+      assert.ok(!p.to,"forecast values are asked without a window (HIC answers nothing with one)");
+      const ids=p.ts_id.split(",");
+      assert.ok(!ids.includes("503"),"a stale forecast run is not read");
+      return json(ids.map(id=>({ts_id:id,data:id==="501"?vmmFc:id==="502"?vmmFc.map(([t],i)=>[t,Math.max(0,(i-48)*0.21)]):id==="601"?hicTide:[]})));
+    }
     if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id==="118730")return json(vmmLayer);
     if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id==="156154")return json(hicLayer);
     if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id==="111236,111237")return json([
@@ -65,6 +83,24 @@ const river=(args,opts)=>atTime(NOW,()=>{const client=makeDovClient({fetchImpl:k
   assert.match(out.key_facts[0],/197 cm below the watch level \(26\.15 m\)/);
   assert.equal(g.change_cm.last_24h,0,"the 24-hour change is present (history reaches back 26 h)");assert.equal(g.last_24h.values,97,"min/max and counts cover 24 h only");
   assert.equal(g.series.ts_name,"Pv.15","the -fout series is never used");
+  // the publisher's level forecast: rise to the peak, the watch level crossed, the alarm level not, catchment rain
+  const f=g.level_forecast;
+  // the run ends 46.75 h ahead at 24.18 + 2.15 x 46.75/48 = 26.27 m: above the watch level (26.15, crossed 44 h ahead), below pre-alarm 26.40
+  assert.equal(f.trend,"rising");assert.equal(f.peak_m_taw,26.27);assert.equal(f.change_to_peak_cm,209);assert.equal(f.still_rising_at_end,true);
+  assert.ok(f.reaches.watch&&!f.reaches.pre_alarm&&!f.reaches.alarm,"watch reached, pre-alarm and alarm not");
+  assert.equal(f.reaches.watch.first_reached_utc,"2026-11-17T09:40Z","the first 15-minute value at or above 26.15 m (44 h ahead: 26.1508 m)");
+  assert.equal(f.model_minus_measured_now_cm,0);
+  assert.equal(f.catchment_rain_forecast_mm,39.3,"rain still to fall: end of the run minus the value now (hindcast rain excluded)");
+  assert.match(out.key_facts[0],/FORECAST: VMM forecast \(run [^)]+\): reaches the watch level \(26\.15 m\) at 17 Nov, 10:40, peak 26\.27 m at 17 Nov, \d\d:\d\d; 39\.3 mm of rain forecast over the catchment/);
+  assert.ok(out.key_facts[0].length<=600);
+}
+{ // a stale forecast run is not reported as a forecast
+  const out=await river({station:"Ichtegem"});
+  assert.equal(out.gauges[0].level_forecast,undefined);
+}
+{ // without forecasts the answer is unchanged in shape
+  const out=await river({station:"L08_097"},{noForecast:true});
+  assert.equal(out.gauges[0].level_forecast,undefined);assert.doesNotMatch(out.key_facts[0],/VMM forecast/);
 }
 { // above the watch level: said plainly, with a negative margin
   const out=await river({station:"Ichtegem"});
@@ -88,6 +124,12 @@ const river=(args,opts)=>atTime(NOW,()=>{const client=makeDovClient({fetchImpl:k
   assert.equal(g.tidal,true);assert.match(g.trend,/^tide (rising|falling)$/);assert.equal(g.change_cm.last_24h,undefined);
   assert.match(out.key_facts[0],/tidal gauge, low and high water in the last 24 h 0\.1\d and 5\.\d\d m/);
   assert.equal(g.latest.level_m_taw,5.1);assert.equal(g.thresholds.below_watch_cm,150,"the newest reading (series) is compared, not the older layer value");
+  // the tide forecast gives the next high and low waters, about 12 h 25 min apart, and no "rising to" claims
+  const f=g.level_forecast;
+  assert.equal(f.next_high_waters.length,2);assert.equal(f.next_low_waters.length,2);assert.equal(f.peak_m_taw,undefined);
+  const gap=(Date.parse(f.next_high_waters[1].time_utc)-Date.parse(f.next_high_waters[0].time_utc))/36e5;assert.ok(gap>12&&gap<13,"two high waters 12-13 h apart, got "+gap);
+  assert.equal(f.next_high_waters[0].level_m_taw,5.1);
+  assert.match(out.key_facts[0],/HIC forecast \(run [^)]+\): next high water \d+ Nov, \d\d:\d\d at 5\.10 m, then \d+ Nov, \d\d:\d\d at 5\.10 m; next low water/);
 }
 { // nearest gauges by coordinates; the retired gauge is counted but not listed; one service down is reported, not hidden
   const out=await river({latitude:50.838,longitude:4.643,max_stations:5},{hicDown:true});
@@ -117,7 +159,20 @@ const synRows=(code,{knots=false}={})=>{
   return rows;
 };
 const feat=rows=>({type:"FeatureCollection",features:rows.map(r=>({type:"Feature",geometry:{type:"Point",coordinates:[r.lon??4.358,r.lat??50.797]},properties:r}))});
-function kmi({failSteps=new Set(),knots=false}={}){
+// MeteoAlarm's Belgium feed, as KMI fills it: CAP alerts with one info block per language, NUTS2 geocodes, awareness level "n; colour; ..."
+const cap=({id,code,area,level,colour,type,onsetH,expiresH,sent="2026-11-15T10:00:00+01:00",msgType="Alert"})=>({uuid:id,alert:{identifier:id,sender:"kmi-irm",sent,status:"Actual",msgType,scope:"Public",
+  info:["en-GB","nl-BE","fr-BE","de-DE"].map(language=>({language,category:["Met"],event:colour+" warning for "+type+" ("+language+")",headline:colour+" warning for "+type+" in Belgium - "+area+" ("+language+")",
+    description:"Original "+language+" text for "+type+" in "+area+".",instruction:"Be vigilant",onset:new Date(T+onsetH*36e5).toISOString(),expires:new Date(T+expiresH*36e5).toISOString(),
+    severity:"Moderate",certainty:"Likely",urgency:"Expected",senderName:"Royal Meteorological Institute of Belgium",web:"https://www.meteo.be/en/weather/warnings/overview-belgium",
+    parameter:[{valueName:"awareness_level",value:level+"; "+colour+"; Moderate"},{valueName:"awareness_type",value:"1; "+type}],
+    area:[{areaDesc:area,geocode:[{valueName:"NUTS2",value:code}]}]}))}});
+const FEED=[cap({id:"old",code:"BE004",area:"Brabant",level:2,colour:"yellow",type:"Fog",onsetH:-30,expiresH:-20}),       // expired: still in the feed, must be ignored
+  cap({id:"wind",code:"BE004",area:"Brabant",level:3,colour:"orange",type:"Wind",onsetH:5,expiresH:20}),                     // announced
+  cap({id:"fog",code:"BE21",area:"Antwerp",level:2,colour:"yellow",type:"Fog",onsetH:-1,expiresH:3}),                         // in force, other province
+  cap({id:"green",code:"BE004",area:"Brabant",level:1,colour:"Green",type:"Snow-ice",onsetH:-2,expiresH:10}),               // green: issued, not a warning
+  cap({id:"coast",code:"BE801",area:"Coastal zone",level:2,colour:"yellow",type:"Wind",onsetH:-1,expiresH:6}),
+  cap({id:"cancel",code:"BE004",area:"Brabant",level:4,colour:"red",type:"Rain",onsetH:-1,expiresH:6,msgType:"Cancel"})];
+function kmi({failSteps=new Set(),knots=false,feed=FEED,feedDown=false}={}){
   const run0=Date.parse("2026-11-15T06:00:00Z"),acc=h=>h<=6?0:(h-6)*0.0005;   // 0.5 mm per hour after 6 h, in metres
   return async url=>{
     const u=new URL(url),p=Object.fromEntries([...u.searchParams].map(([k,v])=>[k.toLowerCase(),v]));
@@ -135,6 +190,7 @@ function kmi({failSteps=new Set(),knots=false}={}){
       return json({type:"FeatureCollection",features:vals.map(v=>({type:"Feature",properties:{x:v}}))});
     }
     if(u.hostname==="geo.api.vlaanderen.be")return json({LocationResult:[]});
+    if(u.hostname==="feeds.meteoalarm.org"){if(feedDown)throw new Error("down");assert.equal(u.pathname,"/api/v1/warnings/feeds-belgium");return json({warnings:feed})}
     throw new Error("unexpected request "+url);
   };
 }
@@ -144,7 +200,15 @@ const wx=(args,opts)=>atTime(NOW,()=>weather(makeDovClient({fetchImpl:kmi(opts),
   assert.deepEqual(checkAnswer(out),[]);
   const now=out.observed.now;
   assert.equal(out.observed.station,"UCCLE");assert.equal(now.wind_kmh,18);assert.equal(now.wind_from,"SW");assert.equal(now.gust_kmh,43);
-  assert.match(out.key_facts[0],/^NOW \(measured at KMI station UCCLE, .*: \d+ °C, overcast, wind SW 18 km\/h with gusts to 43 km\/h\.$/,"no 'humidity undefined' when humidity is missing");
+  // no place (no committed tables in this test): every Belgian warning in force or announced counts, the strongest first
+  assert.match(out.key_facts[0],/^OFFICIAL KMI WARNINGS for Belgium \(the place could not be matched to a warning area\): ORANGE warning for wind \(from Sun 15 Nov, 19:40 until Mon 16 Nov, 10:40\); YELLOW warning for fog \(in force until Sun 15 Nov, 17:40\); YELLOW warning for wind/);
+  assert.match(out.key_facts[0],/KMI: "Original en-GB text for Wind in Brabant\." \(issued Sun 15 Nov, 10:00, via MeteoAlarm; full text under warnings\)\.$/);
+  assert.deepEqual(out.warnings.items.map(x=>x.identifier),["wind","fog","coast","green"],"expired and cancelled alerts are dropped; green is kept as a state");
+  assert.equal(out.warnings.items[0].status,"announced");assert.equal(out.warnings.items[1].status,"in force");
+  assert.equal(out.warnings.items[0].original_text["nl-BE"].description,"Original nl-BE text for Wind in Brabant.","the original text goes out unchanged");
+  assert.equal(out.warnings.disclaimer,MA_DISCLAIMER);assert.match(out.warnings.source,/KMI\/IRM\), via EUMETNET – MeteoAlarm \(www\.meteoalarm\.org\)/);
+  assert.match(out.provenance.citation,/www\.meteoalarm\.org/);
+  assert.match(out.key_facts[1],/^NOW \(measured at KMI station UCCLE, .*: \d+ °C, overcast, wind SW 18 km\/h with gusts to 43 km\/h\.$/,"no 'humidity undefined' when humidity is missing");
   // 24 h precipitation = the 12 h report at 06 UTC + the 12 h report at 18 UTC the day before (not the 6 h ones in between)
   assert.equal(out.observed.last_24h.precip_mm,2.4);
   const s=out.forecast.steps;
@@ -157,7 +221,31 @@ const wx=(args,opts)=>atTime(NOW,()=>weather(makeDovClient({fetchImpl:kmi(opts),
   assert.equal(out.forecast.next_24h.precip_mm,12,"24 h of 0.5 mm/h");
   assert.match(out.key_facts.join(" "),/First rain of 0\.5 mm or more expected/);
   assert.equal(out.last_7_days.total_precip_mm,6.5);assert.equal(out.last_7_days.days.length,7);
-  assert.match(out.key_facts.at(-1),/weather warnings are not part of KMI's open data/);
+  assert.ok(out.key_facts.every(f=>f.length<=600));
+}
+{ // warning areas: NIS codes to KMI's provinces; Brussels and both Brabants share BE004; coastal municipalities add the coastal zone
+  assert.deepEqual(warningAreas("24062").map(a=>a.code),["BE004"]);assert.deepEqual(warningAreas("21004").map(a=>a.code),["BE004"]);
+  assert.deepEqual(warningAreas("25072").map(a=>a.code),["BE004"]);assert.deepEqual(warningAreas("62063").map(a=>a.code),["BE33"]);
+  assert.deepEqual(warningAreas("71022").map(a=>a.code),["BE22"],"Limburg is BE22, not Luxembourg");assert.deepEqual(warningAreas("82003").map(a=>a.code),["BE34"]);
+  assert.deepEqual(warningAreas("35013").map(a=>a.code),["BE25","BE801"],"Ostend: West Flanders and the coastal zone");
+  assert.deepEqual(warningAreas("44021").map(a=>a.code),["BE23"]);assert.deepEqual(warningAreas(null),[]);
+  // filtering by area: Antwerp sees only its fog; Ostend sees the coastal wind
+  const client=()=>makeDovClient({fetchImpl:kmi(),hosts:WEATHER_HOSTS,maxRequests:2});
+  const ant=await atTime(NOW,()=>kmiWarnings(client(),warningAreas("11002"),Date.parse(NOW)));
+  assert.deepEqual(ant.warnings.map(x=>x.identifier),["fog"]);
+  const coast=await atTime(NOW,()=>kmiWarnings(client(),warningAreas("35013"),Date.parse(NOW)));
+  assert.deepEqual(coast.warnings.map(x=>x.identifier),["coast"]);
+}
+{ // the feed is down: never "no warning"
+  const out=await wx({latitude:50.80,longitude:4.36},{feedDown:true});
+  assert.match(out.key_facts[0],/^KMI's weather warnings could not be read just now .*this does not mean there is none/);
+  assert.match(out.warnings.note,/does not mean there is none/);
+  assert.ok(out.observed.now,"the rest of the answer still comes");
+}
+{ // a quiet feed: "no warning" is said, with the time it was read
+  const out=await wx({latitude:50.80,longitude:4.36},{feed:[FEED[0],FEED[3]]});
+  assert.match(out.key_facts[0],/^No yellow, orange or red KMI weather warning in force or announced for Belgium .*\(MeteoAlarm, read 15 Nov, 14:40 Brussels time\)\.$/);
+  assert.equal(out.warnings.summary,"no yellow, orange or red warning");
 }
 { // knots are converted
   const out=await wx({latitude:50.80,longitude:4.36},{knots:true});

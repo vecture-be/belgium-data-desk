@@ -109,12 +109,13 @@ async function stationAnswer(client,args,loc){
   // the station's last 13 months; the average over all stops per month (same measurement); yesterday's arrivals there
   const since=(()=>{const [y,mo]=latest.month.split("-").map(Number);const d=new Date(Date.UTC(y,mo-13,1));return d.toISOString().slice(0,10)})();
   const D1="ruwe-gegevens-van-stiptheid-d-1",at='ptcar_lg_nm_nl = "'+nl.replace(/"/g,"")+'"';
-  const [hist,avg,sum,bands,worst]=await Promise.all([
+  const [hist,avg,sum,bands,worst,inc]=await Promise.all([
     ods(client,"maandelijkse-stiptheid-per-stopplaats",{select:"datum,stiptheid,sumoftel,sumofreg",where:"ptcar_no = "+Number(st.id)+" and datum >= date'"+since+"' and datum <= date'"+latest.month+"-01'",order_by:"datum desc",limit:"13"}),
     ods(client,"maandelijkse-stiptheid-per-stopplaats",{select:"datum,sum(sumofreg) as reg,sum(sumoftel) as tel",where:"datum >= date'"+since+"' and datum <= date'"+latest.month+"-01'",group_by:"datum",order_by:"datum desc",limit:"13"}),
     ods(client,D1,{select:"max(datdep) as day,count(*) as passes,count(delay_arr) as arrivals,avg(delay_arr) as avg_arr,count(delay_dep) as departures",where:at,limit:"1"},{ttl:HOUR}),
     ods(client,D1,{select:"train_serv,count(*) as n",where:at+" and delay_arr is not null",group_by:"train_serv,range(delay_arr, *, 60, 360, 900, *) as band",limit:"100"},{ttl:HOUR}),
-    ods(client,D1,{select:"train_no,relation_direction,train_serv,planned_time_arr,delay_arr",where:at+" and delay_arr >= 360",order_by:"delay_arr desc",limit:"5"},{ttl:HOUR})
+    ods(client,D1,{select:"train_no,relation_direction,train_serv,planned_time_arr,delay_arr",where:at+" and delay_arr >= 360",order_by:"delay_arr desc",limit:"5"},{ttl:HOUR}),
+    incidentsAt(client,[...new Set([st.nl,st.fr].filter(Boolean))])
   ]);
   const avgBy=Object.fromEntries((avg.rows||[]).map(r=>[monthOf(r.datum),pctOf(r.reg,r.tel)]));
   const months=(hist.rows||[]).map(r=>clean({month:monthOf(r.datum),on_time_pct:pct(num(r.stiptheid)),trains:num(r.sumoftel),all_stops_pct:pct(avgBy[monthOf(r.datum)])})).sort((a,b)=>a.month<b.month?-1:1);
@@ -143,11 +144,12 @@ async function stationAnswer(client,args,loc){
   const sncb=yesterday?.by_operator?.["SNCB/NMBS"],intl=yesterday&&sncb&&sncb.arrivals<arr;
   if(yesterday)facts.push("Yesterday ("+weekday(day)+"): "+nf(ontime)+" of "+nf(arr)+" measured arrivals on time ("+yesterday.on_time_pct+" %"+(intl?"; SNCB trains only: "+sncb.on_time_pct+" % of "+nf(sncb.arrivals):"")+"); "+band.late_6_to_15+" arrived 6 to 15 minutes late and "+band.late_15_plus+" at least 15 minutes late; average delay "+yesterday.average_delay_min+" min.");
   if(yesterday?.late_trains?.length)facts.push("Most delayed arrivals there yesterday: "+yesterday.late_trains.slice(0,3).map(t=>"train "+t.train_no+" ("+fmtRel(t.relation)+", due "+t.planned_arrival+") "+t.delay_min+" min late").join("; ")+".");
+  if(inc.rows?.length)facts.push("Major incidents Infrabel recorded at "+titleCase(st.nl)+" in the last 13 months: "+inc.rows.slice(0,3).map(fmtIncident).join("; ")+".");
   if(note)facts.push(note);
   facts.push("On time = less than 6 minutes late on arrival. Cancelled trains are not in these figures (Infrabel publishes cancellations only nationally), and a station's figure is measured at every stop, so it is not comparable with the national figure (measured at destinations).");
   return{facts,body:{station:clean({name_nl:titleCase(st.nl),name_fr:titleCase(st.fr),name_en:titleCase(st.en),ptcar_no:st.id,latitude:st.lat,longitude:st.lon,distance_km:st.distance_km}),
     month:clean({month:latest.month,on_time_pct:pct(st.pct),trains:st.tel,on_time_trains:st.reg,all_stops_pct:pct(allStops),stops:latest.stops.length,rank,ranked_stops:rank?peers.length:null}),
-    last_13_months:months,yesterday,errors:[hist,avg,sum,bands,worst].filter(x=>x.error).map(x=>x.error)}};
+    last_13_months:months,yesterday,major_incidents:inc.rows?.length?inc.rows.map(incidentView):null,errors:[hist,avg,sum,bands,worst,inc].filter(x=>x.error).map(x=>x.error)}};
 }
 
 // ---------- one train yesterday ----------
@@ -186,6 +188,92 @@ async function trainAnswer(client,no){
 export const fmtRel=r=>{const m=String(r||"").match(/^([^:]+):\s*(.+?)\s*->\s*(.+)$/);return m?m[1].trim()+" "+titleCase(m[2])+" → "+titleCase(m[3]):String(r||"")};
 const fmtDelay=s=>s==null?"":s<=-60?mins(-s)+" min early":s<60?"on time ("+(s>=0?"+":"")+s+" s)":mins(s)+" min late";
 
+// ---------- between two stations, yesterday ----------
+// Yesterday's raw data lists every point each train passed. A train STOPS at a point when its planned arrival and departure differ, or
+// when it starts (no arrival) or ends (no departure) there; a train that only passes through has the same planned arrival and departure
+// (Eurostar and ICE through Leuven, for instance) and must not count as a connection. Both directions come from the same rows.
+const hm=t=>String(t||"").slice(0,5);
+const stopsAt=r=>!(r.planned_time_arr&&r.planned_time_dep&&r.planned_time_arr===r.planned_time_dep);
+const stamp=(d,t)=>d&&t?Date.parse(d+"T"+t+"Z"):null;   // planned local wall-clock times compared as if UTC: only differences are used
+const median=a=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+/** Trains that stopped at A and later at B, from yesterday's rows at both points. */
+export function connections(rows,A,B){
+  const by=new Map();
+  for(const r of rows){const k=r.train_no+"|"+String(r.datdep||"").slice(0,10);(by.get(k)||by.set(k,[]).get(k)).push(r)}
+  const out=[];
+  for(const list of by.values()){
+    const a=list.find(r=>r.ptcar_lg_nm_nl===A&&r.planned_time_dep&&stopsAt(r)),b=list.find(r=>r.ptcar_lg_nm_nl===B&&r.planned_time_arr&&stopsAt(r));
+    if(!a||!b)continue;
+    const dep=stamp(a.planned_date_dep,a.planned_time_dep),arr=stamp(b.planned_date_arr,b.planned_time_arr);
+    if(dep==null||arr==null||arr<=dep)continue;
+    const planned=(arr-dep)/60e3,dd=a.delay_dep??null,da=b.delay_arr??null;
+    out.push({train_no:a.train_no,relation:a.relation,direction:a.relation_direction,operator:a.train_serv,dep:hm(a.planned_time_dep),arr:hm(b.planned_time_arr),
+      dep_delay_s:dd,arr_delay_s:da,planned_min:planned,actual_min:dd!=null&&da!=null?planned+(da-dd)/60:null,t:dep});
+  }
+  return out.sort((x,y)=>x.t-y.t);
+}
+const PERIODS=[["morning peak (departing 06:00-08:59)",6,9],["evening peak (departing 16:00-18:59)",16,19]];
+function summariseLeg(list){
+  const m=list.filter(x=>x.arr_delay_s!=null),on=m.filter(x=>x.arr_delay_s<ON_TIME_S).length;
+  const periods=PERIODS.map(([name,a,b])=>{const p=m.filter(x=>{const h=Number(x.dep.slice(0,2));return h>=a&&h<b}),o=p.filter(x=>x.arr_delay_s<ON_TIME_S).length;
+    return p.length?{period:name,trains:p.length,on_time_pct:pct(pctOf(o,p.length))}:null}).filter(Boolean);
+  return clean({trains:list.length,measured:m.length,on_time:on,on_time_pct:m.length?pct(pctOf(on,m.length)):null,
+    late_6_to_15:m.filter(x=>x.arr_delay_s>=ON_TIME_S&&x.arr_delay_s<900).length,late_15_plus:m.filter(x=>x.arr_delay_s>=900).length,
+    average_arrival_delay_min:m.length?mins(m.reduce((n,x)=>n+x.arr_delay_s,0)/m.length):null,median_arrival_delay_min:m.length?mins(median(m.map(x=>x.arr_delay_s))):null,
+    scheduled_minutes_median:list.length?round(median(list.map(x=>x.planned_min)),0):null,scheduled_minutes_fastest:list.length?round(Math.min(...list.map(x=>x.planned_min)),0):null,
+    actual_minutes_median:list.some(x=>x.actual_min!=null)?round(median(list.filter(x=>x.actual_min!=null).map(x=>x.actual_min)),0):null,
+    by_period:periods.length?periods:null,
+    first_departure:list[0]?.dep,last_departure:list.at(-1)?.dep,
+    lines:[...new Set(list.map(x=>x.relation).filter(Boolean))].slice(0,8)});
+}
+async function journeyAnswer(client,from,to){
+  const latest=await stopsLatest(client);if(latest.error)return{error:latest.error};
+  const a=matchStation(latest.stops,from);if(a.error)return{error:"from_station: "+a.error};
+  const b=matchStation(latest.stops,to);if(b.error)return{error:"to_station: "+b.error};
+  if(a.stop.id===b.stop.id)return{error:"from_station and to_station are the same station ("+titleCase(a.stop.nl)+")."};
+  const A=a.stop.nl,B=b.stop.nl,q=s=>'"'+s.replace(/"/g,"")+'"';
+  const [r,inc]=await Promise.all([
+    ods(client,"ruwe-gegevens-van-stiptheid-d-1",{select:"datdep,train_no,relation,relation_direction,train_serv,ptcar_lg_nm_nl,planned_date_arr,planned_time_arr,planned_date_dep,planned_time_dep,delay_arr,delay_dep",
+      where:"ptcar_lg_nm_nl in ("+q(A)+","+q(B)+")"},{exportAll:true,ttl:HOUR,maxBytes:4<<20}),
+    incidentsAt(client,[...new Set([A,B,a.stop.fr,b.stop.fr].filter(Boolean))])]);
+  if(r.error)return{error:r.error};
+  const day=String(r.rows.map(x=>x.datdep).filter(Boolean).sort().at(-1)||"").slice(0,10);
+  const go=connections(r.rows,A,B),back=connections(r.rows,B,A);
+  const nA=titleCase(A),nB=titleCase(B);
+  if(!go.length&&!back.length)return{error:"No train stopped at both "+nA+" and "+nB+" yesterday in Infrabel's data. They may need a change of train (this tool follows one train at a time), or no train ran between them yesterday."};
+  const S=summariseLeg(go),R=summariseLeg(back);
+  const facts=[];
+  if(go.length){
+    facts.push(nA+" → "+nB+" yesterday ("+weekday(day)+"): "+go.length+" direct train"+(go.length>1?"s":"")+" stopped at both; "+(S.measured?S.on_time+" of "+S.measured+" ("+S.on_time_pct+" %) arrived at "+nB+" less than 6 minutes late, average arrival delay "+S.average_arrival_delay_min+" min"+(S.late_15_plus?", "+S.late_15_plus+" at least 15 minutes late":""):"no arrival times recorded")+".");
+    facts.push("Journey time "+nA+" → "+nB+": "+S.scheduled_minutes_median+" min scheduled (median; fastest "+S.scheduled_minutes_fastest+" min)"+(S.actual_minutes_median!=null?", "+S.actual_minutes_median+" min as actually run (median)":"")+"; first departure "+S.first_departure+", last "+S.last_departure+".");
+    const worst=go.filter(x=>x.arr_delay_s>=ON_TIME_S).sort((x,y)=>y.arr_delay_s-x.arr_delay_s).slice(0,3);
+    if(worst.length)facts.push("Most delayed on arrival at "+nB+": "+worst.map(x=>"train "+x.train_no+" ("+fmtRel(x.direction)+", "+x.dep+" from "+nA+") "+mins(x.arr_delay_s)+" min late").join("; ")+".");
+    if(S.by_period)facts.push("By time of day: "+S.by_period.map(p=>p.period+" "+p.on_time_pct+" % of "+p.trains).join(", ")+".");
+  }else facts.push("No direct train stopped at "+nA+" and then "+nB+" yesterday ("+weekday(day)+") in Infrabel's data.");
+  if(back.length)facts.push("Return direction "+nB+" → "+nA+": "+back.length+" direct train"+(back.length>1?"s":"")+(R.measured?", "+R.on_time_pct+" % arrived less than 6 minutes late, average delay "+R.average_arrival_delay_min+" min":"")+".");
+  const mo=s=>pct(s.pct)+" % at "+titleCase(s.nl);
+  facts.push("For comparison, in "+monthName(latest.month)+" Infrabel measured "+mo(a.stop)+" and "+mo(b.stop)+" (all trains stopping there, every stop counted).");
+  if(inc.rows?.length)facts.push("Major incidents recorded by Infrabel at these stations in the last 13 months: "+inc.rows.slice(0,3).map(fmtIncident).join("; ")+".");
+  if(a.note||b.note)facts.push([a.note,b.note].filter(Boolean).join(" "));
+  facts.push("Only trains that ran are in Infrabel's data: a cancelled train leaves no trace there, so these shares are of trains that ran. Direct trains only (no changes); on time = arriving less than 6 minutes late.");
+  const list=x=>x.slice(0,40).map(j=>clean({train_no:j.train_no,line:j.relation,direction:fmtRel(j.direction),operator:j.operator,departs:j.dep,arrives:j.arr,
+    departure_delay_min:mins(j.dep_delay_s),arrival_delay_min:mins(j.arr_delay_s),on_time:j.arr_delay_s!=null?j.arr_delay_s<ON_TIME_S:null,scheduled_min:round(j.planned_min,0),actual_min:j.actual_min!=null?round(j.actual_min,0):null}));
+  return{facts,body:{journey:clean({from:titleCase(A),to:titleCase(B),date:day,from_ptcar_no:a.stop.id,to_ptcar_no:b.stop.id}),
+    outbound:go.length?{...S,trains_list:list(go),list_truncated:go.length>40?true:undefined}:null,return:back.length?{...R,trains_list:list(back),list_truncated:back.length>40?true:undefined}:null,
+    stations_month:{month:latest.month,[titleCase(A)]:pct(a.stop.pct),[titleCase(B)]:pct(b.stop.pct)},
+    major_incidents:inc.rows?.length?inc.rows.map(incidentView):null}};
+}
+
+// ---------- Infrabel's list of major incidents (monthly, with delay minutes and cancelled trains) ----------
+const fmtIncident=r=>r.date+" "+(r.incident_desciption||"incident")+(r.plaats&&r.plaats!=="-"?" at "+titleCase(r.plaats):"")+(r.lijn&&r.lijn!=="-"?" (line "+r.lijn+")":"")+": "+nf(num(r.min_delay))+" delay minutes, "+nf(num(r.sup))+" trains cancelled";
+const incidentView=r=>clean({date:r.date,place:r.plaats&&r.plaats!=="-"?titleCase(r.plaats):null,line:r.lijn&&r.lijn!=="-"?r.lijn:null,incident:r.incident_desciption,
+  incident_nl:r.aard_van_incident,delay_minutes:num(r.min_delay),trains_cancelled:num(r.sup)});
+async function incidentsAt(client,places){
+  const since=new Date(Date.now()-400*DAY*1000).toISOString().slice(0,7)+"-01";
+  return ods(client,"belangrijkste-incidenten",{select:"date,lijn,plaats,aard_van_incident,incident_desciption,min_delay,sup",
+    where:"plaats in ("+places.map(p=>'"'+p.replace(/"/g,"")+'"').join(",")+") and month >= date'"+since+"'",order_by:"min_delay desc",limit:"10"},{ttl:6*HOUR});
+}
+
 // ---------- IC relation ----------
 export function normIc(s){const m=String(s||"").toUpperCase().replace(/\s+/g,"").match(/^IC(\d{1,2})(?:-(\d))?$/);return m?"IC "+m[1].padStart(2,"0")+(m[2]?"-"+m[2]:""):null}
 async function icAnswer(client,ic,month){
@@ -219,14 +307,16 @@ async function icAnswer(client,ic,month){
 // ---------- national ----------
 async function nationalAnswer(client,month){
   const w=month?{where:"maand <= date'"+month+"-01'"}:{};
-  const [nat,canc,types,causes,ops,rt,hourly]=await Promise.all([
+  const [nat,canc,types,causes,ops,rt,hourly,inc]=await Promise.all([
     ods(client,"nationale-stiptheid-per-maand",{select:"maand,regelmaat,regelmaatneutralisatie,tel,reg,min_rt,regelmaat_ytd",order_by:"maand desc",limit:"13",...w}),
     ods(client,"nationale-stiptheid-met-afgeschafte-treinen",{select:"maand2,id,tel",order_by:"maand2 desc",limit:"13",...(month?{where:"maand2 <= '"+month+"'"}:{})}),
     ods(client,"data_punctualite_typedetrain",{select:"maand,rel,regelmaat,tel",order_by:"maand desc",limit:"6",...w}),
     ods(client,"oorzaken-vertraging-per-maand",{select:"jaar_maand,responsible,stiptheidsverlies,aandeel",order_by:"jaar_maand desc",limit:"10",...(month?{where:"jaar_maand <= '"+month+"'"}:{})}),
     ods(client,"maandelijks-afgeschafte-treinen-per-operator",{select:"maand,operator_en,enigetreinen,sups,totaal,partieel,sup0",order_by:"maand desc",limit:"20",...(month?{where:"maand <= '"+month+"'"}:{})}),
     month?Promise.resolve(null):ods(client,"realtime-stiptheid",{order_by:"uur desc",limit:"1"},{ttl:300}),
-    month?Promise.resolve(null):ods(client,"stiptheid-van-vandaag-per-uur",{limit:"30"},{ttl:300})
+    month?Promise.resolve(null):ods(client,"stiptheid-van-vandaag-per-uur",{limit:"30"},{ttl:300}),
+    ods(client,"belangrijkste-incidenten",{select:"month,date,lijn,plaats,aard_van_incident,incident_desciption,min_delay,sup",order_by:"month desc,min_delay desc",limit:"40",
+      ...(month?{where:"month <= date'"+month+"-01'"}:{})},{ttl:6*HOUR})
   ]);
   if(nat.error||!nat.rows.length)return{error:nat.error||"Infrabel published no national punctuality"+(month?" for "+month:"")};
   const n0=nat.rows[0],m=monthOf(n0.maand);
@@ -244,12 +334,15 @@ async function nationalAnswer(client,month){
   if(nat.rows[12])facts.push("A year earlier ("+monthName(monthOf(nat.rows[12].maand))+"): "+pct(num(nat.rows[12].regelmaat))+" %.");
   if(ty.length)facts.push("By train type: "+ty.map(r=>(TYPE[r.rel]||r.rel)+" "+pct(num(r.regelmaat))+" %").join(", ")+".");
   if(ca.length)facts.push("Punctuality lost by cause: "+ca.map(r=>r.responsible+" "+r.stiptheidsverlies+" points").join(", ")+" (of "+pct(100-num(n0.regelmaat))+" points lost in total).");
+  const incM=(inc.rows||[]).filter(r=>String(r.month).slice(0,7)===m);
+  if(incM.length)facts.push("Major incidents in "+monthName(m)+" (Infrabel's list, "+incM.length+"): "+incM.slice(0,3).map(fmtIncident).join("; ")+".");
   if(today)facts.push("Today so far (to "+today.as_of_local+" Brussels time): "+today.on_time_pct+" % of "+nf(today.sightings)+" train sightings on time."+(today.sightings<300?" Early in the day, so few trains count yet.":""));
   facts.push("The leading figure counts trains at their destination (or the first Brussels North-South junction station) without neutralisation, as Infrabel advises for the passenger's view; the neutralised figure ("+pct(num(n0.regelmaatneutralisatie))+" %) leaves out delays the management contract excuses.");
   return{facts,body:{month:m,national:clean({on_time_pct:pct(num(n0.regelmaat)),neutralised_pct:pct(num(n0.regelmaatneutralisatie)),with_cancellations_pct:c0?pct(num(c0.id)):null,trains:num(n0.tel),on_time_trains:num(n0.reg),
       delay_minutes_total:num(n0.min_rt),year_to_date_pct:pct(num(n0.regelmaat_ytd))}),by_train_type:ty.map(r=>({type:TYPE[r.rel]||r.rel,on_time_pct:pct(num(r.regelmaat)),trains:num(r.tel)})),
     lost_points_by_cause:ca.map(r=>({responsible:r.responsible,points:r.stiptheidsverlies,share_pct:r.aandeel})),
     cancellations:op.length?{month:opLast,by_operator:op.map(r=>clean({operator:r.operator_en,trains:num(r.enigetreinen),cancelled:num(r.sups),fully:num(r.totaal),partly:num(r.partieel),cancelled_pct:pct(num(r.sup0))}))}:null,
+    major_incidents:incM.length?{month:m,count:incM.length,delay_minutes:incM.reduce((n,r)=>n+(num(r.min_delay)||0),0),trains_cancelled:incM.reduce((n,r)=>n+(num(r.sup)||0),0),incidents:incM.map(incidentView)}:null,
     today,last_13_months:series}};
 }
 
@@ -261,9 +354,12 @@ export async function trainPunctuality(client,args){
   const ic=args?.ic_line?normIc(args.ic_line):null;
   if(args?.ic_line&&!ic)return{error:"ic_line looks like 'IC 01' or 'IC 16-1'."};
   const station=typeof args?.station==="string"?args.station.trim().slice(0,80):"";
+  const from=typeof args?.from_station==="string"?args.from_station.trim().slice(0,80):"",to=typeof args?.to_station==="string"?args.to_station.trim().slice(0,80):"";
+  if(!!from!==!!to)return{error:"Give both from_station and to_station for trains between two stations (e.g. 'Leuven' and 'Brussel-Centraal')."};
   const hasPlace=!!(args?.address||args?.latitude!=null||args?.x_lambert72!=null);
   let out,mode,loc=null;
-  if(tn){mode="train";out=await trainAnswer(client,tn);
+  if(from&&to){mode="journey";out=await journeyAnswer(client,from,to)}
+  else if(tn){mode="train";out=await trainAnswer(client,tn);
     if(!out.error&&out.ic){const icx=await icAnswer(client,out.ic,null);if(!icx.error){out.facts.push("Its line, "+icx.body.ic_line+", in "+monthName(icx.body.month)+": "+icx.facts[0].split(": ")[1].split(";")[0]+".");out.body.ic_line_context=icx.body}}}
   else if(ic){mode="ic_line";out=await icAnswer(client,ic,month)}
   else if(station||hasPlace){
@@ -276,7 +372,9 @@ export async function trainPunctuality(client,args){
     location:loc?clean({latitude:loc.latitude,longitude:loc.longitude,matched_address:loc.matched_address}):null,
     definitions:{on_time:"Arriving less than 6 minutes late (5 min 59 s), Infrabel's definition.",cancelled_trains:"Not in punctuality percentages; the national figure 'with cancellations' counts them as late.",
       where_measured:"National and IC figures: at the destination, and at the first Brussels North-South junction station for trains through Brussels. Station figures: at that stop. Yesterday's data: every point a train passed.",
-      yesterday:"Infrabel publishes yesterday's trains train by train, overwritten every morning; earlier days only as monthly files."},
+      yesterday:"Infrabel publishes yesterday's trains train by train, overwritten every morning; earlier days only as monthly files.",
+      journey:"Between two stations: every train that stopped at the first and later at the second yesterday (passing without a stop does not count); on time is judged on arrival at the second.",
+      major_incidents:"Infrabel's monthly list of the incidents that cost the most punctuality, with the delay minutes and cancelled trains each caused."},
     provenance:{source:"Infrabel open data (Belgian rail infrastructure manager)",licence:"CC0 1.0",url:"https://opendata.infrabel.be",
       citation:"Infrabel, punctuality open data (opendata.infrabel.be), CC0, retrieved "+d+"."}});
 }
