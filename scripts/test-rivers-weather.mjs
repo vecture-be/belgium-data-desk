@@ -25,7 +25,7 @@ const vmmLayer=[
   {ts_id:4,timestamp:at(10),ts_value:2.0,station_latitude:50.86,station_longitude:4.66,ts_name:"P.15",station_no:"K04_999",station_name:"Elsewhere/Beek",ts_unitsymbol:"m",river_name:"Beek",Level_Alarm:"25 m",Level_Waak:"24 m",GAUGE_DATUM:"0.0"}
 ];
 const hicLayer=[{ts_id:9,timestamp:at(5),ts_value:0.7,station_latitude:51.2213,station_longitude:4.3977,ts_name:"Pv",station_no:"zes21a-1066",station_name:"Antwerpen tij/Zeeschelde",ts_unitsymbol:"m",Portal_Rivier:"Zeeschelde",GAUGE_DATUM:"0.0",dataowner:"HIC"}];
-const series=(f,n=97,stepMin=15)=>Array.from({length:n},(_,i)=>{const m=(n-1-i)*stepMin;return[at(m),f(m/60)]});
+const series=(f,n=105,stepMin=15)=>Array.from({length:n},(_,i)=>{const m=(n-1-i)*stepMin;return[at(m),f(m/60)]});
 function kiwis({hicDown=false}={}){
   return async url=>{
     const u=new URL(url),p=P(url),host=u.hostname;
@@ -37,9 +37,9 @@ function kiwis({hicDown=false}={}){
       {ts_name:"AlarmStatus",station_no:"S01_42A8",ts_value:1,timestamp:at(40)}]);
     if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id.startsWith("156152"))return json([{ts_name:"AlarmStatus.O",station_no:"zes21a-1066",ts_value:0,timestamp:at(10)},
       {ts_name:"DrempelWaak.O",station_no:"zes21a-1066",ts_value:6.6,timestamp:"2022-12-14T00:00:00+01:00"},{ts_name:"DrempelAlarm.O",station_no:"zes21a-1066",ts_value:7.3,timestamp:"2022-12-14T00:00:00+01:00"}]);
-    if(p.request==="getTimeseriesValues"&&p.period==="P1D"){
+    if(p.request==="getTimeseriesValues"&&p.period==="PT26H"){
       const ids=p.ts_id.split(",");
-      return json(ids.map(id=>({ts_id:id,data:id==="9"?series(h=>2.6+2.5*Math.cos(h/12.42*2*Math.PI),289,5)   // tide: 5 m swing
+      return json(ids.map(id=>({ts_id:id,data:id==="9"?series(h=>2.6+2.5*Math.cos(h/12.42*2*Math.PI),313,5)   // tide: 5 m swing
         :id==="2"?series(h=>6.6+0.02*h):series(()=>0.15)})));
     }
     if(p.request==="getTimeseriesList")return json([["station_no","ts_id","ts_name"],["L08_097","101","AnalysePeriodeP90"],["L08_097","102","AnalysePeriodeP10"],["L08_097","103","AnalysePeriodeP25"],["L08_097","104","AnalysePeriodeP75"]]);
@@ -63,6 +63,7 @@ const river=(args,opts)=>atTime(NOW,()=>{const client=makeDovClient({fetchImpl:k
   assert.match(g.usual_range.position,/below the usual range/);
   assert.equal(g.forecast_status.highest_code_expected,2);assert.match(out.key_facts[0],/FORECAST/);
   assert.match(out.key_facts[0],/197 cm below the watch level \(26\.15 m\)/);
+  assert.equal(g.change_cm.last_24h,0,"the 24-hour change is present (history reaches back 26 h)");assert.equal(g.last_24h.values,97,"min/max and counts cover 24 h only");
   assert.equal(g.series.ts_name,"Pv.15","the -fout series is never used");
 }
 { // above the watch level: said plainly, with a negative margin
