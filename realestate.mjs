@@ -34,7 +34,7 @@ async function rank(P,assets,{within="Belgium",type="house",order="highest",limi
   const skipped=nis.length-rows.length,y=rows[0]?.f.year;
   const top=rows.slice(0,Math.min(25,Math.max(1,limit))).map((x,i)=>clean({rank:i+1,municipality:label(P,{type:"municipality",key:x.k}),nis_code:x.k,median_eur:x.f.median_eur,sales:x.f.sales,median_change_5y_pct:x.f.median_change_5y_pct}));
   return{within:label(P,area),type:TYPE_LABEL[type],year:y,order:order==="lowest"?"lowest first":"highest first",municipalities_compared:rows.length,
-    ...(skipped?{left_out:skipped+" municipalities with fewer than "+min_sales+" "+TYPE_LABEL[type]+" sold in "+y+" (a median of so few sales is not comparable)"}:{}),ranking:top};
+    ...(skipped?{left_out:skipped+(skipped===1?" municipality":" municipalities")+" with fewer than "+min_sales+" "+TYPE_LABEL[type]+" sold in "+y+" (a median of so few sales is not comparable)"}:{}),ranking:top};
 }
 
 export async function realEstatePrices(client,args={},{assets}={}){
