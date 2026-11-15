@@ -81,9 +81,10 @@ function levels(s,value){
   return{abs:value+d,rel:value};
 }
 
-/** 24 h of values for the chosen series of one provider (one request). */
+/** 26 h of values for the chosen series of one provider (one request): the newest reading is up to ~20 min old, so a
+ *  24-hour window would not reach back to the reading 24 hours before it. */
 async function history(client,key,ids){
-  const r=await getJson(client,url(KIWIS[key],{request:"getTimeseriesValues",ts_id:ids.join(","),period:"P1D",returnfields:"Timestamp,Value",
+  const r=await getJson(client,url(KIWIS[key],{request:"getTimeseriesValues",ts_id:ids.join(","),period:"PT26H",returnfields:"Timestamp,Value",
     metadata:"true",md_returnfields:"ts_id"}),{maxBytes:1<<20,ttl:LIVE_TTL});
   if(r.error||!Array.isArray(r.json))return{};
   return Object.fromEntries(r.json.map(t=>[String(t.ts_id),(t.data||[]).filter(d=>typeof d[1]==="number").map(([t2,v])=>[Date.parse(t2),v])]));
@@ -123,14 +124,14 @@ function trendOf(series,now){
   if(!series?.length)return null;
   const [tN,vN]=series.at(-1);
   const at=h=>{const target=tN-h*3.6e6;let best=null;for(const [t,v] of series){if(Math.abs(t-target)<=20*60e3&&(!best||Math.abs(t-target)<Math.abs(best[0]-target)))best=[t,v]}return best?vN-best[1]:null};
-  const d1=at(1),d3=at(3),d24=at(24),vals=series.map(x=>x[1]);
+  const d1=at(1),d3=at(3),d24=at(24),day=series.filter(([t])=>t>=tN-24*3.6e6),vals=day.map(x=>x[1]);
   const range=Math.max(...vals)-Math.min(...vals);
   // reversals of the hourly change (ignoring wiggles under 2 cm): a tide turns about four times a day, a river once at most
   let reversals=0,dir=0;
   for(let i=0,last=series[0];i<series.length;i++){const [t,v]=series[i];if(t-last[0]<36e5)continue;const d=v-last[1];last=series[i];
     if(Math.abs(d)<0.02)continue;const sgn=Math.sign(d);if(dir&&sgn!==dir)reversals++;dir=sgn}
   const trend=d3==null?null:d3>0.03?"rising":d3<-0.03?"falling":"steady";
-  return{latest:[tN,vN],change_1h:d1,change_3h:d3,change_24h:d24,min:Math.min(...vals),max:Math.max(...vals),range,reversals,points:series.length,trend,stale:(now-tN)/3.6e6>FRESH_H};
+  return{latest:[tN,vN],change_1h:d1,change_3h:d3,change_24h:d24,min:Math.min(...vals),max:Math.max(...vals),range,reversals,points:day.length,trend,stale:(now-tN)/3.6e6>FRESH_H};
 }
 
 function view(s,dist,hist,st,lt,crue){
