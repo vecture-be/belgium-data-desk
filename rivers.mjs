@@ -33,6 +33,14 @@ const ENABLED=["vmm","hic"];
 export const RIVER_HOSTS=Object.freeze(ENABLED.map(k=>new URL(KIWIS[k].base).hostname));
 const LIVE_TTL=600,FRESH_H=3,STAT_TTL=86400;
 export const RIVER_LIMITS=Object.freeze({radiusKm:{default:10,max:30},stations:{default:3,max:6}});
+// Short-term deterministic forecasts (KT-det) the publishers run every few hours and draw on waterinfo.be:
+// VMM: about 330 gauges, water level in m TAW for 48 h after the run (the series also holds ~36 h of hindcast before the run), plus the
+//      forecast cumulative rainfall over the gauge's catchment. HIC: about 30 gauges on the waterways, 60 h from the run; tidal gauges
+//      forecast the tide itself (W_voorspeld), so the next high and low waters can be read from it.
+// A forecast whose run is more than FC_STALE_H old is not used (the layer keeps runs that stopped years ago).
+const FORECAST={vmm:{group:"179890",level:/^H_voorspeld$/,rain:/^NcatchCum_voorspeld$/,model:"VMM short-term flood forecast (KT, deterministic)"},
+  hic:{group:"506056",level:/^(H|W)_voorspeld$/,rain:null,model:"HIC short-term forecast (KT, deterministic)"}};
+const FC_STALE_H=12;
 
 const url=(p,params)=>p.base+"?"+new URLSearchParams({service:"kisters",type:"queryServices",format:"json",datasource:p.ds,...params});
 const hav=(a,b,c,d)=>{const R=6371,t=Math.PI/180,s=Math.sin((c-a)*t/2)**2+Math.cos(a*t)*Math.cos(c*t)*Math.sin((d-b)*t/2)**2;return 2*R*Math.asin(Math.sqrt(s))};
@@ -43,7 +51,7 @@ const local=iso=>{const t=Date.parse(iso);if(!Number.isFinite(t))return null;
   return new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Brussels",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(t))};
 /** "5.3 m", "19,50", "" -> number or null */
 const level=s=>{const m=String(s??"").replace(",",".").match(/-?\d+(\.\d+)?/);return m?Number(m[0]):null};
-const cm=d=>d==null?null:Math.round(d*100);
+const cm=d=>d==null?null:Math.round(d*100)||0;   // no "-0 cm"
 const fmtM=v=>v==null?null:v.toFixed(2)+" m";
 
 /** One provider's station layer -> stations with their latest level (one row per station: the newest, preferring Pv series). */
@@ -119,6 +127,87 @@ async function longTerm(client,key,stations){
   return out;
 }
 
+/** The forecast series of one provider, keyed by station number: {level:{ts_id,run,param}, rain:{ts_id,run}} (one request). */
+async function forecastLayer(client,key){
+  const f=FORECAST[key];
+  const r=await getJson(client,url(KIWIS[key],{request:"getTimeseriesValueLayer",timeseriesgroup_id:f.group,metadata:"true",
+    md_returnfields:"ts_id,station_no,parametertype_name"}),{maxBytes:1<<20,ttl:LIVE_TTL});
+  if(r.error||!Array.isArray(r.json))return{};
+  const by={};
+  for(const row of r.json){
+    const run=Date.parse(row.timestamp);if(!row.station_no||!Number.isFinite(run))continue;
+    const k=f.level.test(row.parametertype_name||"")?"level":f.rain?.test(row.parametertype_name||"")?"rain":null;if(!k)continue;
+    const cur=(by[row.station_no]||(by[row.station_no]={}))[k];
+    if(!cur||run>cur.run)by[row.station_no][k]={ts_id:String(row.ts_id),run,param:row.parametertype_name};
+  }
+  return by;
+}
+/** Values of forecast series (one request). Asked without a period, a KT series answers its whole latest run (VMM with ~36 h of
+ *  hindcast before it); HIC answers nothing at all when a from/to window is given, so none is. */
+async function forecastValues(client,key,ids){
+  if(!ids.length)return{};
+  const r=await getJson(client,url(KIWIS[key],{request:"getTimeseriesValues",ts_id:ids.join(","),returnfields:"Timestamp,Value",metadata:"true",md_returnfields:"ts_id"}),{maxBytes:2<<20,ttl:LIVE_TTL});
+  if(r.error||!Array.isArray(r.json))return{};
+  return Object.fromEntries(r.json.map(t=>[String(t.ts_id),(t.data||[]).filter(d=>typeof d[1]==="number").map(([t2,v])=>[Date.parse(t2),v])]));
+}
+/** High and low waters of a tide forecast. A turn is the extreme of the 3 hours either side and stands at least 30 cm above (below)
+ *  the other end of that window: values come rounded to the centimetre, so a flat low water wiggles (0.11, 0.10, 0.11) and a plain
+ *  "higher than both neighbours" test would call that wiggle a high water. Turns closer than 4 h to the previous one are the same turn.
+ *  A turn at the very start or end of the forecast is not known to be one, so the window must lie inside the forecast. */
+export function tideTurns(pts){
+  const highs=[],lows=[],W=3*36e5;
+  if(pts.length<3)return{highs,lows};
+  const first=pts[0][0],last=pts.at(-1)[0];
+  for(let i=0,lo=0,hi=0;i<pts.length;i++){
+    const t=pts[i][0];if(t-W<first||t+W>last)continue;
+    while(pts[lo][0]<t-W)lo++;while(hi+1<pts.length&&pts[hi+1][0]<=t+W)hi++;
+    let mx=-Infinity,mn=Infinity;for(let k=lo;k<=hi;k++){const v=pts[k][1];if(v>mx)mx=v;if(v<mn)mn=v}
+    const v=pts[i][1];
+    if(v===mx&&mx-mn>=0.3&&(!highs.length||t-highs.at(-1)[0]>=4*36e5))highs.push(pts[i]);
+    if(v===mn&&mx-mn>=0.3&&(!lows.length||t-lows.at(-1)[0]>=4*36e5))lows.push(pts[i]);
+  }
+  return{highs,lows};
+}
+/** What the publisher's forecast says for one gauge: peak, change, threshold crossings, tide turns. Levels in m TAW. */
+export function forecastOf(fc,values,{now,measured,datum,thresholds,tidal,provider}){
+  if(!fc?.level)return null;
+  const runAge=(now-fc.level.run)/36e5;
+  if(runAge>FC_STALE_H)return{stale:true,run_utc:utc(new Date(fc.level.run).toISOString())};
+  let pts=(values[fc.level.ts_id]||[]).filter(([t])=>t>=now-45*60e3);
+  if(pts.length<4)return null;
+  // the forecast is stated in m TAW; if a series turns out to be relative to the gauge zero, the measured level shows it
+  const nearNow=pts.reduce((b,p)=>Math.abs(p[0]-now)<Math.abs(b[0]-now)?p:b,pts[0]);
+  if(measured!=null&&datum&&Math.abs(nearNow[1]-measured)>2&&Math.abs(nearNow[1]+datum-measured)<0.5)pts=pts.map(([t,v])=>[t,v+datum]);
+  const model0=Math.abs(nearNow[0]-now)<=45*60e3?pts.find(p=>p[0]===nearNow[0])[1]:null;
+  const fut=pts.filter(([t])=>t>now);if(fut.length<3)return null;
+  const peak=fut.reduce((b,p)=>p[1]>b[1]?p:b,fut[0]),low=fut.reduce((b,p)=>p[1]<b[1]?p:b,fut[0]),end=fut.at(-1);
+  const base=model0??measured;
+  const out={model:FORECAST[provider].model,run_utc:utc(new Date(fc.level.run).toISOString()),run_local:local(new Date(fc.level.run).toISOString()),
+    until_utc:utc(new Date(end[0]).toISOString()),until_local:local(new Date(end[0]).toISOString())};
+  if(tidal){
+    const {highs,lows}=tideTurns(fut.filter(([t])=>t<=now+30*36e5));
+    Object.assign(out,{next_high_waters:highs.slice(0,3).map(([t,v])=>({time_local:local(new Date(t).toISOString()),time_utc:utc(new Date(t).toISOString()),level_m_taw:round(v,2)})),
+      next_low_waters:lows.slice(0,2).map(([t,v])=>({time_local:local(new Date(t).toISOString()),time_utc:utc(new Date(t).toISOString()),level_m_taw:round(v,2)}))});
+  }else{
+    const rise=base!=null?peak[1]-base:null,fall=base!=null?base-low[1]:null;
+    Object.assign(out,{trend:rise==null?null:rise>=0.05?"rising":fall>=0.05?"falling":"steady",
+      peak_m_taw:round(peak[1],2),peak_utc:utc(new Date(peak[0]).toISOString()),peak_local:local(new Date(peak[0]).toISOString()),
+      change_to_peak_cm:rise!=null?cm(rise):null,lowest_m_taw:round(low[1],2),end_m_taw:round(end[1],2),
+      still_rising_at_end:rise!=null&&rise>=0.05&&end[0]-peak[0]<=36e5&&end[1]-fut[Math.max(0,fut.length-13)][1]>0.01?true:null});
+  }
+  // threshold crossings (forecast levels and thresholds both in m TAW); only for thresholds not already reached now
+  const cross={};
+  for(const [k,v] of Object.entries(thresholds||{})){if(v==null||(base!=null&&base>=v))continue;const hit=fut.find(([,x])=>x>=v);
+    if(hit)cross[k]=clean({level_m_taw:v,first_reached_utc:utc(new Date(hit[0]).toISOString()),first_reached_local:local(new Date(hit[0]).toISOString())})}
+  if(Object.keys(cross).length)out.reaches=cross;
+  else if(thresholds&&!tidal&&base!=null){const m=clean({watch:thresholds.watch!=null&&base<thresholds.watch?cm(thresholds.watch-peak[1]):null,
+    alarm:thresholds.alarm!=null&&base<thresholds.alarm?cm(thresholds.alarm-peak[1]):null});if(Object.keys(m).length)out.peak_below_cm=m}
+  if(model0!=null&&measured!=null)out.model_minus_measured_now_cm=cm(model0-measured);
+  if(fc.rain&&values[fc.rain.ts_id]?.length){const r=values[fc.rain.ts_id],at0=r.reduce((b,p)=>Math.abs(p[0]-now)<Math.abs(b[0]-now)?p:b,r[0]);
+    const tot=r.at(-1)[1]-at0[1];if(tot>=0)out.catchment_rain_forecast_mm=round(tot,1)}
+  return clean(out);
+}
+
 const STATUS_LABEL=c=>c===0?"normal":c>=1&&c<=3?"alarm level "+c+" of 3 (1 = lowest)":c===-1?"not determined":null;
 function trendOf(series,now){
   if(!series?.length)return null;
@@ -134,7 +223,7 @@ function trendOf(series,now){
   return{latest:[tN,vN],change_1h:d1,change_3h:d3,change_24h:d24,min:Math.min(...vals),max:Math.max(...vals),range,reversals,points:day.length,trend,stale:(now-tN)/3.6e6>FRESH_H};
 }
 
-function view(s,dist,hist,st,lt,crue){
+function view(s,dist,hist,st,lt,crue,fcx){
   const h=hist?.[s.ts_id],tr=trendOf(h,Date.now());
   // tidal gauges (Zeeschelde, Durme, Rupel...): the level swings metres twice a day, so "rising" or "falling" says only where the tide is
   const tidal=!!tr&&((/\btij\b|getij|maree|marée/i.test(s.name+" "+(s.river||""))||tr.reversals>=3))&&tr.range>0.3;
@@ -144,7 +233,7 @@ function view(s,dist,hist,st,lt,crue){
   // thresholds: VMM from the station attributes, HIC from its threshold series; both in m TAW
   let thr=s.thresholds;
   if(s.provider==="hic"&&st)thr={pre_watch:num(st["DrempelPrewaak.O"]?.value),watch:num(st["DrempelWaak.O"]?.value),alarm:num(st["DrempelAlarm.O"]?.value)};
-  let thresholds=null,above=null;
+  let thresholds=null,above=null,thrAbs=null;
   if(thr&&(thr.watch!=null||thr.alarm!=null)&&L.abs!=null){
     // VMM: watch (waakpeil) < pre-alarm < alarm; HIC: pre-watch (prewaakpeil) < watch < alarm. Shown in the publisher's order and names.
     const named=Object.entries(thr).filter(([,v])=>v!=null);
@@ -153,7 +242,7 @@ function view(s,dist,hist,st,lt,crue){
     thresholds=clean({...Object.fromEntries(named.map(([k,v])=>[k+"_m_taw",v])),
       below_watch_cm:plausible&&thr.watch!=null?cm(thr.watch-L.abs):null,below_alarm_cm:plausible&&thr.alarm!=null?cm(thr.alarm-L.abs):null,
       note:!plausible?"The published thresholds are far from this gauge's level (different reference?); not compared.":!ordered?"The publisher lists the watch level above the alarm level; both are shown as published.":null});
-    if(plausible){const hit=named.filter(([,v])=>L.abs>=v).sort((a,b)=>b[1]-a[1])[0];above=hit?hit[0]:"none"}
+    if(plausible){const hit=named.filter(([,v])=>L.abs>=v).sort((a,b)=>b[1]-a[1])[0];above=hit?hit[0]:"none";thrAbs=Object.fromEntries(named)}
   }
   // official alarm status now and forecast (VMM/HIC), InfoCrue basin status (SPW)
   const cur=st?.["AlarmStatus"]||st?.["AlarmStatus.O"],fc=st?.["KT-AlarmStatus.O"]||st?.["KT-AlarmStatus-Max.O"];
@@ -164,6 +253,9 @@ function view(s,dist,hist,st,lt,crue){
     valid_until_utc:s.provider==="vmm"?utc(fc.time):null,issued_utc:s.provider==="hic"?utc(fc.time):null,
     model:s.provider==="vmm"?"VMM short-term flood forecast (KT)":"HIC short-term forecast (KT), highest status over the coming days"}):null;
   const infocrue=s.provider==="spw"&&crue?clean({basin_no:s.basin,code:num(crue.value),label:num(crue.value)===0?"no flood warning for this basin":num(crue.value)>0?"flood warning level "+num(crue.value)+" for this basin":"not determined",time_utc:utc(crue.time)}):null;
+  // the publisher's own level forecast (VMM, HIC): tidal gauges forecast the tide itself
+  const fcl=fcx?.by?.[s.station_no];
+  const levelForecast=fcl?forecastOf(fcl,fcx.values||{},{now:Date.now(),measured:L.abs,datum:s.datum,thresholds:thrAbs,tidal:tidal||fcl.level?.param==="W_voorspeld",provider:s.provider}):null;
   // usual range: whichever convention the provider uses, the 10th and 90th percentile bound the level of 80 % of the time
   let usual=null;
   if(lt){
@@ -189,7 +281,7 @@ function view(s,dist,hist,st,lt,crue){
     change_cm:tr?clean({last_1h:cm(tr.change_1h),last_3h:cm(tr.change_3h),last_24h:tidal?null:cm(tr.change_24h)}):null,trend:tr?.trend,
     last_24h:tr?clean({min_m:round(toAbs(tr.min),2),max_m:round(toAbs(tr.max),2),values:tr.points,
       note:tidal?"Tidal gauge: the 24-hour minimum and maximum are low and high water.":null}):null,
-    thresholds,above_threshold:above,official_status:official,forecast_status:forecast,infocrue,usual_range:usual,
+    thresholds,above_threshold:above,official_status:official,forecast_status:forecast,level_forecast:levelForecast?.stale?null:levelForecast,infocrue,usual_range:usual,
     series:{ts_id:s.ts_id,ts_name:s.ts_name}});
 }
 
@@ -204,11 +296,27 @@ function fact(v){
     const rel=(d,n,lv)=>d==null?null:d>0?d+" cm below the "+n+" level ("+lv.toFixed(2)+" m)":Math.abs(d)+" cm ABOVE the "+n+" level ("+lv.toFixed(2)+" m)";
     parts.push([rel(t.below_watch_cm,"watch",t.watch_m_taw),rel(t.below_alarm_cm,"alarm",t.alarm_m_taw)].filter(Boolean).join(" and "));
   }else if(v.provider!=="SPW")parts.push("no watch or alarm level published for this gauge");
-  if(v.usual_range?.position)parts.push(v.usual_range.position);
-  if(v.official_status)parts.push("official alarm status "+v.official_status.label);
+  const optional=[];   // dropped first when the sentence gets too long
+  if(v.usual_range?.position)optional.push(v.usual_range.position);
+  if(v.official_status)optional.push("official alarm status "+v.official_status.label);
   if(v.forecast_status&&v.forecast_status.highest_code_expected>0)parts.push("FORECAST: the publisher's short-term forecast"+(v.forecast_status.issued_utc?" (issued "+v.forecast_status.issued_utc+")":"")+" reaches "+v.forecast_status.label+(v.forecast_status.valid_until_utc?" before "+v.forecast_status.valid_until_utc:""));
+  const f=v.level_forecast,who=v.provider+" forecast (run "+(f?.run_local||"")+")";
+  if(f?.next_high_waters?.length)parts.push(who+": next high water "+f.next_high_waters.slice(0,2).map(h=>h.time_local+" at "+h.level_m_taw.toFixed(2)+" m").join(", then ")+
+    (f.next_low_waters?.length?"; next low water "+f.next_low_waters[0].time_local+" at "+f.next_low_waters[0].level_m_taw.toFixed(2)+" m":""));
+  else if(f?.peak_m_taw!=null){
+    const reach=f.reaches?Object.entries(f.reaches).sort((a,b)=>b[1].level_m_taw-a[1].level_m_taw)[0]:null;
+    const name=k=>k.replace(/_/g,"-");
+    parts.push((reach?"FORECAST: ":"")+who+": "+(reach?"reaches the "+name(reach[0])+" level ("+reach[1].level_m_taw.toFixed(2)+" m) at "+reach[1].first_reached_local+", peak "+f.peak_m_taw.toFixed(2)+" m at "+f.peak_local
+      :f.trend==="rising"?"rising to "+f.peak_m_taw.toFixed(2)+" m by "+f.peak_local+" (+"+f.change_to_peak_cm+" cm)"+(f.still_rising_at_end?", still rising at the end of the forecast ("+f.until_local+")":"")
+      :f.trend==="falling"?"falling to "+f.lowest_m_taw.toFixed(2)+" m by "+f.until_local:"steady to "+f.until_local+" (peak "+f.peak_m_taw.toFixed(2)+" m)")+
+      (!reach&&f.peak_below_cm?.watch!=null&&f.trend==="rising"?", "+f.peak_below_cm.watch+" cm below the watch level at its peak":"")+
+      (f.catchment_rain_forecast_mm!=null&&f.catchment_rain_forecast_mm>=1?"; "+f.catchment_rain_forecast_mm+" mm of rain forecast over the catchment":""));
+  }
   if(v.infocrue)parts.push("InfoCrue: "+v.infocrue.label);
-  return parts.join("; ")+".";
+  let out=[...parts.slice(0,3),...optional,...parts.slice(3)];
+  for(let i=optional.length;i>0&&out.join("; ").length>590;i--)out=[...parts.slice(0,3),...optional.slice(0,i-1),...parts.slice(3)];
+  const text=out.join("; ");
+  return(text.length>595?text.slice(0,590).replace(/[;,]?\s+\S*$/,"")+" …":text)+".";
 }
 
 export async function riverLevels(client,args,{assets}={}){
@@ -243,19 +351,22 @@ export async function riverLevels(client,args,{assets}={}){
       picked=near.slice(0,1);mode="nearest_outside_radius";
     }
   }else{picked=pool.slice(0,limit).map(s=>({s,d:null}));mode="river"}
-  // details per provider of the chosen gauges: history, status layers, long-term statistics
-  const provs=[...new Set(picked.map(x=>x.s.provider))];
+  // details per provider of the chosen gauges: history, status layers, long-term statistics, the publisher's level forecast
+  const provs=[...new Set(picked.map(x=>x.s.provider))],now=Date.now();
   const details=await Promise.all(provs.map(async k=>{
     const ss=picked.filter(x=>x.s.provider===k).map(x=>x.s);
-    const [hist,status,lt]=await Promise.all([history(client,k,ss.map(s=>s.ts_id)),statusLayer(client,k),longTerm(client,k,ss)]);
-    return[k,{hist,status,lt}];
+    const [hist,status,lt,fby]=await Promise.all([history(client,k,ss.map(s=>s.ts_id)),statusLayer(client,k),longTerm(client,k,ss),FORECAST[k]?forecastLayer(client,k):Promise.resolve({})]);
+    // only fresh runs are read: a stale run would be dropped anyway
+    const ids=ss.flatMap(s=>{const f=fby[s.station_no];return f?.level&&now-f.level.run<=FC_STALE_H*36e5?[f.level.ts_id,f.rain?.ts_id].filter(Boolean):[]});
+    const values=await forecastValues(client,k,ids);
+    return[k,{hist,status,lt,fc:{by:fby,values}}];
   }));
   const D=Object.fromEntries(details);
   const views=picked.map(({s,d})=>{const x=D[s.provider];return view(s,d,x.hist,x.status?.by?.[s.provider==="spw"?null:s.station_no],x.lt?.[s.station_no],
-    s.provider==="spw"&&s.basin?x.status?.by?.[s.basin]?.["00-Statut.InfoCrue.O"]:null)});
+    s.provider==="spw"&&s.basin?x.status?.by?.[s.basin]?.["00-Statut.InfoCrue.O"]:null,x.fc)});
   const facts=views.map(fact);
   if(mode==="nearest_outside_radius")facts.unshift("No gauge reporting now lies within "+radius+" km; the nearest one is "+views[0].distance_km+" km away.");
-  const watch=views.filter(v=>v.above_threshold&&v.above_threshold!=="none"),fcw=views.filter(v=>v.forecast_status?.highest_code_expected>0);
+  const watch=views.filter(v=>v.above_threshold&&v.above_threshold!=="none"),fcw=views.filter(v=>v.forecast_status?.highest_code_expected>0||v.level_forecast?.reaches);
   const noThr=views.filter(v=>!v.thresholds||v.thresholds.below_watch_cm==null&&v.thresholds.below_alarm_cm==null).length;
   if(views.length>1)facts.push((watch.length?watch.length+" of these "+views.length+" gauges are at or above a published threshold":"None of these "+views.length+" gauges is at or above a published watch or alarm level")+
     (noThr?" ("+(noThr===views.length?"none of them publishes one":noThr+" of them "+(noThr===1?"publishes":"publish")+" none")+")":"")+(fcw.length?"; a forecast raises the status at "+fcw.map(v=>v.name).join(", "):"")+".");

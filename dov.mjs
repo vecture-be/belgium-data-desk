@@ -21,7 +21,7 @@ const PATH_ONLY={"statbel.fgov.be":"/sites/default/files/files/opendata/"};
 // Errors name the service that failed, so a VMM or Statbel timeout is not reported as a DOV one.
 const SERVICE_NAME={"www.dov.vlaanderen.be":"DOV","geo.api.vlaanderen.be":"The Flemish geolocation service","geo.irceline.be":"IRCEL-CELINE",
   "bestat.statbel.fgov.be":"Statbel","statbel.fgov.be":"Statbel","inspirepub.waterinfo.be":"VMM's map service (waterinfo.be)","best.pr.fedservices.be":"The federal BeST address service",
-  "download.waterinfo.be":"waterinfo.be (VMM)","hicws.vlaanderen.be":"waterinfo.be (HIC)","hydrometrie.wallonie.be":"SPW hydrometry","opendata.meteo.be":"KMI/IRM open data","opendata.infrabel.be":"Infrabel open data"};
+  "download.waterinfo.be":"waterinfo.be (VMM)","hicws.vlaanderen.be":"waterinfo.be (HIC)","hydrometrie.wallonie.be":"SPW hydrometry","opendata.meteo.be":"KMI/IRM open data","opendata.infrabel.be":"Infrabel open data","feeds.meteoalarm.org":"MeteoAlarm (EUMETNET)"};
 const WFS=DOV_ORIGIN+"/geoserver/wfs",WMS=DOV_ORIGIN+"/geoserver/wms",EXPORT=DOV_ORIGIN+"/xdov/proxy/export",XSD=DOV_ORIGIN+"/xdov/schema/latest/xsd/kern/interpretatie/";
 const TIMEOUT_MS=12000,MAX_UPSTREAM=20,MAX_POINTS=500,NEAREST=5,DEEPEST=3,MAX_LAYERS=80,MAX_TEXT=240;
 const DAY=86400,HOUR=3600;
@@ -82,7 +82,7 @@ export function makeDovClient({fetchImpl=fetch,hosts=HOSTS,maxRequests=MAX_UPSTR
       const reader=r.body?.getReader(),parts=[];let size=0;
       if(reader)for(;;){
         const {done,value}=await reader.read();if(done)break;
-        size+=value.length;if(size>maxBytes){await reader.cancel().catch(()=>{});return{error:"the DOV record is larger than "+Math.round(maxBytes/1024)+" KiB, too large to summarise here",tooLarge:true}}
+        size+=value.length;if(size>maxBytes){await reader.cancel().catch(()=>{});return{error:(SERVICE_NAME[u.hostname]||u.hostname)+" answered more than "+Math.round(maxBytes/1024)+" KiB, too large to summarise here",tooLarge:true}}
         parts.push(value);
       }
       const bytes=new Uint8Array(size);let o=0;for(const p of parts){bytes.set(p,o);o+=p.length}
