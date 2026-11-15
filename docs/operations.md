@@ -52,3 +52,16 @@ Rollback: point the `data` CNAME back at Netlify. The proxy and the old worker a
 4. Optionally set `workers_dev: false`. Nothing links to the new workers.dev host.
 
 Do not do step 2 before DNS has settled. While some resolvers still send traffic to Netlify, a redirecting old worker would loop those visitors.
+
+## Listing in the MCP Registry
+
+`server.json` describes the hosted endpoint for the official MCP Registry
+(registry.modelcontextprotocol.io) as `io.github.vecture-be/belgium-data-desk`, remote only, no package.
+
+- `npm test` checks the file offline; its `version` must equal `MCP_VERSION` in `mcp-server.mjs`. Bump both together.
+- `npm run check:registry` also checks that the live server reports that version, that the registry's validator
+  accepts the file and that the version is not published yet.
+- Publishing is manual: run the **Publish to MCP Registry** workflow with the deployed version, after the deploy.
+  It logs in with GitHub OIDC (namespace `io.github.vecture-be`), so no token is stored. A published version
+  cannot be edited or republished; the `mcp-registry` environment can require a reviewer before the job runs.
+- The registry is a metadata feed: it does not host or proxy the server, and it does not reserve the endpoint URL.
