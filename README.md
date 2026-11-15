@@ -21,6 +21,8 @@ The public service combines a searchable catalogue, browser-based analysis and r
 | `belgian_statistics` | Statbel: population, income, inflation, unemployment by municipality, province, region |
 | `air_quality` | IRCEL-CELINE: now, forecast, annual means against WHO and EU limits |
 | `flood_risk` | VMM's official flood-prone maps (Flanders) |
+| `river_levels` | waterinfo.be (VMM, HIC): live river, canal and tide levels against watch and alarm levels (Flanders) |
+| `weather` | KMI/IRM: measured weather now, last 24 hours and 7 days, ALARO forecast for 48 hours |
 | `subsurface_at_location`, `search_subsurface`, `get_subsurface_record` | Databank Ondergrond Vlaanderen: soil, geology, boreholes, groundwater |
 | `search`, `fetch` | Same catalogue, in the shape ChatGPT deep research expects |
 

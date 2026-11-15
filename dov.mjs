@@ -20,7 +20,8 @@ const HOSTS=new Set(["www.dov.vlaanderen.be","geo.api.vlaanderen.be","geo.irceli
 const PATH_ONLY={"statbel.fgov.be":"/sites/default/files/files/opendata/"};
 // Errors name the service that failed, so a VMM or Statbel timeout is not reported as a DOV one.
 const SERVICE_NAME={"www.dov.vlaanderen.be":"DOV","geo.api.vlaanderen.be":"The Flemish geolocation service","geo.irceline.be":"IRCEL-CELINE",
-  "bestat.statbel.fgov.be":"Statbel","statbel.fgov.be":"Statbel","inspirepub.waterinfo.be":"VMM's map service (waterinfo.be)","best.pr.fedservices.be":"The federal BeST address service"};
+  "bestat.statbel.fgov.be":"Statbel","statbel.fgov.be":"Statbel","inspirepub.waterinfo.be":"VMM's map service (waterinfo.be)","best.pr.fedservices.be":"The federal BeST address service",
+  "download.waterinfo.be":"waterinfo.be (VMM)","hicws.vlaanderen.be":"waterinfo.be (HIC)","hydrometrie.wallonie.be":"SPW hydrometry","opendata.meteo.be":"KMI/IRM open data"};
 const WFS=DOV_ORIGIN+"/geoserver/wfs",WMS=DOV_ORIGIN+"/geoserver/wms",EXPORT=DOV_ORIGIN+"/xdov/proxy/export",XSD=DOV_ORIGIN+"/xdov/schema/latest/xsd/kern/interpretatie/";
 const TIMEOUT_MS=12000,MAX_UPSTREAM=20,MAX_POINTS=500,NEAREST=5,DEEPEST=3,MAX_LAYERS=80,MAX_TEXT=240;
 const DAY=86400,HOUR=3600;
