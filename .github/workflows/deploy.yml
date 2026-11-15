@@ -83,7 +83,9 @@ jobs:
           key: link-health-none
           restore-keys: link-health-
 
-      - name: Build search index and pages
+      - name: Build search index and pages (catalogue sanity gates compare with the deployed catalogue)
+        env:
+          SANITY_PREVIOUS_ORIGIN: ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}
         run: npm run build:index
       - name: Relevance gate
         run: npm run eval

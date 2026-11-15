@@ -386,8 +386,10 @@ export async function catalogueOverview(reader){
   const m=await reader.json("/mcp/manifest.json");
   if(!m)return{error:"Index not available."};
   const {ranges,pins,...rest}=m;void ranges;void pins;
-  const cards=await reader.json("/cards/summary.json");
-  return{...rest,...(cards?{dataset_cards:cards}:{}),note:TRUST_NOTE};
+  const cards=await reader.json("/cards/summary.json"),checks=await reader.json("/catalogue-sanity.json");
+  return{...rest,...(cards?{dataset_cards:cards}:{}),
+    // record-level problems the publishers own, counted across the catalogue (scripts/catalogue-sanity.mjs)
+    ...(checks?{catalogue_checks:{checked:checks.checked,all_gates_passed:checks.gates.every(g=>g.ok),issues:Object.fromEntries(Object.entries(checks.notes).map(([k,v])=>[k,{records:v.count,pct:v.pct}]))}}:{}),note:TRUST_NOTE};
 }
 
 /** The dataset card (scripts/dataset-card.mjs) for a record, trimmed for an MCP answer: facts with evidence first. */
