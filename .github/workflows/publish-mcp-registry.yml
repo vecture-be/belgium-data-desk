@@ -1,0 +1,68 @@
+name: Publish to MCP Registry
+
+# Lists the server in the official MCP Registry (registry.modelcontextprotocol.io).
+# Manual only: a published version cannot be changed or republished, so a maintainer
+# runs this after the version in server.json is deployed. OIDC login, no stored token.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish; must equal server.json and the live server"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-mcp-registry
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: mcp-registry
+    permissions:
+      contents: read
+      id-token: write # GitHub OIDC grants the io.github.vecture-be namespace
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Requested version matches server.json
+        env: { REQUESTED: "${{ inputs.version }}" }
+        run: test "$(node -p 'require("./server.json").version')" = "$REQUESTED"
+
+      - name: Check server.json against the live server and the registry
+        run: node scripts/check-server-json.mjs --live --registry
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+
+      - run: ./mcp-publisher validate server.json
+      - run: ./mcp-publisher login github-oidc
+      - run: ./mcp-publisher publish server.json
+
+      - name: Confirm the listing
+        env: { REQUESTED: "${{ inputs.version }}" }
+        run: |
+          name=$(node -p 'encodeURIComponent(require("./server.json").name)')
+          curl --fail --silent --show-error "https://registry.modelcontextprotocol.io/v0.1/servers/${name}/versions/${REQUESTED}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);console.log((j.server??j).name,(j.server??j).version)})'
