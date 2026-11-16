@@ -6,7 +6,7 @@ import { fetchNationalCatalogue, thinNationalCatalogue, validateNationalCatalogu
 import { kindOf, normalizeLicense, topicOf } from "./curate.mjs";
 import { RELAY_INDEX_PATH, writeRelayIndex } from "./relay-index-lib.mjs";
 import { getJsonOnce, getJsonRetry } from "./harvest-fetch.mjs";
-import { DOV_LICENSE, groupDov } from "./harvest-dov.mjs";
+import { DOV_CAPABILITIES, DOV_LICENSE, collectionsFromCapabilities, groupDov } from "./harvest-dov.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const outPath=path.resolve(__dirname,"../public/harvested-catalog.json");
@@ -123,16 +123,18 @@ const ogcServices=[
   ["brussels-active","Brussels Mobility — Active mobility","https://data.mobility.brussels/datasets/v1/active_mobility",999],
   ["brussels-parking","Brussels Mobility — Parking","https://data.mobility.brussels/datasets/v1/parking",999],
   ["brussels-traffic","Brussels Mobility — Traffic","https://data.mobility.brussels/datasets/v1/traffic",999],
-  // DOV lists ~4,300 collections (19 MB) and takes 30-60 s to do so, so it gets long tries. ~3,900 of them are layers of a few 3D
-  // subsurface models and one map series; harvest-dov.mjs folds each model version into one record. The other ~400 stay individual.
-  ["dov","DOV — Databank Ondergrond Vlaanderen","https://www.dov.vlaanderen.be/geoserver/ogc/features/v1",450,{timeouts:[60000,90000],tries:2,group:groupDov,license:DOV_LICENSE}],
+  // DOV: ~4,300 layers, listed from WFS GetCapabilities (2 s, cached) rather than the OGC collection list (35-60 s; GitHub's runners
+  // lose the connection). ~3,900 are layers of a few 3D subsurface models and one map series; harvest-dov.mjs folds each model version
+  // into one record. The other ~400 stay individual and are sampled through OGC API Features under the same ids.
+  ["dov","DOV — Databank Ondergrond Vlaanderen","https://www.dov.vlaanderen.be/geoserver/ogc/features/v1",450,{list:listDov,group:groupDov,license:DOV_LICENSE}],
   ["wallonia-buildings","SPW Wallonia — Buildings HVD","https://geoservices.wallonie.be/geoserver/inspire_bu/ogc/features/v1",999],
   ["wallonia-transport","SPW Wallonia — Transport Networks HVD","https://geoservices.wallonie.be/geoserver/inspire_tn/ogc/features/v1",999],
   ["wallonia-names","SPW Wallonia — Geographical Names HVD","https://geoservices.wallonie.be/geoserver/inspire_gn/ogc/features/v1",999],
   ["wallonia-management","SPW Wallonia — Management Zones HVD","https://geoservices.wallonie.be/geoserver/inspire_am/ogc/features/v1",999]
 ];
-async function harvestOgcService([slug,provider,base,sampleLimit=999,{timeouts,tries,group=null,license=""}={}]){
-  const j=await getJsonRetry(base+"/collections?f=json",{ua,...(timeouts?{timeouts}:{}),...(tries?{tries}:{})});
+async function listDov(){return{collections:collectionsFromCapabilities(await getJsonRetry(DOV_CAPABILITIES,{ua,as:"text"})),timeStamp:null}}
+async function harvestOgcService([slug,provider,base,sampleLimit=999,{list=null,group=null,license=""}={}]){
+  const j=list?await list():await getCatalogue(base+"/collections?f=json");
   const grouped=group?group(j?.collections||[],{base,timeStamp:j?.timeStamp||null}):null;
   const cs=grouped?grouped.individual:j?.collections||[],extra=(grouped?.series||[]).map(x=>Object.assign(x,{enrichment:quality(x)}));
   const enriched=await mapLimit(cs,8,async (c,i)=>{
@@ -161,7 +163,7 @@ async function harvestOgc(){
     catch(e){
       // keep the service's records from the previous catalogue rather than dropping them for the week, and say so
       const kept=(previous.items||[]).filter(x=>String(x.id).startsWith("harvest:"+s[0]+":"));
-      if(kept.length)partialSources.push("digitaal-vlaanderen/"+s[0]);
+      partialSources.push("digitaal-vlaanderen/"+s[0]);   // degraded even with nothing to keep: next deploy should try again
       console.warn("[harvest-ogc] "+s[0]+" failed: "+e.message+(kept.length?"; kept "+kept.length+" earlier records":""));return kept}
   }));
   return groups.flat();

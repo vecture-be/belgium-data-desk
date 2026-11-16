@@ -6,6 +6,25 @@
 
 export const DOV_LICENSE="modellicentie-gratis-hergebruik/v1.0";
 const DOV_BASE="https://www.dov.vlaanderen.be/geoserver/ogc/features/v1";
+// The OGC API collection list is 19 MB and takes 35-60 s to build (from GitHub's runners the connection drops before it is done);
+// WFS GetCapabilities lists the same layers, under the same ids, from GeoServer's cache: 11 MB in about 2 s.
+export const DOV_CAPABILITIES="https://www.dov.vlaanderen.be/geoserver/wfs?service=WFS&version=2.0.0&request=GetCapabilities";
+
+const ENTITY={amp:"&",lt:"<",gt:">",quot:'"',apos:"'"};
+const xmlText=s=>String(s??"").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,"$1").replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos);/gi,
+  (m,e)=>e[0]==="#"?String.fromCodePoint(e[1]==="x"||e[1]==="X"?parseInt(e.slice(2),16):Number(e.slice(1))):ENTITY[e.toLowerCase()]);
+const tag=(block,name)=>{const m=new RegExp("<(?:\\w+:)?"+name+"\\b[^>]*>([\\s\\S]*?)</(?:\\w+:)?"+name+">").exec(block);return m?xmlText(m[1]).trim():""};
+/** WFS 2.0 GetCapabilities -> collections in the OGC API shape the harvest uses ({id, title, description, extent}). */
+export function collectionsFromCapabilities(xml){
+  const out=[];
+  for(const [b] of String(xml).matchAll(/<(?:\w+:)?FeatureType[\s>][\s\S]*?<\/(?:\w+:)?FeatureType>/g)){
+    const id=tag(b,"Name");if(!id)continue;
+    const lo=tag(b,"LowerCorner").split(/\s+/).map(Number),hi=tag(b,"UpperCorner").split(/\s+/).map(Number);
+    const bbox=lo.length===2&&hi.length===2&&[...lo,...hi].every(Number.isFinite)?[lo[0],lo[1],hi[0],hi[1]]:null;
+    out.push({id,title:tag(b,"Title")||id,description:tag(b,"Abstract"),extent:bbox?{spatial:{bbox:[bbox],crs:"http://www.opengis.net/def/crs/OGC/1.3/CRS84"}}:{}});
+  }
+  return out;
+}
 
 // namespace (the part of the collection id before ":") -> series; `by` splits one namespace into several series by title
 export const DOV_SERIES={

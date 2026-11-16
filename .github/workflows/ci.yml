@@ -35,3 +35,18 @@ jobs:
       - run: npm run snapshot
       - run: npm run build:index
       - run: npm run eval
+
+  # TEMPORARY diagnostic (remove before merge): can a GitHub runner reach DOV, and which DOV listing works from here?
+  diag-dov:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: |
+          B=https://www.dov.vlaanderen.be/geoserver
+          curl -s -o /dev/null -w "caps http=%{http_code} size=%{size_download} connect=%{time_connect}s total=%{time_total}s ip=%{remote_ip}\n" --max-time 90 "$B/wfs?service=WFS&version=2.0.0&request=GetCapabilities" || echo "caps curl-exit=$?"
+          curl -s -o /dev/null -w "items http=%{http_code} size=%{size_download} total=%{time_total}s\n" --max-time 60 "$B/ogc/features/v1/collections/pfas%3Apfas_afvalwater/items?limit=1&f=application%2Fgeo%2Bjson" || echo "items curl-exit=$?"
+          curl -s -o /dev/null -w "queryables http=%{http_code} size=%{size_download} total=%{time_total}s\n" --max-time 60 "$B/ogc/features/v1/collections/pfas%3Apfas_afvalwater/queryables?f=json" || echo "queryables curl-exit=$?"
+          curl -s -o /dev/null -w "ogc-list http=%{http_code} size=%{size_download} ttfb=%{time_starttransfer}s total=%{time_total}s\n" --max-time 150 "$B/ogc/features/v1/collections?f=json" || echo "ogc-list curl-exit=$?"
+          node -e 'const t=Date.now();fetch(process.argv[1],{headers:{"user-agent":"Belgium-Data-Desk/2.0 (+https://data.vecture.be)"}}).then(r=>r.text()).then(s=>console.log("node caps",s.length,Date.now()-t,"ms")).catch(e=>console.log("node caps failed",e.message,e.cause&&e.cause.code))' "$B/wfs?service=WFS&version=2.0.0&request=GetCapabilities"
