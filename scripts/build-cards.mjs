@@ -1,7 +1,8 @@
 // Build dataset cards (scripts/dataset-card.mjs) from the weekly link probe's column profiles.
-//   node scripts/build-cards.mjs [--probe .cache/link-probe.jsonl] [--previous .cache/link-probe-prev.jsonl]
+//   node scripts/build-cards.mjs [--probe .cache/link-probe.jsonl] [--previous .cache/link-probe-prev.jsonl] [--full .cache/full-check.jsonl]
 // Writes public/cards/<shard>.json ({id: card}, sharded like the MCP id index) and public/cards/summary.json. The previous probe,
-// when present, gives schema drift ("columns changed since ..."). A no-op without a probe file, so local builds keep working.
+// when present, gives schema drift ("columns changed since ..."). Whole-file profiles from scripts/full-check.mjs, when present,
+// replace the probe's first-256-KiB profile of the same file. A no-op without either file, so local builds keep working.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +13,7 @@ import { idShard } from "../mcp-server.mjs";
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),".."),pub=path.join(root,"public"),out=path.join(pub,"cards");
 const arg=(name,def)=>{const i=process.argv.indexOf("--"+name);return path.resolve(i>=0?process.argv[i+1]:def)};
 const probeFile=arg("probe",path.join(root,".cache/link-probe.jsonl")),prevFile=arg("previous",path.join(root,".cache/link-probe-prev.jsonl"));
+const fullFile=arg("full",path.join(root,".cache/full-check.jsonl"));
 
 function loadProfiles(file){
   const byUrl=new Map();
@@ -25,7 +27,7 @@ function loadProfiles(file){
 // Cards follow the published MCP records (public/mcp/, built just before by scripts/build-mcp-index.mjs): the index merges records
 // that several catalogues carry, so its ids are the ones get_dataset answers for. Light docs give id and update date, details the
 // declared frequency and file links.
-function loadRecords(){
+export function loadRecords(){
   const dir=path.join(pub,"mcp"),items=[];
   if(!fs.existsSync(path.join(dir,"manifest.json")))throw new Error("public/mcp is missing: run scripts/build-mcp-index.mjs first");
   const docs=[],details=[];
@@ -48,14 +50,21 @@ export function buildCards(records,current,previous,{now=new Date().toISOString(
     const p=current.get(d.url),prev=previous.get(d.url);
     const prevCard=prev?buildCard(rec,prev.profile,{now:prev.checkedAt||now,file:{}}):null;
     cards.set(rec.id,buildCard(rec,p.profile,{previous:prevCard,now:p.checkedAt||now,
-      file:{url:d.url,format:d.format||p.fmt,bytesRead:p.bytes,totalBytes:p.total,lastModified:p.lastModified}}));
+      file:{url:d.url,format:d.format||p.fmt,bytesRead:p.bytes,totalBytes:p.total,lastModified:p.lastModified,sha256:p.sha256}}));
   }
   return cards;
 }
 
+/** Whole-file profiles win over the probe's partial read of the same URL. */
+export function mergeFull(probe,full){
+  const out=new Map(probe);
+  for(const [url,r] of full)if(r.profile?.rows_exact)out.set(url,r);
+  return out;
+}
+
 function main(){
-  const current=loadProfiles(probeFile);
-  if(!current.size){console.log("[cards] no column profiles in "+probeFile+"; nothing to build");return}
+  const full=loadProfiles(fullFile),current=mergeFull(loadProfiles(probeFile),full);
+  if(!current.size){console.log("[cards] no column profiles in "+probeFile+" or "+fullFile+"; nothing to build");return}
   const cards=buildCards(loadRecords(),current,loadProfiles(prevFile));
   fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(out,{recursive:true});
   const shards=new Map();
@@ -65,6 +74,7 @@ function main(){
   const keyKinds={};for(const c of all)for(const k of c.coverage.keys)keyKinds[k.kind]=(keyKinds[k.kind]||0)+1;
   const summary={built:new Date().toISOString().slice(0,10),cards:all.length,
     freshness:{current:count(c=>c.freshness.status==="current"),overdue:count(c=>c.freshness.status==="overdue"),unknown:count(c=>c.freshness.status==="unknown")},
+    whole_file:count(c=>c.file.rows_exact),with_duplicate_rows:count(c=>c.quality.duplicate_rows>0),
     with_time_coverage:count(c=>c.coverage.time),join_keys:keyKinds,schema_changed:count(c=>c.schema.changed_since)};
   fs.writeFileSync(path.join(out,"summary.json"),JSON.stringify(summary));
   console.log("[cards] "+all.length+" dataset cards in "+shards.size+" shards; "+JSON.stringify(summary.freshness)+"; keys "+JSON.stringify(keyKinds)+"; schema changed "+summary.schema_changed);

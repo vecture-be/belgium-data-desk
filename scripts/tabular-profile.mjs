@@ -102,6 +102,8 @@ function mergeType(a,b){
   return"string";
 }
 // onRow(values, headers) is called for every data row (after the header), e.g. by scripts/dataset-card.mjs for column statistics.
+// push(text) may be called with consecutive pieces of a file (a streamed download); finish() ends the last row.
+export function createDelimitedAccumulator(delimiter,options){return accumulator(delimiter,options)}
 function accumulator(delimiter,{sampleRows=DEFAULT_SAMPLE_ROWS,inferRows=DEFAULT_INFER_ROWS,onRow=null}={}){
   let cell="",row=[],quoted=false,pendingQuote=false,headers=null,rowCount=0,nonEmptyRows=0;
   const samples=[],types=[];

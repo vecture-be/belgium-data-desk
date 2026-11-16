@@ -1,0 +1,106 @@
+name: Full-file check
+
+# Weekly: download each dataset's best CSV/TSV file whole (up to 100 MB) and profile every row (scripts/full-check.mjs), so dataset
+# cards give exact row counts, real time coverage and duplicate rows. Six shards split by host run in parallel; files unchanged since
+# last week (ETag / Last-Modified) are not downloaded again. The merged result is cached and picked up by the next deploy.
+on:
+  schedule:
+    - cron: '23 1 * * 6'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: Files per shard (0 = all); for a quick trial run
+        default: '0'
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: full-check
+  cancel-in-progress: false
+
+jobs:
+  shard:
+    if: github.repository == 'vecture-be/belgium-data-desk'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Restore catalogue
+        id: catalogue
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            public/harvested-catalog.json
+            public/national-catalog.json
+            public/national-catalog-*.json
+            public/catalogue-manifest.json
+            relay-index.mjs
+          key: catalogue-none
+          restore-keys: catalogue-
+      - name: Use the deployed catalogue when no cached copy exists
+        if: steps.catalogue.outputs.cache-matched-key == ''
+        run: npm run snapshot
+      # files are chosen from the published records (the ones dataset cards are built for)
+      - name: Build the MCP record index
+        run: node scripts/build-mcp-index.mjs
+      - name: Restore last week's full check
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/full-check.jsonl
+          key: full-check-none
+          restore-keys: full-check-
+      - name: Keep it as the previous run
+        run: if [ -f .cache/full-check.jsonl ]; then mv .cache/full-check.jsonl .cache/full-check-prev.jsonl; fi
+      - name: Check files
+        run: >
+          node --max-old-space-size=6144 scripts/full-check.mjs --shard ${{ matrix.shard }}/6
+          --previous .cache/full-check-prev.jsonl --out .cache/shard-${{ matrix.shard }}.jsonl
+          --budget-minutes 300 --limit ${{ inputs.limit || '0' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: full-check-${{ matrix.shard }}
+          path: .cache/shard-${{ matrix.shard }}.jsonl
+          retention-days: 3
+
+  merge:
+    needs: shard
+    if: ${{ !cancelled() && github.repository == 'vecture-be/belgium-data-desk' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Restore last week's full check
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/full-check.jsonl
+          key: full-check-none
+          restore-keys: full-check-
+      - run: if [ -f .cache/full-check.jsonl ]; then mv .cache/full-check.jsonl .cache/full-check-prev.jsonl; else touch .cache/full-check-prev.jsonl; fi
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: full-check-*
+          path: .cache/shards
+          merge-multiple: true
+      # a failed or unreached file keeps last week's profile; nothing is cached if no shard produced output
+      - name: Merge shards
+        run: |
+          ls .cache/shards/*.jsonl >/dev/null
+          node scripts/full-check.mjs --merge .cache/full-check.jsonl .cache/full-check-prev.jsonl .cache/shards/*.jsonl
+      - uses: actions/cache/save@v4
+        with:
+          path: .cache/full-check.jsonl
+          key: full-check-${{ github.run_id }}
+      - name: Redeploy with the new profiles
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --repo "${{ github.repository }}" --ref main
