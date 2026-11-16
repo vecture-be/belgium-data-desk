@@ -1,6 +1,7 @@
 // Calls every MCP tool once against a deployed server the way an MCP client does (initialize, tools/list, tools/call).
 //   node scripts/smoke-mcp.mjs [origin]     exit code 1 when a call fails or returns an error result
 // Live tools reach DOV, Statbel tables, IRCEL and VMM, so a failure can also mean an upstream service is down; the output says which.
+import { callThroughRollout } from "./smoke-retry.mjs";
 const origin=(process.argv[2]||"https://data.vecture.be").replace(/\/$/,"");
 const PROTOCOL="2025-06-18";
 let id=0,failed=0,warned=0;
@@ -43,7 +44,7 @@ for(let [name,args] of CALLS){
   if(name==="get_dataset")args={id:datasetId};
   if(name==="preview_dataset")args={id:previewId||datasetId,rows:3};
   if(name==="fetch")args={id:fetchId||datasetId};
-  const r=await rpc("tools/call",{name,arguments:args});
+  const r=await callThroughRollout(()=>rpc("tools/call",{name,arguments:args}),name,names);
   const res=r.body?.result,text=res?.content?.[0]?.text||"";let parsed=null;try{parsed=JSON.parse(text)}catch{}
   const err=r.status!==200||r.body?.error||res?.isError||parsed?.error;
   if(name==="search_datasets"){const items=parsed?.results||parsed?.items||[];datasetId=items[0]?.id}
