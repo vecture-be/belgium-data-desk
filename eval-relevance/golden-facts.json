@@ -288,5 +288,45 @@
     ],
     "source": "https://www.waterinfo.be",
     "why": "HIC's tide forecast for Antwerpen tij is read as high and low waters (high water at Antwerp is about 4.5-6 m TAW)."
+  },
+  {
+    "question": "Which is the current geological 3D model of the Flemish subsurface?",
+    "tool": "search_datasets",
+    "args": {
+      "query": "geologisch 3D model Vlaanderen",
+      "limit": 5
+    },
+    "expect": [
+      {
+        "path": "results.0.title",
+        "matches": "^G3Dv3.1 . Geologisch 3D-model"
+      },
+      {
+        "path": "results.0.publisher",
+        "matches": "DOV"
+      }
+    ],
+    "source": "https://www.dov.vlaanderen.be/",
+    "why": "DOV publishes G3Dv3.1 as the current version of the geological 3D model; G3Dv3 and G3Dv2 are earlier versions and must not lead."
+  },
+  {
+    "question": "Where is PFAS in the soil measured in Flanders?",
+    "tool": "search_datasets",
+    "args": {
+      "query": "PFAS bodem",
+      "limit": 5
+    },
+    "expect": [
+      {
+        "path": "results.0.title",
+        "matches": "PFAS"
+      },
+      {
+        "path": "results.0.publisher",
+        "matches": "DOV|Databank Ondergrond"
+      }
+    ],
+    "source": "https://www.dov.vlaanderen.be/",
+    "why": "DOV publishes the PFAS soil measurements (Lantis and others) as OGC API Features collections."
   }
 ]

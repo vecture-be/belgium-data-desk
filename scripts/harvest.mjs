@@ -6,6 +6,7 @@ import { fetchNationalCatalogue, thinNationalCatalogue, validateNationalCatalogu
 import { kindOf, normalizeLicense, topicOf } from "./curate.mjs";
 import { RELAY_INDEX_PATH, writeRelayIndex } from "./relay-index-lib.mjs";
 import { getJsonOnce, getJsonRetry } from "./harvest-fetch.mjs";
+import { DOV_LICENSE, groupDov } from "./harvest-dov.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const outPath=path.resolve(__dirname,"../public/harvested-catalog.json");
@@ -122,16 +123,18 @@ const ogcServices=[
   ["brussels-active","Brussels Mobility — Active mobility","https://data.mobility.brussels/datasets/v1/active_mobility",999],
   ["brussels-parking","Brussels Mobility — Parking","https://data.mobility.brussels/datasets/v1/parking",999],
   ["brussels-traffic","Brussels Mobility — Traffic","https://data.mobility.brussels/datasets/v1/traffic",999],
-  // DOV lists ~4,300 collections and takes over 30 s to do so; it has never fitted in one try and has not been in the catalogue.
-  // One try only, as before: whether its collections belong in the catalogue (it nearly doubles it) is a separate decision.
-  ["dov","DOV — Databank Ondergrond Vlaanderen","https://www.dov.vlaanderen.be/geoserver/ogc/features/v1",80,{retry:false}],
+  // DOV lists ~4,300 collections (19 MB) and takes 30-60 s to do so, so it gets long tries. ~3,900 of them are layers of a few 3D
+  // subsurface models and one map series; harvest-dov.mjs folds each model version into one record. The other ~400 stay individual.
+  ["dov","DOV — Databank Ondergrond Vlaanderen","https://www.dov.vlaanderen.be/geoserver/ogc/features/v1",450,{timeouts:[60000,90000],tries:2,group:groupDov,license:DOV_LICENSE}],
   ["wallonia-buildings","SPW Wallonia — Buildings HVD","https://geoservices.wallonie.be/geoserver/inspire_bu/ogc/features/v1",999],
   ["wallonia-transport","SPW Wallonia — Transport Networks HVD","https://geoservices.wallonie.be/geoserver/inspire_tn/ogc/features/v1",999],
   ["wallonia-names","SPW Wallonia — Geographical Names HVD","https://geoservices.wallonie.be/geoserver/inspire_gn/ogc/features/v1",999],
   ["wallonia-management","SPW Wallonia — Management Zones HVD","https://geoservices.wallonie.be/geoserver/inspire_am/ogc/features/v1",999]
 ];
-async function harvestOgcService([slug,provider,base,sampleLimit=999,{retry=true}={}]){
-  const j=await (retry?getCatalogue:getJson)(base+"/collections?f=json"),cs=j?.collections||[];
+async function harvestOgcService([slug,provider,base,sampleLimit=999,{timeouts,tries,group=null,license=""}={}]){
+  const j=await getJsonRetry(base+"/collections?f=json",{ua,...(timeouts?{timeouts}:{}),...(tries?{tries}:{})});
+  const grouped=group?group(j?.collections||[],{base,timeStamp:j?.timeStamp||null}):null;
+  const cs=grouped?grouped.individual:j?.collections||[],extra=(grouped?.series||[]).map(x=>Object.assign(x,{enrichment:quality(x)}));
   const enriched=await mapLimit(cs,8,async (c,i)=>{
     let q={};if(i<sampleLimit){try{q=await getJson(base+"/collections/"+encodeURIComponent(c.id)+"/queryables?f=json")}catch{}}
     const publisherSchema=!!Object.keys(q.properties||{}).length;
@@ -148,13 +151,18 @@ async function harvestOgcService([slug,provider,base,sampleLimit=999,{retry=true
     }
     const previewRows=sample.features?.length?compactPreview(sample.features.map(f=>({...f.properties,_geometry:f.geometry?.type}))):[];
     const e=c.extent||{},x={id:"harvest:"+slug+":"+c.id,provider,platform:"OGC API Features",datasetId:c.id,title:clean(c.title||c.id),description:clean(c.description).slice(0,700),kind:"OGC feature collection",formats:["OGC API Features","GeoJSON"],updatedAt:j.timeStamp||null,recordCount,fields,previewRows,schemaOrigin:publisherSchema?"publisher-schema":fields.length?"sample-observed":"none",sampleOrigin:previewRows.length?"live-api-records":"none",extent:{spatial:e.spatial?.bbox?.[0]||null,spatialCrs:e.spatial?.crs||c.storageCrs||null,temporal:e.temporal?.interval?.[0]||null},themes:[],license:"",crs:(c.crs||[]).slice(0,8),officialUrl:base+"/collections/"+encodeURIComponent(c.id)+"?f=text%2Fhtml",distributions:[{name:"Features",format:"OGC API Features",url:base+"/collections/"+encodeURIComponent(c.id)+"/items?limit=20"},{name:"Queryables",format:"JSON Schema",url:base+"/collections/"+encodeURIComponent(c.id)+"/queryables?f=json"}]};
+    if(license)x.license=license;
     return Object.assign(x,{enrichment:quality(x)});
-  });return enriched.filter(x=>!x.error);
+  });return[...extra,...enriched.filter(x=>!x.error)];
 }
 async function harvestOgc(){
   const groups=await Promise.all(ogcServices.map(async s=>{
     try{return await harvestOgcService(s)}
-    catch(e){console.warn("[harvest-ogc] "+s[0]+" failed: "+e.message);return[]}
+    catch(e){
+      // keep the service's records from the previous catalogue rather than dropping them for the week, and say so
+      const kept=(previous.items||[]).filter(x=>String(x.id).startsWith("harvest:"+s[0]+":"));
+      if(kept.length)partialSources.push("digitaal-vlaanderen/"+s[0]);
+      console.warn("[harvest-ogc] "+s[0]+" failed: "+e.message+(kept.length?"; kept "+kept.length+" earlier records":""));return kept}
   }));
   return groups.flat();
 }
@@ -324,6 +332,7 @@ const jobs=[
   ["wallonia-metawal",()=>harvestCsw("wallonia","SPW Wallonia — Metawal","https://metawal.wallonie.be/geonetwork/srv/fre/csw",20)],
   ["geo-be",()=>harvestCsw("geo-be","geo.be / National Geographic Institute","https://publish.geo.be/geonetwork/srv/eng/csw",10)]
 ];
+const partialSources=[];   // parts of a source that kept earlier records (an OGC service that did not answer)
 let previous={items:[],sources:{}};try{previous=JSON.parse(fs.readFileSync(outPath,"utf8"))}catch{}
 const items=[],sources={};
 for(const [name,fn] of jobs){
@@ -356,6 +365,6 @@ fs.writeFileSync(manifestPath,JSON.stringify(manifest)+"\n");
 console.log("[harvest] wrote catalogue manifest for versioned browser caching");
 // The deploy caches one harvest per ISO week. A harvest where a source kept old records must not be that week's copy,
 // or one passing timeout freezes the source for seven days: report it, and the workflow skips saving the cache.
-const degraded=[...Object.entries(sources).filter(([,v])=>!v.ok).map(([k])=>k),...(nationalFellBack?["national-dcat"]:[])];
+const degraded=[...Object.entries(sources).filter(([,v])=>!v.ok).map(([k])=>k),...partialSources,...(nationalFellBack?["national-dcat"]:[])];
 if(degraded.length)console.warn("[harvest] degraded: "+degraded.join(", ")+" kept earlier records; this harvest will not be cached for the week");
 if(process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,"degraded="+degraded.join(",")+"\n");

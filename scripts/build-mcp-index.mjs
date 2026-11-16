@@ -51,7 +51,7 @@ export function curatedToItems(assets,sources){
 
 const TIER_RANK={ready:5,download:4,service:3,document:2,metadata:1,broken:0};
 const SCOPE_ORDER=Object.fromEntries(SCOPES.filter(s=>s.id!=="all").map((s,i)=>[s.id,i]));
-const rankOf=it=>(5-SCOPE_ORDER[scopeOf(it)])*10000+(it.curated?5000:0)+(TIER_RANK[it.tier]??2)*100+(["open","open-sharealike"].includes(it.licenseFamily)?20:0)+((it.fields||[]).length?10:0)+(it.probe?.ok?5:0)+(it.description?2:0);
+const rankOf=it=>(5-SCOPE_ORDER[scopeOf(it)])*10000+(it.curated?5000:0)+(TIER_RANK[it.tier]??2)*100+(["open","open-sharealike"].includes(it.licenseFamily)?20:0)+((it.fields||[]).length?10:0)+(it.probe?.ok?5:0)+(it.description?2:0)-(it.successor?1:0);   // a superseded model version ranks just below its peers
 
 export function toDocs(it,relay){
   const lic=it.licenseFamily?{label:it.license,family:it.licenseFamily}:normalizeLicense(it.licenseUri||it.license);
