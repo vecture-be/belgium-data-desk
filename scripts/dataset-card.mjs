@@ -194,8 +194,9 @@ export function changeSentence(c){
   if(c.distinct_rows_added!=null)parts.push(fmtInt(c.distinct_rows_added)+" distinct row"+(c.distinct_rows_added===1?"":"s")+" added and "+fmtInt(c.distinct_rows_removed)+" removed");
   if(c.columns_added?.length)parts.push("column"+(c.columns_added.length>1?"s ":" ")+c.columns_added.slice(0,3).map(x=>"'"+x+"'").join(", ")+" added");
   if(c.columns_removed?.length)parts.push("column"+(c.columns_removed.length>1?"s ":" ")+c.columns_removed.slice(0,3).map(x=>"'"+x+"'").join(", ")+" removed");
-  for(const v of (c.coverage||[]).slice(0,2))parts.push("'"+v.column+"' now runs to "+v.after[1]+" (was "+v.before[1]+")");
-  return"Between the checks of "+day(c.since)+" and "+day(c.seen_at)+" the file changed: "+(parts.join("; ")||"its content differs")+".";
+  for(const v of (c.coverage||[]).slice(0,2))parts.push("'"+v.column+"' now runs from "+v.after[0]+" to "+v.after[1]+" (was "+v.before[0]+" to "+v.before[1]+")");
+  for(const v of (c.ranges||[]).slice(0,2))parts.push("'"+v.column+"' now ranges from "+num(v.after[0])+" to "+num(v.after[1])+" (was "+num(v.before[0])+" to "+num(v.before[1])+")");
+  return"Between the checks of "+day(c.since)+" and "+day(c.seen_at)+" the file changed: "+(parts.join("; ")||"its values differ")+".";
 }
 
 // ---------- the card ----------
