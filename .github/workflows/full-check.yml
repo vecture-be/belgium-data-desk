@@ -85,7 +85,7 @@ jobs:
           path: .cache/full-check.jsonl
           key: full-check-none
           restore-keys: full-check-
-      - run: if [ -f .cache/full-check.jsonl ]; then mv .cache/full-check.jsonl .cache/full-check-prev.jsonl; else touch .cache/full-check-prev.jsonl; fi
+      - run: mkdir -p .cache && if [ -f .cache/full-check.jsonl ]; then mv .cache/full-check.jsonl .cache/full-check-prev.jsonl; else touch .cache/full-check-prev.jsonl; fi
       - uses: actions/download-artifact@v4
         with:
           pattern: full-check-*
