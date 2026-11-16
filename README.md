@@ -2,7 +2,7 @@
 
 Belgian public data, answered from the official sources.
 
-Belgium Data Desk is a catalogue of about 21,700 Belgian open-data records (data.gov.be plus directly harvested federal, regional and city portals), a website to search it, and an [MCP](https://modelcontextprotocol.io) server that lets AI assistants search it and answer common questions from the authoritative publisher: Statbel figures, IRCEL-CELINE air quality, VMM flood maps and the Flemish subsurface database (DOV).
+Belgium Data Desk is a catalogue of about 23,000 Belgian open-data records (data.gov.be plus directly harvested federal, regional and city portals), a website to search it, and an [MCP](https://modelcontextprotocol.io) server that lets AI assistants search it and answer common questions from the authoritative publisher: Statbel figures, IRCEL-CELINE air quality, VMM flood maps and the Flemish subsurface database (DOV).
 
 Hosted instance: **https://data.vecture.be** · MCP endpoint: `https://data.vecture.be/mcp` (no account, read-only)
 
@@ -43,7 +43,7 @@ npm run build:index      # build the MCP search shards and the static SEO pages
 npm run dev              # http://localhost:8787 and http://localhost:8787/mcp
 ```
 
-`npm run harvest` rebuilds the catalogue from the source portals instead of the snapshot. It takes a few minutes and some portals may not answer from every network; the harvest then keeps the previous records for that source.
+`npm run harvest` rebuilds the catalogue from the source portals instead of the snapshot. It takes a few minutes. Catalogue listings get three tries; a portal that still does not answer keeps its previous records, and such a harvest is not cached for the week, so the next deploy tries again.
 
 Check a running server (yours or the hosted one):
 
@@ -62,6 +62,7 @@ The catalogue path harvests and checks source metadata before publishing search 
 | Where | What |
 | --- | --- |
 | `scripts/harvest.mjs`, `scripts/national-dcat.mjs` | Source adapters: CKAN, OpenDataSoft, OGC API, CSW and the national DCAT feed |
+| `scripts/harvest-fetch.mjs`, `scripts/harvest-dov.mjs` | Retries for catalogue listings; DOV's ~3,900 3D-model layers folded into one record per model version |
 | `scripts/curate.mjs`, `public/dataset-*.mjs` | Curation: kinds, topics, licences, publishers, authoritative sources, synonyms |
 | `mcp-server.mjs` | MCP protocol, tool definitions, search ranking |
 | `statbel.mjs`, `air.mjs`, `flood.mjs`, `dov.mjs`, `dov-search.mjs`, `place.mjs` | Live answer tools |
