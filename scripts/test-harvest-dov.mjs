@@ -50,7 +50,7 @@ const OA="Deze laag geeft de boringen doorheen Ongedifferentieerd lid van de For
   const g=series.find(s=>s.datasetId==="g3dv3_1");
   assert.equal(g.id,"harvest:dov:series:g3dv3_1");
   assert.equal(g.title,"G3Dv3.1 – Geologisch 3D-model van de Vlaamse ondergrond, versie 3.1");
-  assert.equal(g.layerCount,3);assert.equal(g.layers.length,3);assert.equal(g.license,DOV_LICENSE);
+  assert.equal(g.provider,"Databank Ondergrond Vlaanderen (DOV)","the name DOV declares nationally");assert.equal(g.layerCount,3);assert.equal(g.layers.length,3);assert.equal(g.license,DOV_LICENSE);
   assert.match(g.description,/^3 kaartlagen \(OGC API Features: GeoJSON, CSV\): (basis|breuken|top) 1, (basis|breuken|top) 1, (basis|breuken|top) 1\. 2 eenheden, o\.a\. Ld van Achterbos van de Fm van Gent; Fm van Borgloon\. Het Geologisch 3D model is opgemaakt/);
   assert.match(series.find(s=>s.datasetId==="g3dv3").description,/^Vorige versie; opgevolgd door G3Dv3\.1\. /);
   assert.ok(g.distributions[0].url.startsWith("https://www.dov.vlaanderen.be/geoserver/ogc/features/v1/collections/g3dv3_1%3A"));assert.deepEqual(g.distributions.map(d=>d.format).slice(0,2),["GeoJSON","CSV"]);

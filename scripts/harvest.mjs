@@ -6,7 +6,7 @@ import { fetchNationalCatalogue, thinNationalCatalogue, validateNationalCatalogu
 import { kindOf, normalizeLicense, topicOf } from "./curate.mjs";
 import { RELAY_INDEX_PATH, writeRelayIndex } from "./relay-index-lib.mjs";
 import { getJsonOnce, getJsonRetry } from "./harvest-fetch.mjs";
-import { DOV_CAPABILITIES, DOV_LICENSE, collectionsFromCapabilities, groupDov } from "./harvest-dov.mjs";
+import { DOV_CAPABILITIES, DOV_LICENSE, DOV_PROVIDER, collectionsFromCapabilities, groupDov } from "./harvest-dov.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const outPath=path.resolve(__dirname,"../public/harvested-catalog.json");
@@ -126,7 +126,7 @@ const ogcServices=[
   // DOV: ~4,300 layers, listed from WFS GetCapabilities (2 s, cached) rather than the OGC collection list (35-60 s; GitHub's runners
   // lose the connection). ~3,900 are layers of a few 3D subsurface models and one map series; harvest-dov.mjs folds each model version
   // into one record. The other ~400 stay individual and are sampled through OGC API Features under the same ids.
-  ["dov","DOV — Databank Ondergrond Vlaanderen","https://www.dov.vlaanderen.be/geoserver/ogc/features/v1",450,{list:listDov,group:groupDov,license:DOV_LICENSE}],
+  ["dov",DOV_PROVIDER,"https://www.dov.vlaanderen.be/geoserver/ogc/features/v1",450,{list:listDov,group:groupDov,license:DOV_LICENSE}],
   ["wallonia-buildings","SPW Wallonia — Buildings HVD","https://geoservices.wallonie.be/geoserver/inspire_bu/ogc/features/v1",999],
   ["wallonia-transport","SPW Wallonia — Transport Networks HVD","https://geoservices.wallonie.be/geoserver/inspire_tn/ogc/features/v1",999],
   ["wallonia-names","SPW Wallonia — Geographical Names HVD","https://geoservices.wallonie.be/geoserver/inspire_gn/ogc/features/v1",999],

@@ -5,6 +5,8 @@
 // individual records.
 
 export const DOV_LICENSE="modellicentie-gratis-hergebruik/v1.0";
+// The name DOV declares in the national catalogue (data.gov.be): one publisher, one name in facets and publisher pages.
+export const DOV_PROVIDER="Databank Ondergrond Vlaanderen (DOV)";
 const DOV_BASE="https://www.dov.vlaanderen.be/geoserver/ogc/features/v1";
 // The OGC API collection list is 19 MB and takes 35-60 s to build (from GitHub's runners the connection drops before it is done);
 // WFS GetCapabilities lists the same layers, under the same ids, from GeoServer's cache: 11 MB in about 2 s.
@@ -103,7 +105,7 @@ export function seriesRecord(key,title,cs,{base=DOV_BASE,timeStamp=null,successo
     +(units.length?" "+units.length+" eenheden, o.a. "+units.slice(0,6).join("; ")+".":"");
   const desc=clean((successor?"Vorige versie; opgevolgd door "+successor+". ":"")+head+" "+(withBlurb?blurb(cs):""));
   const layers=[...cs].sort((a,b)=>String(a.id).localeCompare(String(b.id))).map(c=>({id:c.id,title:clean(c.title)}));
-  return{id:"harvest:dov:series:"+key,provider:"DOV — Databank Ondergrond Vlaanderen",platform:"OGC API Features",datasetId:key,title,
+  return{id:"harvest:dov:series:"+key,provider:DOV_PROVIDER,platform:"OGC API Features",datasetId:key,title,
     description:desc.length>900?desc.slice(0,897).replace(/\s+\S*$/,"")+" …":desc,
     kind:"OGC feature collection series",formats:["OGC API Features","GeoJSON","CSV"],updatedAt:timeStamp,recordCount:null,
     fields:[],previewRows:[],schemaOrigin:"none",sampleOrigin:"none",
