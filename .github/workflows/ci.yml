@@ -35,3 +35,16 @@ jobs:
       - run: npm run snapshot
       - run: npm run build:index
       - run: npm run eval
+
+  # TEMPORARY diagnostic (remove before merge): how the Brussels catalogue answers from a GitHub runner.
+  diag-brussels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          for h in bruxellesdata.opendatasoft.com opendata.brussels.be data.stad.gent; do
+            for q in "limit=1" "limit=100&offset=0" "limit=20&offset=0" "limit=100&offset=100"; do
+              curl -s -o /dev/null -w "$h $q http=%{http_code} connect=%{time_connect}s ttfb=%{time_starttransfer}s total=%{time_total}s size=%{size_download} ip=%{remote_ip}\n" --max-time 45 -H "user-agent: Belgium-Data-Desk/2.0 (+https://data.vecture.be)" -H "accept: application/json" "https://$h/api/explore/v2.1/catalog/datasets?$q" || echo "$h $q curl-exit=$?"
+            done
+          done
+          curl -s -D - -o /dev/null --max-time 45 "https://bruxellesdata.opendatasoft.com/api/explore/v2.1/catalog/datasets?limit=1" | head -12
