@@ -54,6 +54,9 @@ jobs:
         id: harvest
         if: steps.catalogue.outputs.cache-hit != 'true'
         run: npm run harvest
+        env:
+          # a portal that does not answer keeps the records the site has now, not the older committed snapshot's
+          PREVIOUS_CATALOGUE_URL: ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}/harvested-catalog.json
       # A harvest where a source kept earlier records (timeout, outage) is deployed but not cached for the week,
       # so the next deploy harvests again instead of carrying the failure for seven days.
       - name: Save catalogue
