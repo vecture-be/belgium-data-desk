@@ -50,7 +50,7 @@ export function buildCards(records,current,previous,{now=new Date().toISOString(
     const p=current.get(d.url),prev=previous.get(d.url);
     const prevCard=prev?buildCard(rec,prev.profile,{now:prev.checkedAt||now,file:{}}):null;
     cards.set(rec.id,buildCard(rec,p.profile,{previous:prevCard,now:p.checkedAt||now,
-      file:{url:d.url,format:d.format||p.fmt,bytesRead:p.bytes,totalBytes:p.total,lastModified:p.lastModified,etag:p.etag,sha256:p.sha256,headerCheck:p.header_check,
+      file:{url:d.url,format:d.format||p.fmt,bytesRead:p.bytes,totalBytes:p.total,lastModified:p.lastModified,etag:p.etag,sha256:p.sha256,headerCheck:p.header_check,change:p.change||null,
         ...(p.content_since?{content:{since:p.content_since,changedAt:p.content_changed_at,changedAfter:p.changed_after,observedSince:p.observed_since,lastModifiedUsable:p.header_check?.last_modified_usable,rowOrderUnstable:!!p.row_order_unstable}}:{})}}));
   }
   return cards;
@@ -87,6 +87,7 @@ function main(){
     change_headers:headerSummary(all.filter(c=>c.file.headers)),
     catalogue_date_not_in_file:count(c=>c.freshness.metadata_date_not_reflected_in_file),
     row_order_unstable:count(c=>c.quality.row_order_unstable),
+    with_change_seen:count(c=>c.last_change_seen),
     with_time_coverage:count(c=>c.coverage.time),join_keys:keyKinds,schema_changed:count(c=>c.schema.changed_since)};
   fs.writeFileSync(path.join(out,"summary.json"),JSON.stringify(summary));
   console.log("[cards] "+all.length+" dataset cards in "+shards.size+" shards; "+JSON.stringify(summary.freshness)+"; keys "+JSON.stringify(keyKinds)+"; schema changed "+summary.schema_changed);

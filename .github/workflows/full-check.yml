@@ -1,8 +1,13 @@
 name: Full-file check
 
 # Weekly: download each dataset's best CSV/TSV file whole (up to 100 MB) and profile every row (scripts/full-check.mjs), so dataset
-# cards give exact row counts, real time coverage and duplicate rows. Six shards split by host run in parallel; files unchanged since
-# last week (ETag / Last-Modified) are not downloaded again. The merged result is cached and picked up by the next deploy.
+# cards give exact row counts, real time coverage, duplicate rows and what changed since the previous check. Six shards split by host
+# run in parallel. Every file is downloaded every run: change headers are tested against the content, not trusted.
+#
+# State between runs lives in the "full-check-state" release, which does not expire like the Actions cache:
+#   rows-<shard>.json/.bin  hashes of each file's distinct rows, for the row-level diff (scripts/row-diff.mjs)
+#   full-check.jsonl.gz     the merged results (also cached for the deploy)
+# The change log (scripts/change-log.mjs) is published to the "data-changes" branch.
 on:
   schedule:
     - cron: '23 1 * * 6'
@@ -11,14 +16,21 @@ on:
       limit:
         description: Files per shard (0 = all); for a quick trial run
         default: '0'
+      publish_log:
+        description: Publish the change log to the data-changes branch (scheduled runs always do)
+        type: boolean
+        default: false
 
 permissions:
-  contents: read
+  contents: write   # release assets (row baselines) and the data-changes branch
   actions: write
 
 concurrency:
   group: full-check
   cancel-in-progress: false
+
+env:
+  STATE_TAG: full-check-state
 
 jobs:
   shard:
@@ -29,6 +41,8 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -51,41 +65,61 @@ jobs:
       # files are chosen from the published records (the ones dataset cards are built for)
       - name: Build the MCP record index
         run: node scripts/build-mcp-index.mjs
-      - name: Restore last week's full check
+      - name: Restore the previous full check
+        id: prev
         uses: actions/cache/restore@v4
         with:
           path: .cache/full-check.jsonl
           key: full-check-none
           restore-keys: full-check-
-      - name: Keep it as the previous run
-        run: if [ -f .cache/full-check.jsonl ]; then mv .cache/full-check.jsonl .cache/full-check-prev.jsonl; fi
+      - name: Previous run and row baselines from the state release
+        run: |
+          mkdir -p .cache/rows-prev
+          if [ ! -f .cache/full-check.jsonl ]; then
+            gh release download "$STATE_TAG" -p full-check.jsonl.gz -D .cache 2>/dev/null && gunzip -f .cache/full-check.jsonl.gz || true
+          fi
+          if [ -f .cache/full-check.jsonl ]; then mv .cache/full-check.jsonl .cache/full-check-prev.jsonl; fi
+          gh release download "$STATE_TAG" -p "rows-${{ matrix.shard }}.*" -D .cache/rows-prev 2>/dev/null || echo "no row baseline yet"
+          ls -la .cache/rows-prev
       - name: Check files
         run: >
           node --max-old-space-size=6144 scripts/full-check.mjs --shard ${{ matrix.shard }}/6
           --previous .cache/full-check-prev.jsonl --out .cache/shard-${{ matrix.shard }}.jsonl
+          --rows-prev .cache/rows-prev --rows-out .cache/rows-new
           --budget-minutes 300 --limit ${{ inputs.limit || '0' }}
       - uses: actions/upload-artifact@v4
         with:
           name: full-check-${{ matrix.shard }}
           path: .cache/shard-${{ matrix.shard }}.jsonl
           retention-days: 3
+      # index first is safe: readRowPack ignores a pair whose sizes do not match
+      - name: Save row baselines
+        run: |
+          gh release view "$STATE_TAG" >/dev/null 2>&1 || gh release create "$STATE_TAG" --prerelease --title "Full-file check state" \
+            --notes "Working state of the weekly full-file check: hashes of each file's distinct rows (rows-<shard>.json/.bin) and the merged results (full-check.jsonl.gz). Not a software release." || true
+          gh release upload "$STATE_TAG" .cache/rows-new/rows-${{ matrix.shard }}.json .cache/rows-new/rows-${{ matrix.shard }}.bin --clobber
 
   merge:
     needs: shard
     if: ${{ !cancelled() && github.repository == 'vecture-be/belgium-data-desk' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Restore last week's full check
+      - name: Restore the previous full check
         uses: actions/cache/restore@v4
         with:
           path: .cache/full-check.jsonl
           key: full-check-none
           restore-keys: full-check-
-      - run: mkdir -p .cache && if [ -f .cache/full-check.jsonl ]; then mv .cache/full-check.jsonl .cache/full-check-prev.jsonl; else touch .cache/full-check-prev.jsonl; fi
+      - run: |
+          mkdir -p .cache
+          if [ ! -f .cache/full-check.jsonl ]; then gh release download "$STATE_TAG" -p full-check.jsonl.gz -D .cache 2>/dev/null && gunzip -f .cache/full-check.jsonl.gz || true; fi
+          if [ -f .cache/full-check.jsonl ]; then mv .cache/full-check.jsonl .cache/full-check-prev.jsonl; else touch .cache/full-check-prev.jsonl; fi
       - uses: actions/download-artifact@v4
         with:
           pattern: full-check-*
@@ -100,7 +134,38 @@ jobs:
         with:
           path: .cache/full-check.jsonl
           key: full-check-${{ github.run_id }}
+      - name: Keep the merged results in the state release
+        run: gzip -kf .cache/full-check.jsonl && gh release upload "$STATE_TAG" .cache/full-check.jsonl.gz --clobber
+
+      # titles and publishers for the change log come from the published records
+      - name: Restore catalogue
+        if: github.event_name == 'schedule' || inputs.publish_log
+        id: catalogue
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            public/harvested-catalog.json
+            public/national-catalog.json
+            public/national-catalog-*.json
+            public/catalogue-manifest.json
+            relay-index.mjs
+          key: catalogue-none
+          restore-keys: catalogue-
+      - name: Publish the change log
+        if: github.event_name == 'schedule' || inputs.publish_log
+        run: |
+          if [ "${{ steps.catalogue.outputs.cache-matched-key }}" = "" ]; then npm run snapshot; fi
+          node scripts/build-mcp-index.mjs >/dev/null
+          since=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" --jq .run_started_at)
+          git fetch --depth=1 origin data-changes 2>/dev/null && git worktree add log origin/data-changes -B data-changes \
+            || { git worktree add --orphan -b data-changes log; }
+          node scripts/change-log.mjs --checks .cache/full-check.jsonl --since "$since" --dir log
+          cd log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md changes
+          git commit -m "Change log $(date -u +%F)" || { echo "nothing to commit"; exit 0; }
+          git push origin data-changes
+
       - name: Redeploy with the new profiles
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy.yml --repo "${{ github.repository }}" --ref main

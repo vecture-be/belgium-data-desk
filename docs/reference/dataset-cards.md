@@ -56,6 +56,14 @@ How a card uses this:
 
 `catalogue_overview` reports these counts in `change_headers` and `catalogue_date_not_in_file`.
 
+## Change log
+
+Each full-file check also says *what* changed since the previous check, without keeping any of the data:
+
+- **Row baselines.** Per file, the sorted 53-bit hashes of its distinct rows (`scripts/row-diff.mjs`), about 8 bytes per row, up to two million distinct rows. They are stored per shard as `rows-<shard>.json` / `.bin` assets of the `full-check-state` release, which does not expire like the Actions cache. A file the run did not reach keeps its baseline for up to eight weeks.
+- **Change summary** (`last_change_seen` on the card, `change` in the check results): `since` (the previous check), `seen_at`, `rows.before` / `rows.after`, `distinct_rows_added` / `distinct_rows_removed` (when both checks have a baseline), `columns_added` / `columns_removed`, `coverage` (date or year columns whose range moved) and `ranges` (numeric columns whose min/max moved). Rows are compared as a set: a modified row counts as one removed and one added, a duplicate is counted once, and a renamed or added column changes every row. A change stays on the card until the next one is seen.
+- **Public log.** Scheduled runs publish `changes/<date>.json` (every change seen in that run, with run totals for header and row-order findings) and a `README.md` overview to the `data-changes` branch of this repository (`scripts/change-log.mjs`). It holds only facts about the files, never their rows, so it can cover every licence.
+
 Numbers are parsed the Belgian way where it is unambiguous (`1.234,5` is one thousand two hundred and thirty-four and a half); dates accept ISO, `YYYY-MM`, and `DD/MM/YYYY`, `DD-MM-YYYY` or `DD.MM.YYYY`.
 
 ## Writing about a dataset from its card
