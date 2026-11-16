@@ -70,14 +70,16 @@ Numbers are parsed the Belgian way where it is unambiguous (`1.234,5` is one tho
 
 `scripts/health.mjs` and `scripts/change-log.mjs` turn the full-file check into a health report.
 
-**Stopped updating** (`freshness.data_stopped`, with `latest_data_age_days`) is judged from the data, never the metadata, and only when all of these hold:
+**Declared cadence not met** (`freshness.cadence_not_met`, with `latest_data_age_days`) is a contradiction between the metadata and the data, not a verdict. The data does not keep up with the update frequency the publisher declares. Either the series stopped, or the declared frequency is wrong, which is often a portal default; only the publisher knows which. It is raised only when all of these hold:
 
 - the whole file was read;
-- the dataset declares a cadence faster than yearly (yearly figures are routinely published months later);
-- the latest date in its reporting-period column lies more than three cycles back;
+- the dataset declares a cadence faster than yearly (daily, weekly, every two weeks, monthly, quarterly or continuous);
+- the latest date in its reporting-period column lies more than three of those cycles back;
 - for a year-only column, more than a year back.
 
-Columns that date things in a register (`Begindatum`, `datum_plaatsing`, `DATUM INSCHRIJVING`, `attrib_start`, `date_dernier_encodage` and similar) never count: a road-sign inventory with an old placement date is not a stopped feed.
+Most datasets are never judged. On the first full run (2,924 readable datasets), 92 % declared no cadence, and 4 % declared yearly or slower, irregular, as needed or never. One-off and yearly publications are normal and say nothing about upkeep. Only 121 datasets (4 %) declared a faster cadence, and 5 of those met the rule.
+
+Columns that date things in a register (`Begindatum`, `datum_plaatsing`, `DATUM INSCHRIJVING`, `attrib_start`, `date_dernier_encodage` and similar) never count: a road-sign inventory with an old placement date says nothing about upkeep. For datasets that are not judged, the card still records `content_unchanged_since` from the weekly check, without judging it.
 
 **Alerts** (`changes/<date>.json` → `alerts`, and the alerts feed):
 
@@ -88,7 +90,7 @@ Columns that date things in a register (`Begindatum`, `datum_plaatsing`, `DATUM 
 | `columns_removed` | A column disappeared. |
 | `coverage_shrank` | A dated column now ends earlier than before. |
 | `became_unreadable` | Readable at the previous check, now gone (404/410), a web page instead of a table, or empty. |
-| `stopped_updating` | Newly matches the rule above. A dataset already listed in the previous log does not alert again. |
+| `cadence_not_met` | Newly matches the rule above. A dataset already listed in the previous log does not alert again. |
 
 **Failure classes** (`classify`):
 

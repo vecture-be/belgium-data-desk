@@ -140,23 +140,25 @@ const CADENCE_DAYS={"1MIN":3,CONT:3,DAILY:4,WEEKLY:14,WEEKLY_2:21,BIWEEKLY:21,MO
 const CADENCE_WORDS={"1MIN":"continuously",CONT:"continuously",DAILY:"daily",WEEKLY:"weekly",WEEKLY_2:"every two weeks",BIWEEKLY:"every two weeks",MONTHLY:"monthly",QUARTERLY:"quarterly",ANNUAL_2:"twice a year",ANNUAL:"yearly",BIENNIAL:"every two years",TRIENNIAL:"every three years",QUINQUENNIAL:"every five years",DECENNIAL:"every ten years"};
 const day=s=>{const t=Date.parse(s);return Number.isFinite(t)?new Date(t).toISOString().slice(0,10):null};
 const daysBetween=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/86400000);
-// "Stopped updating", judged from the data itself: for a dataset declared to update more often than yearly, its latest data
-// point lies more than three cycles back. Yearly and slower series are left out, since publishing a year's figures many
-// months later is normal. A year counts as its last day, a month as its last day.
+// "Declared cadence not met": a dataset declared to update more often than yearly whose latest data point lies more than three
+// of those cycles back. It is a contradiction between the metadata and the data, not a verdict: either the series stopped or the
+// declared frequency is wrong (often a portal default), and only the publisher knows which. One-off, yearly, irregular and
+// undeclared datasets are never judged (publishing a year's figures many months later is normal). A year counts as its last day,
+// a month as its last day.
 const SUB_ANNUAL=new Set(["1MIN","CONT","DAILY","WEEKLY","WEEKLY_2","BIWEEKLY","MONTHLY","QUARTERLY"]);
 // Dates of things in a register (when a sign was placed, a project started, a file was registered or last edited) say nothing
-// about whether the register is kept up to date, so they never support "stopped updating". Found on the first full run, where
+// about whether the register is kept up to date, so they never count. Found on the first full run, where
 // road-asset inventories declared "daily" were flagged on their Begindatum / datum_plaatsing columns.
 const NOT_A_FEED_DATE=/begin|start|d[eé]but|plaatsing|inschrijving|inscription|registr|toekenning|attrib|encodage|aanvraag|demande|ingang|geldig|valid|install|aanleg|oprichting/i;
-export function dataStopped(code,dataTo,now=new Date().toISOString(),column=""){
+export function cadenceNotMet(code,dataTo,now=new Date().toISOString(),column=""){
   if(!SUB_ANNUAL.has(code)||!dataTo||NOT_A_FEED_DATE.test(column||""))return{};
   const s=String(dataTo),yearOnly=/^\d{4}$/.test(s);
   const end=yearOnly?s+"-12-31":/^\d{4}-\d{2}$/.test(s)?new Date(Date.UTC(+s.slice(0,4),+s.slice(5,7),0)).toISOString().slice(0,10):s.slice(0,10);
   const behind=daysBetween(end,now.slice(0,10));
   if(!Number.isFinite(behind))return{};
-  // a year column cannot show a gap of days: allow a whole year before calling it stopped
+  // a year column cannot show a gap of days: allow a whole year
   const limit=yearOnly?Math.max(365,3*CADENCE_DAYS[code]):3*CADENCE_DAYS[code];
-  return{latest_data_age_days:behind,...(behind>limit?{data_stopped:true}:{})};
+  return{latest_data_age_days:behind,...(behind>limit?{cadence_not_met:true}:{})};
 }
 /** content (from scripts/full-check.mjs, optional): {since, changedAt, observedSince, lastModifiedUsable}. With it, the dates
  *  publishers state are checked against the bytes: a Last-Modified header caught misleading is ignored, and a catalogue update date
@@ -167,7 +169,7 @@ export function freshness(record,{fileLastModified=null,dataTo=null,dataColumn="
   const headerDate=day(fileLastModified),file=content&&content.lastModifiedUsable===false?null:headerDate;
   const out={declared:CADENCE_WORDS[code]||null,metadata_updated:updated,file_changed:file};
   if(headerDate&&!file)out.file_header_ignored=headerDate;
-  if(dataComplete)Object.assign(out,dataStopped(code,dataTo,now,dataColumn));   // a partial read sees only the first (often oldest) rows
+  if(dataComplete)Object.assign(out,cadenceNotMet(code,dataTo,now,dataColumn));   // a partial read sees only the first (often oldest) rows
   let metaCounts=!!updated;
   if(content?.since){
     const since=day(content.since),changed=day(content.changedAt);
@@ -242,7 +244,7 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
   add("The file has "+rowsWord+" and "+profile.column_count+" columns"+(profile.rows_exact?".":" in the part read ("+Math.round((file.bytesRead||0)/1024)+" KiB)."),
     {rows:profile.rows,rows_exact:profile.rows_exact,columns:profile.column_count});
   if(time)add((time.from===time.to?"The data is for "+time.from:"The data runs from "+time.from+" to "+time.to)+" (column '"+time.column+"')"+(profile.rows_exact?".":" in the rows read; later rows may extend it."),time);
-  if(fresh.data_stopped)add("It is declared to be updated "+fresh.declared+", but its latest data is for "+time.to+" (column '"+time.column+"'), "+fmtInt(fresh.latest_data_age_days)+" days ago: it looks like it stopped updating.",
+  if(fresh.cadence_not_met)add("It is declared to be updated "+fresh.declared+", but its latest data is for "+time.to+" (column '"+time.column+"'), "+fmtInt(fresh.latest_data_age_days)+" days ago. Either the series stopped or the declared frequency is wrong.",
     {declared:fresh.declared,latest_data_point:time.to,column:time.column,latest_data_age_days:fresh.latest_data_age_days});
   if(fresh.status==="overdue"&&fresh.at_least)add("It is declared to be updated "+fresh.declared+", but the file has been byte-for-byte the same since at least "+fresh.last_change+", "+fmtInt(fresh.overdue_days)+" days longer than that cadence allows.",
     {declared:fresh.declared,unchanged_since:fresh.last_change,overdue_days:fresh.overdue_days,at_least:true});
