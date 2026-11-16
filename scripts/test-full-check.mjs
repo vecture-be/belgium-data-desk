@@ -4,7 +4,8 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkFile, contentHistory, headerCheck, inShard, loadWork, mergeRuns } from "./full-check.mjs";
+import { checkFile, contentHistory, createHostGate, headerCheck, inShard, loadWork, mergeRuns } from "./full-check.mjs";
+import { refusedHosts } from "./change-log.mjs";
 import { createColumnProfiler, profileColumns, setNisReference, buildCard } from "./dataset-card.mjs";
 import { mergeFull } from "./build-cards.mjs";
 import { encodingFor } from "./tabular-profile.mjs";
@@ -150,6 +151,39 @@ try{
     [new Map([["u1",{url:"u1",error:"timeout",checkedAt:"2026-11-20T00:00:00Z"}]]),new Map([["u3",{url:"u3",too_large:true}]])],{now});
   assert.equal(m.get("u1").profile.rows,1);assert.equal(m.get("u1").last_error,"timeout");
   assert.equal(m.has("u2"),false,"a profile older than eight weeks is dropped");assert.equal(m.get("u3").too_large,true);
+}
+
+// 8. slow but steady streams finish; a stalled one is given up; hosts that refuse the checker are not hammered
+{
+  const rowsCsv="a;b\n"+Array.from({length:40},(_,i)=>i+";x").join("\n")+"\n";
+  const srv=http.createServer((req,res)=>{
+    res.writeHead(200,{"content-type":"text/csv"});
+    if(req.url==="/slow.csv"){let i=0;const t=setInterval(()=>{res.write(rowsCsv.slice(i,i+20));i+=20;if(i>=rowsCsv.length){clearInterval(t);res.end()}},40);return}
+    if(req.url==="/stall.csv"){res.write("a;b\n1;x\n");return}   // never ends
+    res.end(rowsCsv);
+  });
+  await new Promise(r=>srv.listen(0,"127.0.0.1",r));
+  const b="http://127.0.0.1:"+srv.address().port;
+  try{
+    // ~1 s in total, never more than 150 ms between bytes: a 300 ms idle limit lets it finish, an old-style total limit would not
+    const slow=await checkFile({url:b+"/slow.csv",fmt:"CSV"},{idleMs:300,timeoutMs:20000});
+    assert.equal(slow.profile?.rows,40,"steady stream read to the end");
+    const stall=await checkFile({url:b+"/stall.csv",fmt:"CSV"},{idleMs:300,timeoutMs:20000});
+    assert.equal(stall.error,"stalled");
+    const total=await checkFile({url:b+"/slow.csv",fmt:"CSV"},{idleMs:5000,timeoutMs:300});
+    assert.equal(total.error,"timeout");
+  }finally{srv.closeAllConnections?.();srv.close()}
+
+  const g=createHostGate({after:3});
+  for(let i=0;i<2;i++)g.record("a.be",{error:"HTTP 503"});
+  assert.equal(g.refused("a.be"),null,"two refusals are not yet a pattern");
+  g.record("a.be",{error:"HTTP 503"});assert.equal(g.refused("a.be"),"HTTP 503");
+  g.record("b.be",{});for(let i=0;i<5;i++)g.record("b.be",{error:"UND_ERR_CONNECT_TIMEOUT"});
+  assert.equal(g.refused("b.be"),null,"a host that answered once is never written off");
+  for(let i=0;i<2;i++)g.record("c.be",{error:"HTTP 403"});g.record("c.be",{error:"HTTP 404"});g.record("c.be",{error:"HTTP 403"});
+  assert.equal(g.refused("c.be"),null,"refusals must be in a row");
+  const rh=refusedHosts([{url:"https://a.be/1",error:"HTTP 503"},{url:"https://a.be/2",error:"host_refused",refused_with:"HTTP 503"},{url:"https://a.be/3",profile:{}},{url:"https://z.be/1",error:"HTTP 404"}]);
+  assert.deepEqual(rh,{"a.be":{files:2,refusal:"HTTP 503"}});
 }
 
 // 7. one file per dataset, public URLs only, shards split by host

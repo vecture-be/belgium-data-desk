@@ -18,7 +18,7 @@ import { describeChange, diffSorted, readRowPack, rowKey, writeRowPack } from ".
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(__dirname,".."),pub=path.join(root,"public");
 const UA="Belgium-Data-Desk-QA/1.0 (+https://data.vecture.be)";
-const PER_HOST=2,MAX_LANES=16,FILE_TIMEOUT_MS=6*60*1000,RETRY_DELAY_MS=15000;
+const PER_HOST=2,MAX_LANES=16,FILE_TIMEOUT_MS=30*60*1000,IDLE_TIMEOUT_MS=60*1000,RETRY_DELAY_MS=15000;
 const TRANSIENT=/^(UND_ERR_CONNECT_TIMEOUT|EAI_AGAIN|ECONNRESET|ECONNREFUSED|ETIMEDOUT|UND_ERR_SOCKET|HTTP 429|HTTP 502|HTTP 503|HTTP 504)$/;
 
 export function loadWork(items){
@@ -31,6 +31,19 @@ export function loadWork(items){
   }
   return [...seen.values()];
 }
+// Some hosts refuse automated traffic from cloud machines (connections that never open, 403, 429 or 503 on every request). The
+// check respects that: after REFUSE_AFTER refusals in a row with no success, the host's remaining files are not requested this run
+// and are recorded as host_refused, so the refusal can be reported to the publisher instead of hammered weekly.
+const REFUSAL=/^(UND_ERR_CONNECT_TIMEOUT|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|HTTP 401|HTTP 403|HTTP 429|HTTP 503)$/,REFUSE_AFTER=5;
+export function createHostGate({after=REFUSE_AFTER}={}){
+  const s=new Map();
+  return{
+    record(host,r){const x=s.get(host)||{n:0,ok:false,first:null};
+      if(!r.error||r.too_large)x.ok=true;else if(REFUSAL.test(r.error)){x.n++;x.first=x.first||r.error}else x.n=0;
+      s.set(host,x)},
+    refused(host){const x=s.get(host);return x&&!x.ok&&x.n>=after?x.first:null},
+  };
+}
 const hostOf=u=>{try{return new URL(u).host}catch{return"bad"}};
 /** Shards split by host, so the per-host limit holds across parallel jobs. */
 export function inShard(url,shard){
@@ -40,14 +53,20 @@ export function inShard(url,shard){
 }
 
 export const ROWS=Symbol("rowHashes");
-export async function checkFile(w,{previous=null,prevRows=null,maxBytes=100*1024*1024,fetchImpl=fetch,timeoutMs=FILE_TIMEOUT_MS}={}){
+export async function checkFile(w,{previous=null,prevRows=null,maxBytes=100*1024*1024,fetchImpl=fetch,timeoutMs=FILE_TIMEOUT_MS,idleMs=IDLE_TIMEOUT_MS}={}){
   const t0=Date.now(),r={url:w.url,fmt:w.fmt,ds:w.ds,prov:w.prov,full:true};
   // No conditional request: ETag and Last-Modified are often missing, regenerated per request or left stale, so they are what this
   // check tests (headerCheck), not something it relies on. Every file is downloaded and compared by content hash.
   const headers={"user-agent":UA,accept:"text/csv,text/tab-separated-values,text/plain;q=0.9,*/*;q=0.2","cache-control":"no-cache"};
-  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),timeoutMs);
+  // Two clocks: a slow but steady export (Elia streams ~150 KB/s) may take many minutes, so the file is given up only when no
+  // bytes arrive for idleMs ("stalled") or the whole download passes timeoutMs ("timeout").
+  let why=null,idle=null;
+  const ctl=new AbortController(),timer=setTimeout(()=>{why="timeout";ctl.abort()},timeoutMs);
+  const arm=()=>{clearTimeout(idle);idle=setTimeout(()=>{why="stalled";ctl.abort()},idleMs)};
+  arm();
   try{
     const res=await fetchImpl(w.url,{headers,redirect:"follow",signal:ctl.signal});
+    arm();
     r.status=res.status;
     if(!res.ok){try{await res.body?.cancel()}catch{}r.error="HTTP "+res.status;return finish(r,t0)}
     r.ct=(res.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();
@@ -58,7 +77,7 @@ export async function checkFile(w,{previous=null,prevRows=null,maxBytes=100*1024
     let n=0,decoder=null,profiler=null;
     for(;;){
       const {done,value}=await reader.read();if(done)break;if(!value?.length)continue;
-      n+=value.length;
+      arm();n+=value.length;
       if(n>maxBytes){try{await reader.cancel()}catch{}r.too_large=true;r.total=declared;r.bytes=n;return finish(r,t0)}
       sha.update(value);
       let chunk=value;
@@ -83,8 +102,8 @@ export async function checkFile(w,{previous=null,prevRows=null,maxBytes=100*1024
       r.change={...describeChange(previous,r,diff),seen_at:r.checkedAt};
     }else if(previous?.change)r.change=previous.change;
     return r;
-  }catch(e){r.error=ctl.signal.aborted?"timeout":String(e.cause?.code||e.message||e).slice(0,120)}
-  finally{clearTimeout(timer)}
+  }catch(e){r.error=ctl.signal.aborted?(why||"timeout"):String(e.cause?.code||e.message||e).slice(0,120)}
+  finally{clearTimeout(timer);clearTimeout(idle)}
   return finish(r,t0);
 }
 function finish(r,t0){r.ms=Date.now()-t0;r.checkedAt=new Date().toISOString();return r}
@@ -190,7 +209,8 @@ async function main(){
   const prevPack=args["rows-prev"]?readRowPack(path.resolve(args["rows-prev"]),pack):new Map(),newPack=new Map();
   const out=fs.createWriteStream(outFile,{flags:"a"});
   // unchanged/changed = same or different bytes than the previous run; headers = how the Last-Modified headers fared
-  const stats={checked:0,retried:0,profiled:0,unchanged:0,changed:0,reordered:0,too_large:0,failed:0,bytes:0,skipped_budget:0,last_modified:{},issues:{}};
+  const stats={checked:0,retried:0,profiled:0,unchanged:0,changed:0,reordered:0,too_large:0,failed:0,bytes:0,skipped_budget:0,last_modified:{},issues:{},refused:{}};
+  const gate=createHostGate();
   // each lane takes the next host with free capacity: at most PER_HOST lanes per host, MAX_LANES in total
   const active=new Map();
   const nextItem=()=>{for(const q of queues){const h=q.length&&hostOf(q[0].url);if(h&&(active.get(h)||0)<PER_HOST)return q.shift()}return null};
@@ -198,12 +218,17 @@ async function main(){
     for(;;){
       if(Date.now()>deadline){stats.skipped_budget=queues.reduce((s,q)=>s+q.length,0);return}
       const w=nextItem();if(!w){if(queues.some(q=>q.length)){await new Promise(r=>setTimeout(r,250));continue}return}
-      const h=hostOf(w.url);active.set(h,(active.get(h)||0)+1);
+      const h=hostOf(w.url);
+      // a host that refused the checker on every attempt so far is not asked again this run (it is reported instead)
+      const refusedWith=gate.refused(h);
+      if(refusedWith){const r={url:w.url,fmt:w.fmt,ds:w.ds,prov:w.prov,full:true,error:"host_refused",refused_with:refusedWith,checkedAt:new Date().toISOString()};
+        out.write(JSON.stringify(r)+"\n");stats.checked++;stats.failed++;stats.refused[h]=(stats.refused[h]||0)+1;continue}
+      active.set(h,(active.get(h)||0)+1);
       const opts={previous:previous.get(w.url),prevRows:prevPack.get(rowKey(w.url))?.hashes||null,maxBytes};
       let r=await checkFile(w,opts);
       // a connection that never opened or a DNS hiccup says more about the runner's network than about the publisher: try once more
       if(TRANSIENT.test(r.error||"")){await new Promise(z=>setTimeout(z,RETRY_DELAY_MS));r=await checkFile(w,opts);if(!r.error)r.retried=true}
-      active.set(h,active.get(h)-1);
+      active.set(h,active.get(h)-1);gate.record(h,r);
       if(r[ROWS])newPack.set(rowKey(w.url),{hashes:r[ROWS],checkedAt:r.checkedAt});
       out.write(JSON.stringify(r)+"\n");stats.checked++;if(r.retried)stats.retried++;
       if(r.too_large)stats.too_large++;else if(r.error)stats.failed++;else{stats.profiled++;stats.bytes+=r.bytes||0;if(r.unchanged)stats.unchanged++;if(r.content_changed_at===r.checkedAt)stats.changed++;if(r.row_order_unstable)stats.reordered++;
