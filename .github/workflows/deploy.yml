@@ -49,12 +49,15 @@ jobs:
             public/national-catalog-*.json
             public/catalogue-manifest.json
             relay-index.mjs
-          key: catalogue-${{ steps.key.outputs.week }}-${{ hashFiles('scripts/harvest.mjs', 'scripts/national-dcat.mjs', 'scripts/curate.mjs', 'scripts/relay-index-lib.mjs', 'public/dataset-atlas*.mjs') }}
+          key: catalogue-${{ steps.key.outputs.week }}-${{ hashFiles('scripts/harvest.mjs', 'scripts/harvest-fetch.mjs', 'scripts/national-dcat.mjs', 'scripts/curate.mjs', 'scripts/relay-index-lib.mjs', 'public/dataset-atlas*.mjs') }}
       - name: Harvest
+        id: harvest
         if: steps.catalogue.outputs.cache-hit != 'true'
         run: npm run harvest
+      # A harvest where a source kept earlier records (timeout, outage) is deployed but not cached for the week,
+      # so the next deploy harvests again instead of carrying the failure for seven days.
       - name: Save catalogue
-        if: steps.catalogue.outputs.cache-hit != 'true'
+        if: steps.catalogue.outputs.cache-hit != 'true' && steps.harvest.outputs.degraded == ''
         uses: actions/cache/save@v4
         with:
           path: |
@@ -63,7 +66,7 @@ jobs:
             public/national-catalog-*.json
             public/catalogue-manifest.json
             relay-index.mjs
-          key: catalogue-${{ steps.key.outputs.week }}-${{ hashFiles('scripts/harvest.mjs', 'scripts/national-dcat.mjs', 'scripts/curate.mjs', 'scripts/relay-index-lib.mjs', 'public/dataset-atlas*.mjs') }}
+          key: catalogue-${{ steps.key.outputs.week }}-${{ hashFiles('scripts/harvest.mjs', 'scripts/harvest-fetch.mjs', 'scripts/national-dcat.mjs', 'scripts/curate.mjs', 'scripts/relay-index-lib.mjs', 'public/dataset-atlas*.mjs') }}
 
       - name: Restore link health and column profiles
         id: health

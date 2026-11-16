@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { fetchNationalCatalogue, thinNationalCatalogue, validateNationalCatalogue } from "./national-dcat.mjs";
 import { kindOf, normalizeLicense, topicOf } from "./curate.mjs";
 import { RELAY_INDEX_PATH, writeRelayIndex } from "./relay-index-lib.mjs";
+import { getJsonOnce, getJsonRetry } from "./harvest-fetch.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const outPath=path.resolve(__dirname,"../public/harvested-catalog.json");
@@ -12,11 +13,10 @@ const nationalPath=path.resolve(__dirname,"../public/national-catalog.json");
 const manifestPath=path.resolve(__dirname,"../public/catalogue-manifest.json");
 const now=new Date().toISOString(),timeoutMs=14000,ua="Belgium-Data-Desk/2.0 (+https://data.vecture.be)";
 
-async function getJson(url){
-  const c=new AbortController(),t=setTimeout(()=>c.abort(),timeoutMs);
-  try{const r=await fetch(url,{headers:{"user-agent":ua,accept:"application/json"},signal:c.signal});if(!r.ok)throw new Error(`${r.status} ${r.statusText}`);return await r.json()}
-  finally{clearTimeout(t)}
-}
+// Per-dataset requests (previews, queryables, samples): one short try, so a slow host cannot stretch the harvest.
+const getJson=url=>getJsonOnce(url,{ms:timeoutMs,ua});
+// Catalogue-level requests (listing pages, package searches): retried, because one failure costs the whole source.
+const getCatalogue=url=>getJsonRetry(url,{ua});
 async function getText(url,ms=timeoutMs){
   const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
   try{
@@ -69,7 +69,7 @@ async function mapLimit(xs,n,fn){
 }
 
 async function harvestCkan(){
-  const base="https://transportdata.be",j=await getJson(base+"/api/3/action/package_search?rows=1000"),rows=j?.result?.results||[];
+  const base="https://transportdata.be",j=await getCatalogue(base+"/api/3/action/package_search?rows=1000"),rows=j?.result?.results||[];
   const packages=await mapLimit(rows,8,async p=>{
     const ex=extras(p),dsResources=(p.resources||[]).filter(r=>r.datastore_active).slice(0,3);
     let fields=[],previewRows=[];
@@ -82,7 +82,7 @@ async function harvestCkan(){
 }
 
 async function odsPages(host){
-  let rows=[];for(let offset=0;;offset+=100){const j=await getJson(host+"/api/explore/v2.1/catalog/datasets?limit=100&offset="+offset),batch=j?.results||[];rows.push(...batch);if(batch.length<100||offset>=1900)break}return rows;
+  let rows=[];for(let offset=0;;offset+=100){const j=await getCatalogue(host+"/api/explore/v2.1/catalog/datasets?limit=100&offset="+offset),batch=j?.results||[];rows.push(...batch);if(batch.length<100||offset>=1900)break}return rows;
 }
 const normTitle=t=>String(t||"").normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 // Aggregator portals (ODWB) federate datasets that portals we harvest directly already publish; the dedicated-portal record wins.
@@ -122,14 +122,16 @@ const ogcServices=[
   ["brussels-active","Brussels Mobility — Active mobility","https://data.mobility.brussels/datasets/v1/active_mobility",999],
   ["brussels-parking","Brussels Mobility — Parking","https://data.mobility.brussels/datasets/v1/parking",999],
   ["brussels-traffic","Brussels Mobility — Traffic","https://data.mobility.brussels/datasets/v1/traffic",999],
-  ["dov","DOV — Databank Ondergrond Vlaanderen","https://www.dov.vlaanderen.be/geoserver/ogc/features/v1",80],
+  // DOV lists ~4,300 collections and takes over 30 s to do so; it has never fitted in one try and has not been in the catalogue.
+  // One try only, as before: whether its collections belong in the catalogue (it nearly doubles it) is a separate decision.
+  ["dov","DOV — Databank Ondergrond Vlaanderen","https://www.dov.vlaanderen.be/geoserver/ogc/features/v1",80,{retry:false}],
   ["wallonia-buildings","SPW Wallonia — Buildings HVD","https://geoservices.wallonie.be/geoserver/inspire_bu/ogc/features/v1",999],
   ["wallonia-transport","SPW Wallonia — Transport Networks HVD","https://geoservices.wallonie.be/geoserver/inspire_tn/ogc/features/v1",999],
   ["wallonia-names","SPW Wallonia — Geographical Names HVD","https://geoservices.wallonie.be/geoserver/inspire_gn/ogc/features/v1",999],
   ["wallonia-management","SPW Wallonia — Management Zones HVD","https://geoservices.wallonie.be/geoserver/inspire_am/ogc/features/v1",999]
 ];
-async function harvestOgcService([slug,provider,base,sampleLimit=999]){
-  const j=await getJson(base+"/collections?f=json"),cs=j?.collections||[];
+async function harvestOgcService([slug,provider,base,sampleLimit=999,{retry=true}={}]){
+  const j=await (retry?getCatalogue:getJson)(base+"/collections?f=json"),cs=j?.collections||[];
   const enriched=await mapLimit(cs,8,async (c,i)=>{
     let q={};if(i<sampleLimit){try{q=await getJson(base+"/collections/"+encodeURIComponent(c.id)+"/queryables?f=json")}catch{}}
     const publisherSchema=!!Object.keys(q.properties||{}).length;
@@ -333,14 +335,14 @@ for(const x of dedup){x.dataKind=kindOf(x);x.topic=topicOf(x);x.licenseFamily=no
 const payload={generatedAt:now,itemCount:dedup.length,structuredCount:dedup.filter(x=>x.enrichment?.level==="structured").length,previewCount:dedup.filter(x=>x.previewRows?.length).length,sources,items:dedup};
 fs.writeFileSync(outPath,JSON.stringify(payload)+"\n");
 console.log(`[harvest] wrote ${payload.itemCount} catalogue items (${payload.structuredCount} structured, ${payload.previewCount} previews) -> ${outPath}`);
-let nationalRelayItems=[];
+let nationalRelayItems=[],nationalFellBack=false;
 try{
   const snapshot=await harvestNationalDcat();
   nationalRelayItems=snapshot.items;
 }catch(e){
   const fallback=readHealthyNationalSnapshot();
   if(fallback){
-    nationalRelayItems=readNationalItems(fallback);
+    nationalRelayItems=readNationalItems(fallback);nationalFellBack=true;
     console.warn("[harvest-national] refresh failed: "+e.message+"; using healthy snapshot with "+fallback.health.datasetCount+" datasets");
   }else throw new Error("[harvest-national] refresh failed and no healthy snapshot exists: "+e.message);
 }
@@ -352,3 +354,8 @@ for(const [name,file] of [["harvested-catalog.json",outPath],["national-catalog.
 }
 fs.writeFileSync(manifestPath,JSON.stringify(manifest)+"\n");
 console.log("[harvest] wrote catalogue manifest for versioned browser caching");
+// The deploy caches one harvest per ISO week. A harvest where a source kept old records must not be that week's copy,
+// or one passing timeout freezes the source for seven days: report it, and the workflow skips saving the cache.
+const degraded=[...Object.entries(sources).filter(([,v])=>!v.ok).map(([k])=>k),...(nationalFellBack?["national-dcat"]:[])];
+if(degraded.length)console.warn("[harvest] degraded: "+degraded.join(", ")+" kept earlier records; this harvest will not be cached for the week");
+if(process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,"degraded="+degraded.join(",")+"\n");
