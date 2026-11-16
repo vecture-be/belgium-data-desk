@@ -87,13 +87,16 @@ export function profileColumns(text,{url="",format="",bytesRead=null,totalBytes=
 /** Streaming column profile for a whole file (scripts/full-check.mjs): push(text) with consecutive decoded pieces, then
  *  finish({exact:true}). Same output as profileColumns, plus duplicate_rows (rows identical to an earlier row). */
 export function createColumnProfiler(delimiter){
-  const cols=[],seen=new Set();let duplicates=0,dupCapped=false;
+  const cols=[],seen=new Set();let duplicates=0,dupCapped=false,sumHi=0,sumLo=0,hdr="";
   const a=createDelimitedAccumulator(delimiter,{sampleRows:0,inferRows:250,onRow(values,headers){
-    if(!cols.length)headers.slice(0,MAX_COLUMNS).forEach(h=>cols.push({name:h,filled:0,distinct:new Map(),capped:false,min:null,max:null,dmin:null,dmax:null,nums:0,ints:0,dates:0,keySample:[]}));
-    // duplicate rows: a 53-bit hash per row (a Set of numbers stays small); past MAX_ROW_HASHES the count stops growing
-    // and is reported as a lower bound. False matches are ~1 in 10^4 files at a million rows.
-    if(!dupCapped){const b=createHash("sha1").update(values.join("\u0001")).digest(),h=b.readUInt32BE(0)*2**21+(b.readUInt32BE(4)>>>11);
-      if(seen.has(h))duplicates++;else{seen.add(h);if(seen.size>=MAX_ROW_HASHES)dupCapped=true}}
+    if(!cols.length){headers.slice(0,MAX_COLUMNS).forEach(h=>cols.push({name:h,filled:0,distinct:new Map(),capped:false,min:null,max:null,dmin:null,dmax:null,nums:0,ints:0,dates:0,keySample:[]}));hdr=headers.join("\u0001")}
+    // a 53-bit hash per row. Duplicate rows: a Set of these (numbers stay small); past MAX_ROW_HASHES the count stops growing and
+    // is reported as a lower bound. False matches are ~1 in 10^4 files at a million rows.
+    const b=createHash("sha1").update(values.join("\u0001")).digest(),h=b.readUInt32BE(0)*2**21+(b.readUInt32BE(4)>>>11);
+    // row-set fingerprint: the sum of row hashes does not depend on row order, so an export that returns the same rows in another
+    // order keeps its fingerprint while its bytes (sha256) change. Two sums of 26/27-bit halves stay exact past a billion rows.
+    sumLo+=h%2**26;sumHi+=Math.floor(h/2**26);
+    if(!dupCapped){if(seen.has(h))duplicates++;else{seen.add(h);if(seen.size>=MAX_ROW_HASHES)dupCapped=true}}
     for(let i=0;i<cols.length;i++){
       const c=cols[i],v=clean(values[i]);if(!v)continue;
       c.filled++;
@@ -107,7 +110,8 @@ export function createColumnProfiler(delimiter){
   }});
   return{push:t=>a.push(t),finish({exact=true}={}){
     const parsed=a.finish();seen.clear();
-    return summarise(cols,parsed,exact,exact?{duplicate_rows:duplicates,...(dupCapped?{duplicate_rows_lower_bound:true}:{})}:{},delimiter);
+    const rowSet=exact?createHash("sha1").update(hdr+"\u0002"+sumHi+"."+sumLo+"."+parsed.rowCount).digest("hex").slice(0,20):null;
+    return summarise(cols,parsed,exact,exact?{duplicate_rows:duplicates,...(dupCapped?{duplicate_rows_lower_bound:true}:{}),row_set:rowSet}:{},delimiter);
   }};
 }
 function summarise(cols,parsed,whole,extra,delimiter){
@@ -132,14 +136,35 @@ const CADENCE_DAYS={"1MIN":3,CONT:3,DAILY:4,WEEKLY:14,WEEKLY_2:21,BIWEEKLY:21,MO
 const CADENCE_WORDS={"1MIN":"continuously",CONT:"continuously",DAILY:"daily",WEEKLY:"weekly",WEEKLY_2:"every two weeks",BIWEEKLY:"every two weeks",MONTHLY:"monthly",QUARTERLY:"quarterly",ANNUAL_2:"twice a year",ANNUAL:"yearly",BIENNIAL:"every two years",TRIENNIAL:"every three years",QUINQUENNIAL:"every five years",DECENNIAL:"every ten years"};
 const day=s=>{const t=Date.parse(s);return Number.isFinite(t)?new Date(t).toISOString().slice(0,10):null};
 const daysBetween=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/86400000);
-export function freshness(record,{fileLastModified=null,dataTo=null,now=new Date().toISOString()}={}){
+/** content (from scripts/full-check.mjs, optional): {since, changedAt, observedSince, lastModifiedUsable}. With it, the dates
+ *  publishers state are checked against the bytes: a Last-Modified header caught misleading is ignored, and a catalogue update date
+ *  after which the file stayed byte-for-byte the same no longer counts as a change. */
+export function freshness(record,{fileLastModified=null,dataTo=null,now=new Date().toISOString(),content=null}={}){
   const code=String(record.frequency||"").toUpperCase(),limit=CADENCE_DAYS[code];
-  const updated=day(record.dataProcessedAt||record.updatedAt),file=day(fileLastModified);
-  const last=[updated,file].filter(Boolean).sort().pop()||null;
-  const out={declared:CADENCE_WORDS[code]||null,metadata_updated:updated,file_changed:file,last_change:last};
-  if(dataTo)out.latest_data_point=dataTo;
-  if(!limit||!last)return{...out,status:"unknown"};
-  const age=daysBetween(last,now.slice(0,10));
+  const updated=day(record.dataProcessedAt||record.updatedAt);
+  const headerDate=day(fileLastModified),file=content&&content.lastModifiedUsable===false?null:headerDate;
+  const out={declared:CADENCE_WORDS[code]||null,metadata_updated:updated,file_changed:file};
+  if(headerDate&&!file)out.file_header_ignored=headerDate;
+  let metaCounts=!!updated;
+  if(content?.since){
+    const since=day(content.since),changed=day(content.changedAt);
+    out.content_unchanged_since=since;out.observed_since=day(content.observedSince)||since;
+    if(changed)out.content_change_seen=changed;
+    // the catalogue says "updated" on a later day than the first run that saw today's bytes: the file did not change with it
+    // (the update may have touched only the description)
+    if(updated&&since<updated){out.metadata_date_not_reflected_in_file=true;metaCounts=false}
+  }
+  const candidates=[[metaCounts?updated:null,"catalogue date"],[file,"file date"],[out.content_change_seen,"content change seen"]].filter(c=>c[0]);
+  const best=candidates.sort((a,b)=>a[0].localeCompare(b[0])).pop();
+  out.last_change=best?.[0]||null;if(best)out.last_change_basis=best[1];
+  if(!limit)return{...out,status:"unknown"};
+  if(!out.last_change){
+    // only "unchanged since we first saw it": the real change was on or before that day, so this can prove overdue, never current
+    if(out.content_unchanged_since){const age=daysBetween(out.content_unchanged_since,now.slice(0,10));
+      if(age>limit)return{...out,last_change:out.content_unchanged_since,last_change_basis:"unchanged since",age_days:age,status:"overdue",overdue_days:age-limit,at_least:true}}
+    return{...out,status:"unknown"};
+  }
+  const age=daysBetween(out.last_change,now.slice(0,10));
   return{...out,age_days:age,status:age>limit?"overdue":"current",...(age>limit?{overdue_days:age-limit}:{})};
 }
 
@@ -147,6 +172,16 @@ export function freshness(record,{fileLastModified=null,dataTo=null,now=new Date
 const NOT_PERIOD=/creat|cré|gemaakt|aangemaakt|update|bijgewerkt|mise.?[àa].?jour|changed|modif|timestamp|last_?seen|export|dob|naiss|geboort|birth|bouw|build|constr|anciennet|ordening|order|aanleg|oprich|fond[ée]|built|load|ingest|insert|apic/i;
 const PERIOD=/periode|period|jaar|year|ann[ée]e|maand|month|mois|trimest|kwarta|quarter|peildatum|referen|ref_?|rapporter|reporting|date.?d.?(?:es|onn)|date_data|exercice|exercise|semaine|week/i;
 const periodRank=name=>PERIOD.test(name)?0:1;
+
+// header issues found by scripts/full-check.mjs (headerCheck)
+const HEADER_FACTS={
+  last_modified_is_request_time:"The server's Last-Modified date is the time of each request, so it says nothing about when the data changed.",
+  last_modified_in_future:"The server's Last-Modified date lies in the future.",
+  last_modified_moved_content_same:"The server's Last-Modified date moved although the file's content stayed exactly the same.",
+  content_changed_last_modified_same:"The file's content changed, but the server's Last-Modified date did not.",
+  etag_moved_content_same:"The server's ETag changed although the file's content stayed exactly the same, so caches download it again for nothing.",
+  content_changed_etag_same:"The file's content changed, but the server's ETag did not, so caches may keep serving the old file.",
+};
 
 // ---------- the card ----------
 const fmtInt=n=>Number(n).toLocaleString("en-GB");
@@ -158,7 +193,7 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
   // reporting-period names first, then generic dates, best filled first
   const timeCols=cols.filter(c=>c.from&&c.to&&!NOT_PERIOD.test(c.name)).sort((a,b)=>(periodRank(a.name)-periodRank(b.name))||(b.filled_pct-a.filled_pct)||String(a.from).localeCompare(String(b.from)));
   const time=timeCols[0]?{from:timeCols[0].from,to:timeCols[0].to,column:timeCols[0].name}:null;
-  const fresh=freshness(record,{fileLastModified:file.lastModified,dataTo:time?.to,now});
+  const fresh=freshness(record,{fileLastModified:file.lastModified,dataTo:time?.to,now,content:file.content||null});
   const keys=cols.filter(c=>c.key).map(c=>({column:c.name,...c.key}));
   const sparse=cols.filter(c=>c.filled_pct<50).map(c=>({column:c.name,filled_pct:c.filled_pct}));
   const constant=cols.filter(c=>c.distinct===1&&c.filled_pct>=90).map(c=>c.name);
@@ -167,9 +202,17 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
   add("The file has "+rowsWord+" and "+profile.column_count+" columns"+(profile.rows_exact?".":" in the part read ("+Math.round((file.bytesRead||0)/1024)+" KiB)."),
     {rows:profile.rows,rows_exact:profile.rows_exact,columns:profile.column_count});
   if(time)add((time.from===time.to?"The data is for "+time.from:"The data runs from "+time.from+" to "+time.to)+" (column '"+time.column+"')"+(profile.rows_exact?".":" in the rows read; later rows may extend it."),time);
-  if(fresh.status==="overdue")add("It is declared to be updated "+fresh.declared+", but last changed on "+fresh.last_change+", "+fmtInt(fresh.overdue_days)+" days later than that cadence allows.",
+  if(fresh.status==="overdue"&&fresh.at_least)add("It is declared to be updated "+fresh.declared+", but the file has been byte-for-byte the same since at least "+fresh.last_change+", "+fmtInt(fresh.overdue_days)+" days longer than that cadence allows.",
+    {declared:fresh.declared,unchanged_since:fresh.last_change,overdue_days:fresh.overdue_days,at_least:true});
+  else if(fresh.status==="overdue")add("It is declared to be updated "+fresh.declared+", but last changed on "+fresh.last_change+", "+fmtInt(fresh.overdue_days)+" days later than that cadence allows.",
     {declared:fresh.declared,last_change:fresh.last_change,overdue_days:fresh.overdue_days});
   else if(fresh.status==="current")add("It is declared to be updated "+fresh.declared+" and last changed on "+fresh.last_change+", within that cadence.",{declared:fresh.declared,last_change:fresh.last_change});
+  // what the bytes say about the dates publishers state (whole-file checks only)
+  if(fresh.metadata_date_not_reflected_in_file)add("The catalogue says it was updated on "+fresh.metadata_updated+", but the file is byte-for-byte the same as on "+fresh.content_unchanged_since+", before that date (the update may have touched only the description).",
+    {metadata_updated:fresh.metadata_updated,content_unchanged_since:fresh.content_unchanged_since});
+  if(fresh.content_change_seen&&file.content?.changedAfter)add("The file's content changed between "+day(file.content.changedAfter)+" and "+fresh.content_change_seen+".",{after:day(file.content.changedAfter),on_or_before:fresh.content_change_seen});
+  if(file.content?.rowOrderUnstable)add("Downloading it twice gives the same rows in a different order, so its bytes change while its data does not; caches and simple diffs see a new file every time.",{row_order_unstable:true});
+  for(const issue of file.headerCheck?.issues||[])add(HEADER_FACTS[issue],{issue,last_modified:file.lastModified||null,etag:file.etag||null});
   for(const k of keys){
     // with few values a percentage overstates the evidence: say "1 of 3 values" instead
     if(k.kind==="nis_code")add("Column '"+k.column+"' holds NIS municipality codes ("+(k.values_checked<30
@@ -200,7 +243,7 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
   }else if(previous?.schema)schema={...schema,stable_since:previous.schema.stable_since||previous.profiled_at};
 
   return{v:CARD_VERSION,id:record.id,...(record.title?{title:record.title,publisher:record.publisher||null,topic:record.topic||null}:{}),...(record.authoritative?{hand_reviewed:true}:{}),profiled_at:now.slice(0,10),
-    file:{url:file.url||null,format:file.format||null,read:profile.rows_exact?"whole file":"first bytes",bytes_read:file.bytesRead??null,total_bytes:file.totalBytes??null,rows:profile.rows,rows_exact:profile.rows_exact,...(file.sha256?{sha256:file.sha256}:{})},
-    freshness:fresh,coverage:{time,keys},quality:{sparse_columns:sparse,constant_columns:constant,...(profile.duplicate_rows!=null?{duplicate_rows:profile.duplicate_rows}:{})},schema,
+    file:{url:file.url||null,format:file.format||null,read:profile.rows_exact?"whole file":"first bytes",bytes_read:file.bytesRead??null,total_bytes:file.totalBytes??null,rows:profile.rows,rows_exact:profile.rows_exact,...(file.sha256?{sha256:file.sha256}:{}),...(file.headerCheck?{headers:file.headerCheck}:{})},
+    freshness:fresh,coverage:{time,keys},quality:{sparse_columns:sparse,constant_columns:constant,...(profile.duplicate_rows!=null?{duplicate_rows:profile.duplicate_rows}:{}),...(file.content?.rowOrderUnstable?{row_order_unstable:true}:{})},schema,
     columns:cols.map(({key,...c})=>c).slice(0,40),facts};
 }

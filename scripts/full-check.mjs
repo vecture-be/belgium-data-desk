@@ -3,9 +3,10 @@
 // first 256 KiB (scripts/probe-links.mjs).
 //   node scripts/full-check.mjs [--out .cache/full-check.jsonl] [--previous .cache/full-check-prev.jsonl] [--shard 1/6]
 //                               [--max-mb 100] [--budget-minutes 300] [--limit 50]
-// One file per dataset (pickTabularDistribution), at most 2 requests per host at a time. A file unchanged since the previous run
-// (ETag / Last-Modified answered with 304) keeps its previous profile. Files over the size cap are recorded as too_large and left for
-// a bigger machine. Resumable: URLs already in --out are skipped. Runs on CI runners or a laptop, never in the Worker.
+// One file per dataset (pickTabularDistribution), at most 2 requests per host at a time. Every file is downloaded every run: the
+// content hash, compared with the previous run, says whether and when the data changed (contentHistory), and the ETag /
+// Last-Modified headers are checked against it (headerCheck) rather than trusted. Files over the size cap are recorded as too_large
+// and left for a bigger machine. Resumable: URLs already in --out are skipped. Runs on CI runners or a laptop, never in the Worker.
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -38,17 +39,16 @@ export function inShard(url,shard){
 
 export async function checkFile(w,{previous=null,maxBytes=100*1024*1024,fetchImpl=fetch,timeoutMs=FILE_TIMEOUT_MS}={}){
   const t0=Date.now(),r={url:w.url,fmt:w.fmt,ds:w.ds,prov:w.prov,full:true};
-  const headers={"user-agent":UA,accept:"text/csv,text/tab-separated-values,text/plain;q=0.9,*/*;q=0.2"};
-  if(previous?.profile){if(previous.etag)headers["if-none-match"]=previous.etag;else if(previous.lastModified)headers["if-modified-since"]=previous.lastModified}
+  // No conditional request: ETag and Last-Modified are often missing, regenerated per request or left stale, so they are what this
+  // check tests (headerCheck), not something it relies on. Every file is downloaded and compared by content hash.
+  const headers={"user-agent":UA,accept:"text/csv,text/tab-separated-values,text/plain;q=0.9,*/*;q=0.2","cache-control":"no-cache"};
   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),timeoutMs);
   try{
     const res=await fetchImpl(w.url,{headers,redirect:"follow",signal:ctl.signal});
     r.status=res.status;
-    if(res.status===304&&previous?.profile){try{await res.body?.cancel()}catch{}
-      return{...previous,status:304,unchanged:true,checkedAt:new Date().toISOString(),ms:Date.now()-t0}}
     if(!res.ok){try{await res.body?.cancel()}catch{}r.error="HTTP "+res.status;return finish(r,t0)}
     r.ct=(res.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();
-    r.lastModified=res.headers.get("last-modified")||null;r.etag=res.headers.get("etag")||null;
+    r.lastModified=res.headers.get("last-modified")||null;r.etag=res.headers.get("etag")||null;r.serverDate=res.headers.get("date")||null;
     const declared=Number(res.headers.get("content-length"))||null;
     if(declared&&declared>maxBytes){try{await res.body?.cancel()}catch{}r.too_large=true;r.total=declared;return finish(r,t0)}
     const reader=res.body.getReader(),sha=createHash("sha256");
@@ -70,12 +70,65 @@ export async function checkFile(w,{previous=null,maxBytes=100*1024*1024,fetchImp
     profiler.push(decoder.decode());
     r.bytes=r.total=n;r.sha256=sha.digest("hex").slice(0,32);
     r.profile=profiler.finish({exact:true});
-    if(previous?.sha256&&previous.sha256===r.sha256)r.unchanged=true;
+    finish(r,t0);
+    Object.assign(r,contentHistory(r,previous));
+    r.header_check=headerCheck(r,previous);
+    return r;
   }catch(e){r.error=ctl.signal.aborted?"timeout":String(e.cause?.code||e.message||e).slice(0,120)}
   finally{clearTimeout(timer)}
   return finish(r,t0);
 }
 function finish(r,t0){r.ms=Date.now()-t0;r.checkedAt=new Date().toISOString();return r}
+
+// ---------- change evidence from the content itself ----------
+// observed_since: first run that read this file; content_since: first run that saw today's bytes (the content last changed on or
+// before that day); content_changed_at: the run that saw the bytes differ from the run before (the change happened after the
+// previous run, on or before this one).
+// "Same content" means the same rows: an export that returns the same rows in a different order (row_set equal, sha256 not) has
+// not changed its data; it is flagged row_order_unstable instead, since it defeats caches and diffs.
+export function compareContent(cur,prev){
+  if(!prev?.sha256)return null;
+  if(prev.sha256===cur.sha256)return"same";
+  const a=cur.profile?.row_set,b=prev.profile?.row_set;
+  if(!a||!b)return"unknown";   // a run from before row fingerprints: the bytes differ, but whether the rows do is not known
+  return a===b?"reordered":"changed";
+}
+export function contentHistory(cur,prev){
+  const p=prev?.sha256?prev:null,observed=p?.observed_since||p?.checkedAt||cur.checkedAt,cmp=compareContent(cur,p);
+  if(!cmp||cmp==="unknown")return{observed_since:observed,content_since:cur.checkedAt,content_changed_at:null};
+  if(cmp!=="changed")return{observed_since:observed,content_since:p.content_since||p.checkedAt,content_changed_at:p.content_changed_at||null,
+    ...(p.changed_after&&p.content_changed_at?{changed_after:p.changed_after}:{}),unchanged:true,
+    ...(cmp==="reordered"||p.row_order_unstable?{row_order_unstable:true}:{})};
+  return{observed_since:observed,content_since:cur.checkedAt,content_changed_at:cur.checkedAt,changed_after:p.checkedAt,...(p.row_order_unstable?{row_order_unstable:true}:{})};
+}
+
+// ---------- do the HTTP change headers tell the truth? ----------
+// last_modified: missing | request_time (the moment of the request: generated on the fly, says nothing) | future | plausible.
+// With a previous run: a header that moved while the bytes stayed the same, or stayed while the bytes changed, is misleading.
+const strongEtag=e=>String(e||"").replace(/^W\//,"").replace(/-(gzip|br|deflate)"$/,'"');
+export function headerCheck(cur,prev){
+  const lm=Date.parse(cur.lastModified||""),at=Date.parse(cur.serverDate||"")||Date.parse(cur.checkedAt);
+  const lastModified=!cur.lastModified||!Number.isFinite(lm)?"missing":lm>at+3600e3?"future":Math.abs(at-lm)<=120e3?"request_time":"plausible";
+  const out={last_modified:lastModified,etag:cur.etag?"present":"missing",issues:[]};
+  if(lastModified==="request_time")out.issues.push("last_modified_is_request_time");
+  if(lastModified==="future")out.issues.push("last_modified_in_future");
+  const p=prev?.sha256?prev:null;
+  const cmp=compareContent(cur,p);
+  // only the same bytes or a real change of rows say anything about the headers; a mere reordering judges neither way
+  if(p&&cmp!=="reordered"&&cmp!=="unknown"){
+    const same=cmp==="same";
+    const lmMoved=!!(p.lastModified&&cur.lastModified&&p.lastModified!==cur.lastModified),lmStayed=!!(p.lastModified&&p.lastModified===cur.lastModified);
+    const etMoved=!!(p.etag&&cur.etag&&strongEtag(p.etag)!==strongEtag(cur.etag)),etStayed=!!(p.etag&&strongEtag(p.etag)===strongEtag(cur.etag));
+    if(same&&lmMoved&&lastModified!=="request_time")out.issues.push("last_modified_moved_content_same");
+    if(!same&&lmStayed)out.issues.push("content_changed_last_modified_same");
+    if(same&&etMoved)out.issues.push("etag_moved_content_same");
+    if(!same&&etStayed)out.issues.push("content_changed_etag_same");
+  }
+  if(p)out.compared_with=p.checkedAt;
+  // a date a client may use: present, not the request time or in the future, and never caught contradicting the content
+  out.last_modified_usable=lastModified==="plausible"&&!out.issues.some(i=>/last_modified/.test(i));
+  return out;
+}
 
 function readJsonl(file){
   const m=new Map();if(!file||!fs.existsSync(file))return m;
@@ -124,8 +177,8 @@ async function main(){
   // biggest hosts first so they are not the tail of the run
   const queues=[...byHost.values()].sort((a,b)=>b.length-a.length);
   const out=fs.createWriteStream(outFile,{flags:"a"});
-  // unchanged = same content as last run (304, or same hash after downloading: most portal exports send no ETag/Last-Modified)
-  const stats={checked:0,profiled:0,unchanged:0,not_downloaded:0,too_large:0,failed:0,bytes:0,skipped_budget:0};
+  // unchanged/changed = same or different bytes than the previous run; headers = how the Last-Modified headers fared
+  const stats={checked:0,profiled:0,unchanged:0,changed:0,reordered:0,too_large:0,failed:0,bytes:0,skipped_budget:0,last_modified:{},issues:{}};
   // each lane takes the next host with free capacity: at most PER_HOST lanes per host, MAX_LANES in total
   const active=new Map();
   const nextItem=()=>{for(const q of queues){const h=q.length&&hostOf(q[0].url);if(h&&(active.get(h)||0)<PER_HOST)return q.shift()}return null};
@@ -137,7 +190,8 @@ async function main(){
       const r=await checkFile(w,{previous:previous.get(w.url),maxBytes});
       active.set(h,active.get(h)-1);
       out.write(JSON.stringify(r)+"\n");stats.checked++;
-      if(r.too_large)stats.too_large++;else if(r.error)stats.failed++;else{stats.profiled++;if(r.status===304)stats.not_downloaded++;else stats.bytes+=r.bytes||0;if(r.unchanged)stats.unchanged++}
+      if(r.too_large)stats.too_large++;else if(r.error)stats.failed++;else{stats.profiled++;stats.bytes+=r.bytes||0;if(r.unchanged)stats.unchanged++;if(r.content_changed_at===r.checkedAt)stats.changed++;if(r.row_order_unstable)stats.reordered++;
+        const hc=r.header_check;stats.last_modified[hc.last_modified]=(stats.last_modified[hc.last_modified]||0)+1;for(const i of hc.issues)stats.issues[i]=(stats.issues[i]||0)+1}
       if(stats.checked%200===0)console.error("[full-check] "+stats.checked+"/"+work.length+" "+JSON.stringify(stats));
     }
   };

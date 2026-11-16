@@ -398,7 +398,9 @@ async function cardFor(reader,id){
   if(!c)return null;
   return{profiled_at:c.profiled_at,facts:c.facts,freshness:c.freshness,coverage:c.coverage,quality:c.quality,schema:c.schema,
     file:c.file,columns:(c.columns||[]).slice(0,25),
-    note:"Computed by code from the first "+Math.round((c.file?.bytes_read||0)/1024)+" KiB of the file and the catalogue record"+(c.file?.rows_exact?" (the whole file)":"; ranges and counts describe the rows read")+". Quote facts with their evidence."};
+    note:(c.file?.rows_exact
+      ?"Computed by code from the whole file ("+Math.round((c.file?.bytes_read||0)/1024)+" KiB) and the catalogue record; change dates are checked against the file's content week over week"
+      :"Computed by code from the first "+Math.round((c.file?.bytes_read||0)/1024)+" KiB of the file and the catalogue record; ranges and counts describe the rows read")+". Quote facts with their evidence."};
 }
 
 // Compact JSON: the same object is also in structuredContent, and indentation would roughly double the tokens a client reads.
