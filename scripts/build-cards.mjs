@@ -50,9 +50,17 @@ export function buildCards(records,current,previous,{now=new Date().toISOString(
     const p=current.get(d.url),prev=previous.get(d.url);
     const prevCard=prev?buildCard(rec,prev.profile,{now:prev.checkedAt||now,file:{}}):null;
     cards.set(rec.id,buildCard(rec,p.profile,{previous:prevCard,now:p.checkedAt||now,
-      file:{url:d.url,format:d.format||p.fmt,bytesRead:p.bytes,totalBytes:p.total,lastModified:p.lastModified,sha256:p.sha256}}));
+      file:{url:d.url,format:d.format||p.fmt,bytesRead:p.bytes,totalBytes:p.total,lastModified:p.lastModified,etag:p.etag,sha256:p.sha256,headerCheck:p.header_check,
+        ...(p.content_since?{content:{since:p.content_since,changedAt:p.content_changed_at,changedAfter:p.changed_after,observedSince:p.observed_since,lastModifiedUsable:p.header_check?.last_modified_usable,rowOrderUnstable:!!p.row_order_unstable}}:{})}}));
   }
   return cards;
+}
+
+export function headerSummary(cards){
+  const lm={},issues={};let usable=0,etag=0;
+  for(const c of cards){const h=c.file.headers;lm[h.last_modified]=(lm[h.last_modified]||0)+1;if(h.last_modified_usable)usable++;if(h.etag==="present")etag++;
+    for(const i of h.issues)issues[i]=(issues[i]||0)+1}
+  return{files:cards.length,last_modified:lm,last_modified_usable:usable,etag_present:etag,issues};
 }
 
 /** Whole-file profiles win over the probe's partial read of the same URL. */
@@ -75,6 +83,10 @@ function main(){
   const summary={built:new Date().toISOString().slice(0,10),cards:all.length,
     freshness:{current:count(c=>c.freshness.status==="current"),overdue:count(c=>c.freshness.status==="overdue"),unknown:count(c=>c.freshness.status==="unknown")},
     whole_file:count(c=>c.file.rows_exact),with_duplicate_rows:count(c=>c.quality.duplicate_rows>0),
+    // how far the change dates publishers state can be trusted, from whole-file checks
+    change_headers:headerSummary(all.filter(c=>c.file.headers)),
+    catalogue_date_not_in_file:count(c=>c.freshness.metadata_date_not_reflected_in_file),
+    row_order_unstable:count(c=>c.quality.row_order_unstable),
     with_time_coverage:count(c=>c.coverage.time),join_keys:keyKinds,schema_changed:count(c=>c.schema.changed_since)};
   fs.writeFileSync(path.join(out,"summary.json"),JSON.stringify(summary));
   console.log("[cards] "+all.length+" dataset cards in "+shards.size+" shards; "+JSON.stringify(summary.freshness)+"; keys "+JSON.stringify(keyKinds)+"; schema changed "+summary.schema_changed);
