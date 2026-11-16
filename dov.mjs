@@ -95,7 +95,9 @@ export function makeDovClient({fetchImpl=fetch,hosts=HOSTS,maxRequests=MAX_UPSTR
 async function getJson(client,url,opts){
   const r=await client.get(url,opts);if(r.error)return r;
   let svc="DOV";try{svc=SERVICE_NAME[new URL(url).hostname]||svc}catch{}
-  try{return{json:JSON.parse(r.text)}}catch{return{error:/^\s*</.test(r.text)?svc+" answered with an error page instead of data":svc+" answered with unreadable data"}}
+  // the page's title (a gateway timeout, a bot check, a web app's front page) says which error it is
+  const title=()=>{const t=/<title[^>]*>([^<]{1,120})/i.exec(r.text)?.[1]?.replace(/\s+/g," ").trim();return t?" ("+t+")":""};
+  try{return{json:JSON.parse(r.text)}}catch{return{error:/^\s*</.test(r.text)?svc+" answered with an error page"+title()+" instead of data":svc+" answered with unreadable data"}}
 }
 
 /** WFS GetFeature as JSON with only the named properties; returns {rows, matched} or {error}. */
