@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Belgium Data Desk icon">
+  <rect x="4" y="4" width="504" height="504" rx="108" fill="#213A60"/>
+  <g transform="translate(96 86)">
+    <rect x="0" y="0" width="320" height="172" rx="20" fill="#F7F8FC"/>
+    <rect x="0" y="0" width="107" height="172" rx="20" fill="#171A20"/>
+    <rect x="99" y="0" width="113" height="172" fill="#FFDB45"/>
+    <rect x="212" y="0" width="108" height="172" rx="20" fill="#EF4F50"/>
+    <rect x="99" y="0" width="13" height="172" fill="#FFDB45"/>
+    <rect x="207" y="0" width="13" height="172" fill="#EF4F50"/>
+  </g>
+  <g fill="none" stroke="#F7F8FC" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M128 320v75M208 283v112M288 343v52M368 301v94"/>
+    <path d="M114 423h267" stroke-width="15" opacity="0.78"/>
+  </g>
+</svg>
