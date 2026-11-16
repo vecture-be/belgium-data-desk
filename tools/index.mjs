@@ -12,6 +12,7 @@ import weather from "./weather.mjs";
 import trainPunctuality from "./train-punctuality.mjs";
 import realEstatePrices from "./real-estate-prices.mjs";
 import electricityGrid from "./electricity-grid.mjs";
+import localDecisions from "./local-decisions.mjs";
 
 export const LIVE_TOOLS=Object.freeze([
   subsurfaceAtLocation,
@@ -24,7 +25,8 @@ export const LIVE_TOOLS=Object.freeze([
   riverLevels,
   weather,
   trainPunctuality,
-  electricityGrid
+  electricityGrid,
+  localDecisions
 ]);
 
 const byName=new Map();
