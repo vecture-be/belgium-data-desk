@@ -1,6 +1,6 @@
 // DOV's model layers fold into one record per model version; the rest stay individual. Titles are DOV's own (16 Nov 2026).
 import assert from "node:assert/strict";
-import { groupDov, layerKind, layerUnit, unionBbox, blurb, DOV_LICENSE } from "./harvest-dov.mjs";
+import { groupDov, layerKind, layerUnit, unionBbox, blurb, collectionsFromCapabilities, DOV_LICENSE } from "./harvest-dov.mjs";
 
 const BOX=[2.5234,50.3045,5.9474,51.5693];
 const col=(id,title,description="",bbox=BOX)=>({id,title,description,extent:{spatial:{bbox:[bbox]}}});
@@ -65,4 +65,20 @@ const OA="Deze laag geeft de boringen doorheen Ongedifferentieerd lid van de For
   assert.equal(series.find(s=>s.datasetId==="g3dv3").successor,"G3Dv3.1");
   assert.equal(g.successor,undefined);
 }
-console.log(JSON.stringify({ok:true,tests:"DOV series grouping, layer kinds and units, bbox and blurb"}));
+{ // the WFS GetCapabilities listing, in DOV's own XML shape: ids, titles with entities, abstract, WGS84 box
+  const xml='<?xml version="1.0"?><wfs:WFS_Capabilities xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:ows="http://www.opengis.net/ows/1.1"><FeatureTypeList>'+
+    '<FeatureType xmlns:pfas="http://dov.vlaanderen.be/pfas"><Name>pfas:lantis_bodem</Name><Title>PFAS in de bodem Lantis (&#181;g/kg ds) - Totalen</Title>'+
+    '<Abstract>Metingen &amp; totalen</Abstract><ows:Keywords><ows:Keyword>PFAS</ows:Keyword></ows:Keywords><DefaultCRS>urn:ogc:def:crs:EPSG::31370</DefaultCRS>'+
+    '<ows:WGS84BoundingBox><ows:LowerCorner>4.25 51.17</ows:LowerCorner><ows:UpperCorner>4.45 51.26</ows:UpperCorner></ows:WGS84BoundingBox></FeatureType>'+
+    '<FeatureType><Name>g3dv3_1:g3dv3_1_0305_Bo_t_ih</Name><Title>G3Dv3.1 0305, isohypsen van top Fm van Borgloon</Title><Abstract/></FeatureType>'+
+    '</FeatureTypeList></wfs:WFS_Capabilities>';
+  const cs=collectionsFromCapabilities(xml);
+  assert.deepEqual(cs.map(c=>c.id),["pfas:lantis_bodem","g3dv3_1:g3dv3_1_0305_Bo_t_ih"]);
+  assert.equal(cs[0].title,"PFAS in de bodem Lantis (µg/kg ds) - Totalen");
+  assert.equal(cs[0].description,"Metingen & totalen");
+  assert.deepEqual(cs[0].extent.spatial.bbox,[[4.25,51.17,4.45,51.26]]);
+  assert.deepEqual(cs[1].extent,{});
+  const {series,individual}=groupDov(cs);
+  assert.equal(series.length,1);assert.equal(individual[0].id,"pfas:lantis_bodem");
+}
+console.log(JSON.stringify({ok:true,tests:"DOV series grouping, layer kinds and units, bbox and blurb, WFS capabilities"}));
