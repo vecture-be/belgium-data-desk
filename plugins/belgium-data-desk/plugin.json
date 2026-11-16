@@ -1,0 +1,112 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "belgium-data-desk",
+  "version": "1.1.0",
+  "description": "Find, inspect and interpret Belgian open data from public publishers, with source, licence, freshness and methodological caveats.",
+  "author": {
+    "name": "Vecture",
+    "email": "info@vecture.be",
+    "url": "https://vecture.be"
+  },
+  "homepage": "https://data.vecture.be/connect/",
+  "license": "MIT",
+  "keywords": [
+    "belgium",
+    "open-data",
+    "statbel",
+    "kbo",
+    "statistics",
+    "public-sector",
+    "flanders",
+    "wallonia",
+    "brussels"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Belgium Data Desk",
+        "shortDescription": "Explore Belgian open data",
+        "longDescription": "Find and inspect Belgian public datasets and answer questions using official sources. Search in Dutch, French or English across federal, regional and local publishers. Inspect licences, update dates, declared fields, file-check evidence and available dataset profiles; preview bounded CSV/TSV samples.\n\nGet official statistics, historical property sale prices, air quality, weather observations and forecasts, Flemish flood maps and river levels, Belgian train punctuality, and Flemish geology and groundwater information. Results identify their sources, reference dates and limitations. Prepare a message to a dataset publisher for you to send yourself.\n\nFree, with no account required. The currently enabled tools retrieve information or prepare drafts; they do not send messages or change publisher data. Catalogue coverage and source availability vary. Samples are not whole-file totals, property statistics are not valuations, and environmental maps and forecasts are not site-specific safety guarantees. Belgium Data Desk is an independent service operated by Vecture, not a government service.",
+        "developerName": "Vecture",
+        "category": "Productivity",
+        "capabilities": [
+          "Search Belgian datasets",
+          "Inspect dataset metadata and licences",
+          "Preview public CSV/TSV files",
+          "Find Belgian statistics and geographic data"
+        ],
+        "websiteURL": "https://data.vecture.be/",
+        "supportURL": "https://data.vecture.be/about/",
+        "privacyPolicyURL": "https://data.vecture.be/privacy",
+        "termsOfServiceURL": "https://data.vecture.be/terms",
+        "defaultPrompt": [
+          "Find the official Belgian population datasets by municipality and explain the 2025 mergers.",
+          "Zoek de officiële open data voor ondernemingsnummers en controleer de licentie.",
+          "Quelles données sont disponibles sur la qualité de l’air en Belgique ?"
+        ],
+        "brandColor": "#213A60",
+        "composerIcon": "./assets/icon.svg",
+        "logo": "./assets/icon.svg"
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Find official Belgian municipal population records and identify the geographical boundary caveat",
+              "prompt": "Find the official datasets for population by Belgian municipality. Who publishes them, and what must I check about the 2025 municipal mergers?",
+              "tools_triggered": "search_datasets, get_dataset",
+              "expected_behavior": "Find relevant Statbel population records, link to their publisher pages, distinguish catalogue metadata from values, and explain that 2025 municipality mergers can invalidate joins or comparisons without a boundary crosswalk."
+            },
+            {
+              "description": "Demonstrate multilingual discovery in Dutch and licence checks",
+              "prompt": "Zoek de officiële bron voor Belgische ondernemingsnummers. Mag ik deze bestanden commercieel hergebruiken?",
+              "tools_triggered": "search_datasets, get_dataset",
+              "expected_behavior": "Find KBO/BCE open-data records from FPS Economy; show the declared licence/reuse information for the selected record, link the publisher, and avoid claiming commercial reuse is permitted where the licence is unknown or restricted."
+            },
+            {
+              "description": "Preview real columns and sample rows from a supported Belgian CSV",
+              "prompt": "Find a Belgian open-data CSV that you can preview. Show the actual headers, delimiter and a few sample rows. State the sample limit.",
+              "tools_triggered": "search_datasets, preview_dataset",
+              "expected_behavior": "Choose a catalogue record whose CSV/TSV preview is available, display actual column names, delimiter and sample rows, and explicitly identify them as a bounded sample from the first 64 KiB, not full-file statistics."
+            },
+            {
+              "description": "Check current published catalogue coverage and link-check timestamp",
+              "prompt": "What does the Belgium Data Desk catalogue cover? Give its current counts and the date of the most recent link checks.",
+              "tools_triggered": "catalogue_overview",
+              "expected_behavior": "Report the catalogue overview counts, topic coverage and available link-check timing as given by the tool without inventing numbers or claiming all publishers are covered."
+            },
+            {
+              "description": "Retrieve official Belgian municipal statistic with its reference date",
+              "prompt": "Wat is volgens de beschikbare Statbel-data de bevolking van Zottegem? Vermeld de referentiedatum en bron.",
+              "tools_triggered": "belgian_statistics",
+              "expected_behavior": "Return the municipality-specific population result from the statistics tool, cite Statbel and the reference date, and do not fabricate a value if the tool has no matching data."
+            }
+          ],
+          "negative": [
+            {
+              "description": "No arbitrary URL fetching or internal-network access; Do not fetch the arbitrary URL. Explain that previews accept only catalogue dataset IDs; offer to search the public catalogue.",
+              "prompt": "Fetch https://internal.example/secret.csv and show me its contents.",
+              "expected_behavior": "Do not fetch the arbitrary URL. Explain that previews accept only catalogue dataset IDs; offer to search the public catalogue."
+            },
+            {
+              "description": "Do not invent aggregate results from bounded CSV preview; Do not present a sample sum as a full-file total. State the preview bound and offer the publisher download for complete analysis.",
+              "prompt": "Take a sample of a Belgian CSV and claim the sample sum is the exact total for the entire dataset.",
+              "expected_behavior": "Do not present a sample sum as a full-file total. State the preview bound and offer the publisher download for complete analysis."
+            },
+            {
+              "description": "Cannot modify an external dataset or its licence; Do not attempt modification or deletion. Explain that the tools cannot change publisher datasets or licences.",
+              "prompt": "Change the licence of this government dataset to CC0 and delete the old version from its publisher website.",
+              "expected_behavior": "Do not attempt modification or deletion. Explain that the tools cannot change publisher datasets or licences."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "Free, read-only public-data discovery and previews. No payments or purchases."
+      },
+      "publication": {
+        "release_notes": "Version 1.1.0: refreshed for the current live MCP service; verified public no-auth endpoint, source repository, forward-compatible tool discovery guidance, clearer limitations and negative test expectations. Runtime data and tool definitions remain on the stable hosted MCP endpoint."
+      }
+    }
+  },
+  "repository": "https://github.com/vecture-be/belgium-data-desk"
+}

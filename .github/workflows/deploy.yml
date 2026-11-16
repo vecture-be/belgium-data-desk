@@ -112,6 +112,9 @@ jobs:
           let h=fs.readFileSync(f,"utf8").replace(/\s*<meta\s+name="google-site-verification"[^>]*>/gi,"");
           fs.writeFileSync(f,h.replace(/<\/head>/i,"<meta name=\"google-site-verification\" content=\""+t+"\">\n</head>"))'
 
+      - name: Build current ChatGPT submission ZIP
+        run: python3 scripts/package-chatgpt.py
+
       - name: Deploy to Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
