@@ -35,8 +35,9 @@ function describe(c){
   if(c.distinct_rows_added!=null)parts.push(signed(c.distinct_rows_added)+" / "+signed(-c.distinct_rows_removed)+" distinct rows");
   if(c.columns_added?.length)parts.push("columns added: "+c.columns_added.slice(0,3).join(", "));
   if(c.columns_removed?.length)parts.push("columns removed: "+c.columns_removed.slice(0,3).join(", "));
-  for(const v of (c.coverage||[]).slice(0,2))parts.push(v.column+" now "+v.after[0]+" to "+v.after[1]+" (was to "+v.before[1]+")");
-  return parts.join("; ");
+  for(const v of (c.coverage||[]).slice(0,2))parts.push(v.column+" now "+v.after[0]+" to "+v.after[1]+" (was "+v.before[0]+" to "+v.before[1]+")");
+  for(const v of (c.ranges||[]).slice(0,2))parts.push(v.column+" now "+fmt(v.after[0])+"–"+fmt(v.after[1])+" (was "+fmt(v.before[0])+"–"+fmt(v.before[1])+")");
+  return parts.join("; ")||"values changed";
 }
 const cell=s=>String(s??"").replace(/\|/g,"\\|").replace(/\s+/g," ").slice(0,120);
 

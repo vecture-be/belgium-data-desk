@@ -59,7 +59,7 @@ try{
 
   // 4. card sentence
   const s=changeSentence({...c,since:"2026-11-07T01:00:00Z",seen_at:"2026-11-14T01:00:00Z"});
-  assert.equal(s,"Between the checks of 2026-11-07 and 2026-11-14 the file changed: rows went from 3 to 4; 2 distinct rows added and 1 removed; 'datum' now runs to 2026-11-05 (was 2026-11-03).");
+  assert.equal(s,"Between the checks of 2026-11-07 and 2026-11-14 the file changed: rows went from 3 to 4; 2 distinct rows added and 1 removed; 'datum' now runs from 2026-11-01 to 2026-11-05 (was 2026-11-01 to 2026-11-03); 'waarde' now ranges from 1 to 5 (was 1 to 3).");
   const card=buildCard({id:"rec-1"},second.profile,{now:second.checkedAt,file:{url,bytesRead:second.bytes,totalBytes:second.total,change:c,content:{since:second.content_since,changedAt:second.content_changed_at,changedAfter:second.changed_after,observedSince:second.observed_since}}});
   assert.deepEqual(card.last_change_seen,c);
   assert.equal(card.facts.filter(f=>/the file changed|content changed between/.test(f.text)).length,1,"one change sentence, not two");
@@ -77,7 +77,8 @@ try{
   assert.deepEqual(log.run.header_issues,{content_changed_etag_same:1});
   const md=renderReadme(log,[log.run]);
   assert.match(md,/Changed since the previous check: \*\*2\*\*/);
-  assert.match(md,/\| \[Meetstations\]\(http:\/\/127\.0\.0\.1:\d+\/m\.csv\) \| VMM \| 3 → 4 \| \+2 \/ −1 distinct rows; datum now 2026-11-01 to 2026-11-05 \(was to 2026-11-03\) \|/);
+  assert.match(md,/\| \[Meetstations\]\(http:\/\/127\.0\.0\.1:\d+\/m\.csv\) \| VMM \| 3 → 4 \| \+2 \/ −1 distinct rows; datum now 2026-11-01 to 2026-11-05 \(was 2026-11-01 to 2026-11-03\); waarde now 1–5 \(was 1–3\) \|/);
+  assert.match(renderReadme({run:log.run,changed:[{id:"x",url:"u",rows:{before:1,after:1}}]},[]),/\| 1 → 1 \| values changed \|/,"never an empty change cell");
   assert.match(md,/- \[2026-11-14\]\(changes\/2026-11-14\.json\): 2 changed of 2 compared/);
 }finally{server.close();fs.rmSync(tmp,{recursive:true,force:true})}
 

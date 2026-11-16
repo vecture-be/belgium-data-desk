@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { checkFile, contentHistory, headerCheck, inShard, loadWork, mergeRuns } from "./full-check.mjs";
 import { createColumnProfiler, profileColumns, setNisReference, buildCard } from "./dataset-card.mjs";
 import { mergeFull } from "./build-cards.mjs";
+import { encodingFor } from "./tabular-profile.mjs";
 
 const pub=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"../public");
 setNisReference(JSON.parse(fs.readFileSync(path.join(pub,"statbel/places-v1.json"),"utf8")).places);
@@ -45,8 +46,12 @@ const server=http.createServer((req,res)=>{
   if(req.url==="/big.csv"){res.writeHead(200,{"content-type":"text/csv","content-length":Buffer.byteLength(big)});return res.end(big)}
   if(req.url==="/stream.csv"){res.writeHead(200,{"content-type":"text/csv"});return res.end(big)}   // chunked, no length
   if(req.url==="/page.csv"){res.writeHead(200,{"content-type":"text/html"});return res.end("<!doctype html><html><body>Login</body></html>")}
+  // UTF-8 whose first network chunk ends inside the two bytes of "è" (C3 | A8)
+  if(req.url==="/split.csv"){res.writeHead(200,{"content-type":"text/csv"});const b=Buffer.from(accented),cut=b.indexOf(0xc3)+1;
+    res.write(b.subarray(0,cut));return setTimeout(()=>res.end(b.subarray(cut)),50)}
   res.writeHead(404);res.end();
 });
+const accented="province;n\nProvince de Liège;1\nProvince de Namur;2\n";
 await new Promise(r=>server.listen(0,"127.0.0.1",r));
 const base="http://127.0.0.1:"+server.address().port;
 try{
@@ -67,6 +72,13 @@ try{
   assert.equal(cappedStream.too_large,true,"a file without Content-Length is cut off at the cap too");
   const ok=await checkFile({url:base+"/stream.csv",fmt:"CSV"});assert.equal(ok.profile.rows,300000);
   assert.equal((await checkFile({url:base+"/page.csv",fmt:"CSV"})).error,"html instead of a table");
+  // a chunk boundary inside "è" must not switch the file to windows-1252 (it did: "LiÃ¨ge", and a false change of every such row)
+  const b=Buffer.from(accented);
+  assert.equal(encodingFor(b.subarray(0,b.indexOf(0xc3)+1)).encoding,"utf-8","a sample cut inside a character is still UTF-8");
+  assert.equal(encodingFor(Buffer.from([0x4c,0x69,0xe8,0x67,0x65,0x0a])).encoding,"windows-1252","a real Latin-1 byte still is not");
+  const split=await checkFile({url:base+"/split.csv",fmt:"CSV"}),whole1=profileColumns(accented,{bytesRead:b.length,totalBytes:b.length});
+  assert.deepEqual(split.profile.columns[0].top?.[0]??split.profile.columns[0],whole1.columns[0].top?.[0]??whole1.columns[0]);
+  assert.equal(split.profile.row_set,whole1.row_set,"same rows whatever the chunking");
   assert.equal((await checkFile({url:base+"/missing.csv",fmt:"CSV"})).error,"HTTP 404");
 
   // 3. the card says whole file and duplicates; full results replace the probe's partial profile

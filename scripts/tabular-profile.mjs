@@ -54,7 +54,9 @@ export function encodingFor(bytes){
   if(bytes[0]===0xef&&bytes[1]===0xbb&&bytes[2]===0xbf)return{encoding:"utf-8",skip:3};
   if(bytes[0]===0xff&&bytes[1]===0xfe)return{encoding:"utf-16le",skip:2};
   if(bytes[0]===0xfe&&bytes[1]===0xff)return{encoding:"utf-16be",skip:2};
-  try{new TextDecoder("utf-8",{fatal:true}).decode(bytes.slice(0,Math.min(bytes.length,65536)));return{encoding:"utf-8",skip:0}}
+  // stream:true: a sample that ends inside a multi-byte character (a network chunk or the 64 KiB cut splitting an "è") is not an
+  // error. Without it the same UTF-8 file read as windows-1252 whenever a chunk boundary fell inside such a character.
+  try{new TextDecoder("utf-8",{fatal:true}).decode(bytes.slice(0,Math.min(bytes.length,65536)),{stream:true});return{encoding:"utf-8",skip:0}}
   catch{return{encoding:"windows-1252",skip:0}}
 }
 function firstLogicalLine(text){
