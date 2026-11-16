@@ -41,17 +41,18 @@ export function buildChangeLog(records,{since,titles=new Map(),date=new Date().t
 }
 
 const ALERT_WORDS={emptied:"the file is now empty",rows_dropped:"rows dropped sharply",columns_removed:"columns were removed",coverage_shrank:"the time coverage shrank",
-  became_unreadable:"the file stopped being readable",stopped_updating:"it looks like it stopped updating"};
+  became_unreadable:"the file stopped being readable",cadence_not_met:"declared cadence not met"};
+const CADENCE_WORDS={"1MIN":"continuously",CONT:"continuously",DAILY:"daily",WEEKLY:"weekly",WEEKLY_2:"every two weeks",BIWEEKLY:"every two weeks",MONTHLY:"monthly",QUARTERLY:"quarterly"};
 /** Alerts of this run: changes that look like breakage, files that became unreadable for a reason that is the publisher's own,
- *  and datasets that newly look stopped. Hosts refusing cloud access and other "not checked" cases never raise an alert. */
-export function buildAlerts(log,scorecards,{since,previousStoppedIds=[]}={}){
+ *  and datasets that newly miss the cadence they declare. Hosts refusing cloud access and other "not checked" cases never raise an alert. */
+export function buildAlerts(log,scorecards,{since,previousCadenceIds=[]}={}){
   const t0=Date.parse(since),alerts=[];
   for(const c of log.changed)for(const a of c.alerts||[])alerts.push({type:a,id:c.id,title:c.title,publisher:c.publisher,url:c.url,detail:describe(c),seen_at:c.seen_at});
   for(const b of scorecards?.broken||[])if(b.was_readable_until&&Date.parse(b.last_attempt||since)>=t0)
     alerts.push({type:"became_unreadable",id:b.id,title:b.title,publisher:b.publisher,url:b.url,detail:b.problem.replace(/_/g," ")+" (readable on "+String(b.was_readable_until).slice(0,10)+")"});
-  const before=new Set(previousStoppedIds);
-  for(const s of scorecards?.stopped||[])if(!before.has(s.id))
-    alerts.push({type:"stopped_updating",id:s.id,title:s.title,publisher:s.publisher,url:s.url,detail:"declared "+String(s.declared||"").toLowerCase()+", latest data "+s.latest_data_point+" ("+s.latest_data_age_days+" days ago)"});
+  const before=new Set(previousCadenceIds);
+  for(const s of scorecards?.cadence_not_met||[])if(!before.has(s.id))
+    alerts.push({type:"cadence_not_met",id:s.id,title:s.title,publisher:s.publisher,url:s.url,detail:"declared "+(CADENCE_WORDS[String(s.declared||"").toUpperCase()]||String(s.declared||"").toLowerCase())+", but the latest data is for "+s.latest_data_point+" ("+s.latest_data_age_days+" days ago): either the series stopped or the declared frequency is wrong"});
   return alerts;
 }
 
@@ -110,7 +111,7 @@ export function renderReadme(log,history){
     "",
   ];
   if(log.alerts?.length){
-    lines.push("## Alerts","","Changes that usually mean something broke, files that stopped being readable, and datasets that newly look like they stopped updating (their latest data lies more than three declared cycles back).","",
+    lines.push("## Alerts","","Changes that usually mean something broke, files that stopped being readable, and datasets that newly miss the update cadence they declare: their latest data lies more than three declared cycles back, so either the series stopped or the declared frequency is wrong. Only datasets declared to update more often than yearly are judged; one-off, yearly and undeclared ones never are.","",
       "| Alert | Dataset | Publisher | Detail |","| --- | --- | --- | --- |");
     for(const a of log.alerts.slice(0,100))lines.push("| "+(ALERT_WORDS[a.type]||a.type)+" | ["+cell(a.title||a.id)+"]("+a.url+") | "+cell(a.publisher)+" | "+cell(a.detail)+" |");
     lines.push("");
@@ -123,7 +124,7 @@ export function renderReadme(log,history){
   }else lines.push("No dataset changed since the previous check.");
   lines.push("","## Earlier checks","",...history.map(h=>"- ["+h.date+"](changes/"+h.date+".json): "+fmt(h.files_changed)+" changed of "+fmt(h.files_compared)+" compared"),"",
     "## Follow it","",
-    "- [Publisher scorecards](publishers.md) ([JSON](publishers.json)): per publisher, readable files, gone links, web pages served as tables, empty files and datasets that stopped updating. Files that could not be checked from our servers are listed apart and never counted against a publisher.",
+    "- [Publisher scorecards](publishers.md) ([JSON](publishers.json)): per publisher, readable files, gone links, web pages served as tables, empty files and datasets that miss their declared update cadence. Files that could not be checked from our servers are listed apart and never counted against a publisher.",
     "- Atom feeds: [all changes and alerts]("+RAW+"feeds/changes.xml), [alerts only]("+RAW+"feeds/alerts.xml), and one per publisher under [feeds/publishers/](feeds/publishers/).",
     "- Data: `changes/<date>.json`, one file per check. Fields are described in the Data Desk repository under `docs/reference/dataset-cards.md` (\"Change log\").","");
   return lines.join("\n");
@@ -146,9 +147,9 @@ async function main(){
   // health: scorecards per publisher and this run's alerts (hosts refusing cloud access never count, see scripts/health.mjs)
   const {buildScorecards,renderScorecards}=await import("./health.mjs");
   const sc=buildScorecards(checks,records);
-  log.alerts=buildAlerts(log,sc,{since,previousStoppedIds:previous?.stopped_ids||[]});
-  log.stopped_ids=sc.stopped.map(s=>s.id);
-  log.run.alerts=log.alerts.length;log.run.stopped_updating=sc.stopped.length;
+  log.alerts=buildAlerts(log,sc,{since,previousCadenceIds:previous?.cadence_not_met_ids||previous?.stopped_ids||[]});
+  log.cadence_not_met_ids=sc.cadence_not_met.map(s=>s.id);
+  log.run.alerts=log.alerts.length;log.run.cadence_not_met=sc.cadence_not_met.length;
   fs.writeFileSync(path.join(dir,"changes",log.run.date+".json"),JSON.stringify(log,null,1)+"\n");
   fs.writeFileSync(path.join(dir,"publishers.json"),JSON.stringify(sc,null,1)+"\n");
   fs.writeFileSync(path.join(dir,"publishers.md"),renderScorecards(sc));
@@ -167,6 +168,6 @@ async function main(){
     const base=slug(p),n=(used.get(base)||0)+1;used.set(base,n);const name=n>1?base+"-"+n:base;
     fs.writeFileSync(path.join(dir,"feeds","publishers",name+".xml"),renderAtom(list,{title:"Belgian open data: "+p,file:"feeds/publishers/"+name+".xml"}));
   }
-  console.log("[change-log] "+log.run.date+": "+log.run.files_changed+" changed of "+log.run.files_compared+" compared ("+log.run.files_checked+" checked); "+log.alerts.length+" alerts; "+sc.stopped.length+" look stopped; "+byPub.size+" publisher feeds");
+  console.log("[change-log] "+log.run.date+": "+log.run.files_changed+" changed of "+log.run.files_compared+" compared ("+log.run.files_checked+" checked); "+log.alerts.length+" alerts; "+sc.cadence_not_met.length+" miss their declared cadence; "+byPub.size+" publisher feeds");
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))main();

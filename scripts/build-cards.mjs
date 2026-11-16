@@ -90,7 +90,7 @@ function main(){
     row_order_unstable:count(c=>c.quality.row_order_unstable),
     with_change_seen:count(c=>c.last_change_seen),
     with_time_coverage:count(c=>c.coverage.time),join_keys:keyKinds,schema_changed:count(c=>c.schema.changed_since),
-    data_stopped:count(c=>c.freshness.data_stopped)};
+    cadence_not_met:count(c=>c.freshness.cadence_not_met)};
   // publisher scorecards from every full-check result, readable or not (scripts/health.mjs)
   if(fs.existsSync(fullFile)){
     const checks=fs.readFileSync(fullFile,"utf8").split("\n").flatMap(l=>{try{return[JSON.parse(l)]}catch{return[]}});
