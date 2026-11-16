@@ -1,4 +1,4 @@
-# Belgium Data Desk — ChatGPT submission package 1.1.0
+# Belgium Data Desk — ChatGPT submission package
 
 Connects the production MCP service at https://data.vecture.be/mcp. No account, API key or OAuth credentials are needed. The ZIP contains listing metadata, an evidence-first workflow and an icon, not a frozen copy of the tools or data.
 

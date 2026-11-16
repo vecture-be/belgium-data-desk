@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "belgium-data-desk",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Find, inspect and interpret Belgian open data from public publishers, with source, licence, freshness and methodological caveats.",
   "author": {
     "name": "Vecture",
@@ -26,9 +26,9 @@
       "interface": {
         "displayName": "Belgium Data Desk",
         "shortDescription": "Explore Belgian open data",
-        "longDescription": "Find and inspect Belgian public datasets and answer questions using official sources. Search in Dutch, French or English across federal, regional and local publishers. Inspect licences, update dates, declared fields, file-check evidence and available dataset profiles; preview bounded CSV/TSV samples.\n\nGet official statistics, historical property sale prices, air quality, weather observations and forecasts, Flemish flood maps and river levels, Belgian train punctuality, and Flemish geology and groundwater information. Results identify their sources, reference dates and limitations. Prepare a message to a dataset publisher for you to send yourself.\n\nFree, with no account required. The currently enabled tools retrieve information or prepare drafts; they do not send messages or change publisher data. Catalogue coverage and source availability vary. Samples are not whole-file totals, property statistics are not valuations, and environmental maps and forecasts are not site-specific safety guarantees. Belgium Data Desk is an independent service operated by Vecture, not a government service.",
+        "longDescription": "Find and inspect Belgian public datasets and answer questions using official sources. Search in Dutch, French or English across federal, regional and local publishers. Inspect licences, update dates, declared fields, file-check evidence and available dataset profiles; preview bounded CSV/TSV samples.\n\nGet official statistics, historical property sale prices, air quality, weather observations and forecasts, Flemish flood maps and river levels, Belgian train punctuality, and Flemish geology and groundwater information. Results identify their sources, reference dates and limitations. Prepare a message to a dataset publisher for you to send yourself.\n\nNo account is required. The currently enabled tools retrieve information or prepare drafts; they do not send messages or change publisher data. Catalogue coverage and source availability vary. Samples are not whole-file totals, property statistics are not valuations, and environmental maps and forecasts are not site-specific safety guarantees. Belgium Data Desk is an independent service operated by Vecture, not a government service.",
         "developerName": "Vecture",
-        "category": "Productivity",
+        "category": "Data & Analytics",
         "capabilities": [
           "Search Belgian datasets",
           "Inspect dataset metadata and licences",
@@ -101,10 +101,10 @@
           ]
         },
         "commerce": false,
-        "commerce_description": "Free, read-only public-data discovery and previews. No payments or purchases."
+        "commerce_description": "Read-only public-data discovery and previews. No payments or purchases."
       },
       "publication": {
-        "release_notes": "Version 1.1.0: refreshed for the current live MCP service; verified public no-auth endpoint, source repository, forward-compatible tool discovery guidance, clearer limitations and negative test expectations. Runtime data and tool definitions remain on the stable hosted MCP endpoint."
+        "release_notes": "Version 1.1.1: remove pricing language from the listing and classify the plugin under Data & Analytics. Hosted MCP endpoint and tools are unchanged."
       }
     }
   },
