@@ -23,7 +23,6 @@ const CALLS=[
   ["weather",{address:"Grote Markt 1, 3000 Leuven"}],
   ["train_punctuality",{station:"Leuven"}],
   ["electricity_grid",{}],
-  ["local_decisions",{municipality:"Leuven",query:"fiets",limit:2}],
   ["subsurface_at_location",{address:"Grote Markt 1, 3000 Leuven"}],
   ["search_subsurface",{record_type:"boreholes",municipality:"Leuven",limit:3}],
   ["get_subsurface_record",{id:"boring/2016-140688"}],

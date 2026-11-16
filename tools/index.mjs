@@ -12,7 +12,8 @@ import weather from "./weather.mjs";
 import trainPunctuality from "./train-punctuality.mjs";
 import realEstatePrices from "./real-estate-prices.mjs";
 import electricityGrid from "./electricity-grid.mjs";
-import localDecisions from "./local-decisions.mjs";
+// local_decisions (./local-decisions.mjs) is built and tested but not listed: Lokaal Beslist answers requests from Cloudflare's network
+// with a bot check ("Making sure you're not a bot!"). List it again once Lokaal Beslist lets this service through.
 
 export const LIVE_TOOLS=Object.freeze([
   subsurfaceAtLocation,
@@ -25,8 +26,7 @@ export const LIVE_TOOLS=Object.freeze([
   riverLevels,
   weather,
   trainPunctuality,
-  electricityGrid,
-  localDecisions
+  electricityGrid
 ]);
 
 const byName=new Map();
