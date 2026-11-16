@@ -396,7 +396,7 @@ export async function catalogueOverview(reader){
 async function cardFor(reader,id){
   const c=(await reader.json("/cards/"+idShard(id)+".json"))?.[id];
   if(!c)return null;
-  return{profiled_at:c.profiled_at,facts:c.facts,freshness:c.freshness,coverage:c.coverage,quality:c.quality,schema:c.schema,
+  return{profiled_at:c.profiled_at,facts:c.facts,freshness:c.freshness,...(c.last_change_seen?{last_change_seen:c.last_change_seen}:{}),coverage:c.coverage,quality:c.quality,schema:c.schema,
     file:c.file,columns:(c.columns||[]).slice(0,25),
     note:(c.file?.rows_exact
       ?"Computed by code from the whole file ("+Math.round((c.file?.bytes_read||0)/1024)+" KiB) and the catalogue record; change dates are checked against the file's content week over week"

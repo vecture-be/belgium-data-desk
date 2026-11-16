@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { encodingFor, detectDelimiter, pickTabularDistribution, safePublicUrl } from "./tabular-profile.mjs";
 import { createColumnProfiler, setNisReference } from "./dataset-card.mjs";
 import { loadRecords } from "./build-cards.mjs";
+import { describeChange, diffSorted, readRowPack, rowKey, writeRowPack } from "./row-diff.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(__dirname,".."),pub=path.join(root,"public");
 const UA="Belgium-Data-Desk-QA/1.0 (+https://data.vecture.be)";
@@ -38,7 +39,8 @@ export function inShard(url,shard){
   return h%n===i-1;
 }
 
-export async function checkFile(w,{previous=null,maxBytes=100*1024*1024,fetchImpl=fetch,timeoutMs=FILE_TIMEOUT_MS}={}){
+export const ROWS=Symbol("rowHashes");
+export async function checkFile(w,{previous=null,prevRows=null,maxBytes=100*1024*1024,fetchImpl=fetch,timeoutMs=FILE_TIMEOUT_MS}={}){
   const t0=Date.now(),r={url:w.url,fmt:w.fmt,ds:w.ds,prov:w.prov,full:true};
   // No conditional request: ETag and Last-Modified are often missing, regenerated per request or left stale, so they are what this
   // check tests (headerCheck), not something it relies on. Every file is downloaded and compared by content hash.
@@ -70,10 +72,16 @@ export async function checkFile(w,{previous=null,maxBytes=100*1024*1024,fetchImp
     if(!profiler){r.error="empty file";return finish(r,t0)}
     profiler.push(decoder.decode());
     r.bytes=r.total=n;r.sha256=sha.digest("hex").slice(0,32);
-    r.profile=profiler.finish({exact:true});
+    r.profile=profiler.finish({exact:true,keepRowHashes:true});
+    if(profiler.rowHashes)r[ROWS]=profiler.rowHashes;   // not serialised: written to the row pack by main()
     finish(r,t0);
     Object.assign(r,contentHistory(r,previous));
     r.header_check=headerCheck(r,previous);
+    // what changed since the previous run: row diff when both runs kept row hashes; otherwise the last change seen stays
+    if(previous&&r.content_changed_at===r.checkedAt){
+      const diff=prevRows&&r[ROWS]?diffSorted(prevRows,r[ROWS]):null;
+      r.change={...describeChange(previous,r,diff),seen_at:r.checkedAt};
+    }else if(previous?.change)r.change=previous.change;
     return r;
   }catch(e){r.error=ctl.signal.aborted?"timeout":String(e.cause?.code||e.message||e).slice(0,120)}
   finally{clearTimeout(timer)}
@@ -177,6 +185,9 @@ async function main(){
   const byHost=new Map();for(const w of work)(byHost.get(hostOf(w.url))||byHost.set(hostOf(w.url),[]).get(hostOf(w.url))).push(w);
   // biggest hosts first so they are not the tail of the run
   const queues=[...byHost.values()].sort((a,b)=>b.length-a.length);
+  // row hashes of the previous run (--rows-prev) and of this one (--rows-out), packed per shard as <pack>.json/.bin (scripts/row-diff.mjs)
+  const pack=args.pack||(shard?"rows-"+shard[0]:"rows");
+  const prevPack=args["rows-prev"]?readRowPack(path.resolve(args["rows-prev"]),pack):new Map(),newPack=new Map();
   const out=fs.createWriteStream(outFile,{flags:"a"});
   // unchanged/changed = same or different bytes than the previous run; headers = how the Last-Modified headers fared
   const stats={checked:0,retried:0,profiled:0,unchanged:0,changed:0,reordered:0,too_large:0,failed:0,bytes:0,skipped_budget:0,last_modified:{},issues:{}};
@@ -188,10 +199,12 @@ async function main(){
       if(Date.now()>deadline){stats.skipped_budget=queues.reduce((s,q)=>s+q.length,0);return}
       const w=nextItem();if(!w){if(queues.some(q=>q.length)){await new Promise(r=>setTimeout(r,250));continue}return}
       const h=hostOf(w.url);active.set(h,(active.get(h)||0)+1);
-      let r=await checkFile(w,{previous:previous.get(w.url),maxBytes});
+      const opts={previous:previous.get(w.url),prevRows:prevPack.get(rowKey(w.url))?.hashes||null,maxBytes};
+      let r=await checkFile(w,opts);
       // a connection that never opened or a DNS hiccup says more about the runner's network than about the publisher: try once more
-      if(TRANSIENT.test(r.error||"")){await new Promise(z=>setTimeout(z,RETRY_DELAY_MS));r=await checkFile(w,{previous:previous.get(w.url),maxBytes});if(!r.error)r.retried=true}
+      if(TRANSIENT.test(r.error||"")){await new Promise(z=>setTimeout(z,RETRY_DELAY_MS));r=await checkFile(w,opts);if(!r.error)r.retried=true}
       active.set(h,active.get(h)-1);
+      if(r[ROWS])newPack.set(rowKey(w.url),{hashes:r[ROWS],checkedAt:r.checkedAt});
       out.write(JSON.stringify(r)+"\n");stats.checked++;if(r.retried)stats.retried++;
       if(r.too_large)stats.too_large++;else if(r.error)stats.failed++;else{stats.profiled++;stats.bytes+=r.bytes||0;if(r.unchanged)stats.unchanged++;if(r.content_changed_at===r.checkedAt)stats.changed++;if(r.row_order_unstable)stats.reordered++;
         const hc=r.header_check;stats.last_modified[hc.last_modified]=(stats.last_modified[hc.last_modified]||0)+1;for(const i of hc.issues)stats.issues[i]=(stats.issues[i]||0)+1}
@@ -200,6 +213,7 @@ async function main(){
   };
   await Promise.all(Array.from({length:Math.min(MAX_LANES,work.length)},lane));
   await new Promise(r=>out.end(r));
+  if(args["rows-out"])stats.row_baselines=writeRowPack(path.resolve(args["rows-out"]),pack,newPack,prevPack);
   console.log("[full-check] "+(shard?"shard "+shard.join("/")+": ":"")+JSON.stringify({...stats,gb:Math.round(stats.bytes/1e7)/100}));
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))main();

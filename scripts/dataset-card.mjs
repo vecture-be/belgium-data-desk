@@ -108,11 +108,15 @@ export function createColumnProfiler(delimiter){
       else if(n!=null){c.nums++;if(Number.isInteger(n))c.ints++;if(c.min==null||n<c.min)c.min=n;if(c.max==null||n>c.max)c.max=n}
     }
   }});
-  return{push:t=>a.push(t),finish({exact=true}={}){
-    const parsed=a.finish();seen.clear();
+  const self={push:t=>a.push(t),rowHashes:null,finish({exact=true,keepRowHashes=false}={}){
+    const parsed=a.finish();
+    // the distinct row hashes, sorted, for a row-level diff with the next run (scripts/full-check.mjs); none past the cap
+    if(keepRowHashes&&exact&&!dupCapped)self.rowHashes=Float64Array.from(seen).sort();
+    seen.clear();
     const rowSet=exact?createHash("sha1").update(hdr+"\u0002"+sumHi+"."+sumLo+"."+parsed.rowCount).digest("hex").slice(0,20):null;
     return summarise(cols,parsed,exact,exact?{duplicate_rows:duplicates,...(dupCapped?{duplicate_rows_lower_bound:true}:{}),row_set:rowSet}:{},delimiter);
   }};
+  return self;
 }
 function summarise(cols,parsed,whole,extra,delimiter){
   const rows=parsed.rowCount;
@@ -183,6 +187,17 @@ const HEADER_FACTS={
   content_changed_etag_same:"The file's content changed, but the server's ETag did not, so caches may keep serving the old file.",
 };
 
+/** One sentence for the last change the full-file check saw (scripts/row-diff.mjs describeChange). */
+export function changeSentence(c){
+  const parts=[];
+  if(c.rows?.before!=null&&c.rows?.after!=null)parts.push(c.rows.before===c.rows.after?"still "+fmtInt(c.rows.after)+" rows":"rows went from "+fmtInt(c.rows.before)+" to "+fmtInt(c.rows.after));
+  if(c.distinct_rows_added!=null)parts.push(fmtInt(c.distinct_rows_added)+" distinct row"+(c.distinct_rows_added===1?"":"s")+" added and "+fmtInt(c.distinct_rows_removed)+" removed");
+  if(c.columns_added?.length)parts.push("column"+(c.columns_added.length>1?"s ":" ")+c.columns_added.slice(0,3).map(x=>"'"+x+"'").join(", ")+" added");
+  if(c.columns_removed?.length)parts.push("column"+(c.columns_removed.length>1?"s ":" ")+c.columns_removed.slice(0,3).map(x=>"'"+x+"'").join(", ")+" removed");
+  for(const v of (c.coverage||[]).slice(0,2))parts.push("'"+v.column+"' now runs to "+v.after[1]+" (was "+v.before[1]+")");
+  return"Between the checks of "+day(c.since)+" and "+day(c.seen_at)+" the file changed: "+(parts.join("; ")||"its content differs")+".";
+}
+
 // ---------- the card ----------
 const fmtInt=n=>Number(n).toLocaleString("en-GB");
 const num=n=>Number.isInteger(n)?fmtInt(n):Number(n).toLocaleString("en-GB",{maximumFractionDigits:2});
@@ -210,7 +225,8 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
   // what the bytes say about the dates publishers state (whole-file checks only)
   if(fresh.metadata_date_not_reflected_in_file)add("The catalogue says it was updated on "+fresh.metadata_updated+", but the file is byte-for-byte the same as on "+fresh.content_unchanged_since+", before that date (the update may have touched only the description).",
     {metadata_updated:fresh.metadata_updated,content_unchanged_since:fresh.content_unchanged_since});
-  if(fresh.content_change_seen&&file.content?.changedAfter)add("The file's content changed between "+day(file.content.changedAfter)+" and "+fresh.content_change_seen+".",{after:day(file.content.changedAfter),on_or_before:fresh.content_change_seen});
+  if(fresh.content_change_seen&&file.content?.changedAfter&&!file.change)add("The file's content changed between "+day(file.content.changedAfter)+" and "+fresh.content_change_seen+".",{after:day(file.content.changedAfter),on_or_before:fresh.content_change_seen});
+  if(file.change)add(changeSentence(file.change),file.change);
   if(file.content?.rowOrderUnstable)add("Downloading it twice gives the same rows in a different order, so its bytes change while its data does not; caches and simple diffs see a new file every time.",{row_order_unstable:true});
   for(const issue of file.headerCheck?.issues||[])add(HEADER_FACTS[issue],{issue,last_modified:file.lastModified||null,etag:file.etag||null});
   for(const k of keys){
@@ -244,6 +260,7 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
 
   return{v:CARD_VERSION,id:record.id,...(record.title?{title:record.title,publisher:record.publisher||null,topic:record.topic||null}:{}),...(record.authoritative?{hand_reviewed:true}:{}),profiled_at:now.slice(0,10),
     file:{url:file.url||null,format:file.format||null,read:profile.rows_exact?"whole file":"first bytes",bytes_read:file.bytesRead??null,total_bytes:file.totalBytes??null,rows:profile.rows,rows_exact:profile.rows_exact,...(file.sha256?{sha256:file.sha256}:{}),...(file.headerCheck?{headers:file.headerCheck}:{})},
+    ...(file.change?{last_change_seen:file.change}:{}),
     freshness:fresh,coverage:{time,keys},quality:{sparse_columns:sparse,constant_columns:constant,...(profile.duplicate_rows!=null?{duplicate_rows:profile.duplicate_rows}:{}),...(file.content?.rowOrderUnstable?{row_order_unstable:true}:{})},schema,
     columns:cols.map(({key,...c})=>c).slice(0,40),facts};
 }
