@@ -332,16 +332,20 @@ export async function riverLevels(client,args,{assets}={}){
   const failed=ENABLED.filter((k,i)=>layers[i].error).map(k=>KIWIS[k].short);
   const all=layers.flatMap(l=>l.stations||[]);
   if(!all.length)return{error:"The gauge services of waterinfo.be did not answer; try again in a minute."};
+  // A provider whose gauge list did not answer must not read as "no such gauge": its gauges are simply unknown right now.
+  const downWhy=failed.length?"the "+failed.join(" and ")+" gauge list did not answer just now ("+layers[ENABLED.findIndex((k,i)=>layers[i].error)].error+")":"";
+  const notFound=msg=>failed.length?{error:msg.replace(/\.$/,"")+" among the gauges that answered, but "+downWhy+", so try again in a minute.",services_not_answering:failed}:{error:msg};
   let pool=all.filter(s=>s.value!=null&&s.time&&ageH(s.time)<=FRESH_H);
   const retired=all.length-pool.length;
-  if(river){const r=fold(river);pool=pool.filter(s=>fold(s.river).includes(r)||fold(s.name).includes(r));if(!pool.length)return{error:"No gauge reporting now has '"+river+"' in its river or station name. Try another spelling (Dutch or French), or an address."}}
+  if(river){const r=fold(river);pool=pool.filter(s=>fold(s.river).includes(r)||fold(s.name).includes(r));if(!pool.length)return failed.length?notFound("No gauge reporting now has '"+river+"' in its river or station name."):{error:"No gauge reporting now has '"+river+"' in its river or station name. Try another spelling (Dutch or French), or an address."}}
   let picked,mode;
   if(station){
     const q=fold(station),exact=pool.filter(s=>fold(s.station_no)===q);
     const byName=exact.length?exact:pool.filter(s=>fold(s.name).includes(q)||fold(s.municipality).includes(q));
     if(!byName.length){const any=all.find(s=>fold(s.station_no)===q||fold(s.name).includes(q));
-      return{error:any?"Gauge "+any.name+" ("+any.station_no+") has not reported in the last "+FRESH_H+" hours (last value "+(utc(any.time)||"unknown")+")."
-        :"No gauge matches '"+station+"'. Give the station name as the portals write it (e.g. 'Korbeek-Dijle', 'Werchter', 'Lier'), its number, or an address."}}
+      if(any)return{error:"Gauge "+any.name+" ("+any.station_no+") has not reported in the last "+FRESH_H+" hours (last value "+(utc(any.time)||"unknown")+")."};
+      return failed.length?notFound("No gauge matches '"+station+"'")
+        :{error:"No gauge matches '"+station+"'. Give the station name as the portals write it (e.g. 'Korbeek-Dijle', 'Werchter', 'Lier'), its number, or an address."}}
     picked=byName.map(s=>({s,d:loc?hav(loc.latitude,loc.longitude,s.lat,s.lon):null})).sort((a,b)=>(a.d??0)-(b.d??0)).slice(0,limit);mode="station";
   }else if(loc){
     const near=pool.map(s=>({s,d:hav(loc.latitude,loc.longitude,s.lat,s.lon)})).sort((a,b)=>a.d-b.d);
@@ -372,12 +376,13 @@ export async function riverLevels(client,args,{assets}={}){
   const noThr=views.filter(v=>!v.thresholds||v.thresholds.below_watch_cm==null&&v.thresholds.below_alarm_cm==null).length;
   if(views.length>1)facts.push((watch.length?watch.length+" of these "+views.length+" gauges are at or above a published threshold":"None of these "+views.length+" gauges is at or above a published watch or alarm level")+
     (noThr?" ("+(noThr===views.length?"none of them publishes one":noThr+" of them "+(noThr===1?"publishes":"publish")+" none")+")":"")+(fcw.length?"; a forecast raises the status at "+fcw.map(v=>v.name).join(", "):"")+".");
+  if(failed.length)facts.push("Incomplete: "+downWhy.replace(/^the/,"The")+"; its gauges are missing from this answer, so ask again in a minute"+(mode==="station"?".":" for the full picture."));
   if(fcFailed.length)facts.push("The "+fcFailed.join(" and ")+" water-level forecast could not be read just now ("+D[provs.find(k=>D[k].fcError)].fcError+"); the levels above are measured only, so ask again in a minute for the forecast.");
   const place=loc?await placeContext(client,assets,loc).catch(()=>null):null;
   if(/Waals|Wallon/i.test(place?.region||""))facts.push("This place is in Wallonia: its own river gauges (SPW, hydrometrie.wallonie.be) are not included, because SPW's terms forbid passing that data on; the gauges above are Flemish ones nearby.");
   else if(/Brussel|Bruxelles/i.test(place?.region||""))facts.push("Brussels' own gauges (Flowbru) are not included; the gauges above are on the canal and around the region.");
   const d=new Date().toISOString().slice(0,10);
-  return clean({key_facts:facts.slice(0,10),complete:fcFailed.length?false:null,
+  return clean({key_facts:facts.slice(0,10),complete:fcFailed.length||failed.length?false:null,
     location:loc?clean({...loc,x_lambert72:loc.x,y_lambert72:loc.y,x:undefined,y:undefined,geocoded:undefined}):null,place,
     search:clean({mode,radius_km:mode==="station"?null:radius,river:river||null,gauges_reporting_now:pool.length,gauges_not_reporting:retired,services_not_answering:failed.length?failed:null,
       forecasts_not_answering:fcFailed.length?fcFailed:null}),

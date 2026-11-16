@@ -145,6 +145,17 @@ const river=(args,opts)=>atTime(NOW,()=>{const client=makeDovClient({fetchImpl:k
   assert.equal(out.search.gauges_not_reporting,1);
   assert.deepEqual(out.search.services_not_answering,["HIC"]);
   assert.equal(out.gauges[0].station_no,"L08_097");
+  assert.equal(out.complete,false,"an answer missing a provider's gauges is partial");
+  assert.match(out.key_facts.find(f=>f.startsWith("Incomplete")),/^Incomplete: The HIC gauge list did not answer just now \(.+\); its gauges are missing from this answer, so ask again in a minute for the full picture\.$/);
+}
+{ // the 16 Nov golden failure: HIC's list down must not turn a real HIC gauge into "no gauge matches"
+  const st=await river({station:"Antwerpen tij"},{hicDown:true});
+  assert.match(st.error,/^No gauge matches 'Antwerpen tij' among the gauges that answered, but the HIC gauge list did not answer just now \(.+\), so try again in a minute\.$/);
+  assert.deepEqual(st.services_not_answering,["HIC"]);
+  const rv=await river({river:"Zeeschelde"},{hicDown:true});
+  assert.match(rv.error,/among the gauges that answered, but the HIC gauge list did not answer just now/);
+  // with every list answering, an unknown name still gets the plain advice
+  assert.match((await river({station:"Nergenshuizen"})).error,/^No gauge matches 'Nergenshuizen'\. Give the station name/);
 }
 { // a river filter with no match, and no arguments
   assert.match((await river({river:"Maas"})).error,/No gauge reporting now has 'Maas'/);
