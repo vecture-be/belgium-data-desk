@@ -1,0 +1,22 @@
+{
+ "run": {
+  "date": "2026-11-16",
+  "since": "2026-11-16T12:06:58Z",
+  "files_checked": 3375,
+  "files_profiled": 2924,
+  "files_compared": 0,
+  "files_changed": 0,
+  "row_order_unstable": 0,
+  "last_modified": {
+   "plausible": 246,
+   "missing": 2673,
+   "request_time": 5
+  },
+  "header_issues": {
+   "last_modified_is_request_time": 5
+  },
+  "failed": 414,
+  "too_large": 37
+ },
+ "changed": []
+}
