@@ -5,8 +5,9 @@ A dataset card says what a dataset is, whether it can be trusted today, and what
 ## How cards are made
 
 1. **Weekly probe** (`scripts/probe-links.mjs`, `.github/workflows/link-health.yml`). The same request that checks a link reads the first 256 KiB of each CSV/TSV file and profiles its columns (`profileColumns` in `scripts/dataset-card.mjs`). The previous week's results are kept for comparison.
-2. **Build** (`scripts/build-cards.mjs`, part of `npm run build:index`). For every published record (the MCP index in `public/mcp/`), the profile of its best tabular file becomes a card (`buildCard`). Output: `public/cards/<shard>.json` (sharded like the MCP id index) and `public/cards/summary.json`.
-3. **Use**. `get_dataset` returns the card; `catalogue_overview` returns the summary.
+2. **Weekly full-file check** (`scripts/full-check.mjs`, `.github/workflows/full-check.yml`, Saturday). For each dataset, its best CSV/TSV file is downloaded whole, up to 100 MB, and every row is profiled with the same code, which also counts duplicate rows and hashes the file. Six jobs split the hosts between them, with at most two requests per host at a time. A file that is unchanged (the server answers `304` to its ETag or Last-Modified) keeps last week's profile without being downloaded. Larger files are recorded as `too_large` and keep the partial profile. A file that fails one week keeps its previous profile for up to eight weeks, marked `last_error`. When a whole-file profile exists, it replaces the probe's partial one.
+3. **Build** (`scripts/build-cards.mjs`, part of `npm run build:index`). For every published record (the MCP index in `public/mcp/`), the profile of its best tabular file becomes a card (`buildCard`). Output: `public/cards/<shard>.json` (sharded like the MCP id index) and `public/cards/summary.json`.
+4. **Use**. `get_dataset` returns the card; `catalogue_overview` returns the summary.
 
 A host that blocks or throttles the probe yields no profile and therefore no card. A missing card is never a claim about the data.
 
@@ -25,7 +26,8 @@ A host that blocks or throttles the probe yields no profile and therefore no car
 | `quality.constant_columns[]` | Columns with one value in (nearly) every row read. |
 | `schema.fingerprint` | Hash of the column names. `changed_since`, `added`, `removed` when it differs from the previous probe; `stable_since` when it does not. |
 | `columns[]` | Per column: `type` (`integer`, `number`, `date`, `year`, `boolean`, `text`), `filled_pct`, `distinct`, `min`/`max`, `from`/`to`, and `top` values for repeating categories. |
-| `file` | The file profiled, bytes read, `rows` and `rows_exact` (false when only the first 256 KiB were read: counts and ranges then describe those rows). |
+| `quality.duplicate_rows` | Rows identical to an earlier row. Only for whole-file profiles (the fact says "at least" past two million distinct rows). |
+| `file` | The file profiled: `read` (`whole file` or `first bytes`), bytes read, `rows` and `rows_exact` (false when only the first 256 KiB were read: counts and ranges then describe those rows), and `sha256` (first 32 hex characters) for whole files. |
 
 Numbers are parsed the Belgian way where it is unambiguous (`1.234,5` is one thousand two hundred and thirty-four and a half); dates accept ISO, `YYYY-MM`, and `DD/MM/YYYY`, `DD-MM-YYYY` or `DD.MM.YYYY`.
 

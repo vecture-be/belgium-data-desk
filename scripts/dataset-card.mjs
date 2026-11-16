@@ -9,11 +9,11 @@
 // scripts/build-cards.mjs into public/cards/<shard>.json and returned by the MCP get_dataset tool. Field reference:
 // docs/reference/dataset-cards.md.
 import { createHash } from "node:crypto";
-import { detectDelimiter, parseDelimitedText } from "./tabular-profile.mjs";
+import { createDelimitedAccumulator, detectDelimiter } from "./tabular-profile.mjs";
 import { MERGERS_2025 } from "../public/nis-mergers-2025-v1.mjs";
 
 export const CARD_VERSION="1";
-const MAX_DISTINCT=2000,MAX_TOP=5,MAX_KEY_SAMPLE=400,MAX_COLUMNS=60;
+const MAX_DISTINCT=2000,MAX_TOP=5,MAX_KEY_SAMPLE=400,MAX_COLUMNS=60,MAX_ROW_HASHES=2_000_000;
 
 // ---------- values ----------
 const clean=v=>String(v??"").trim();
@@ -81,9 +81,19 @@ export function profileColumns(text,{url="",format="",bytesRead=null,totalBytes=
   // a bounded read usually ends mid-row: drop the partial last line unless the whole file was read
   const whole=totalBytes!=null&&bytesRead!=null&&bytesRead>=totalBytes;
   const body=whole?text:text.slice(0,Math.max(text.lastIndexOf("\n"),0));
-  const cols=[];
-  const parsed=parseDelimitedText(body,{delimiter,sampleRows:0,inferRows:250,onRow(values,headers){
+  const p=createColumnProfiler(delimiter);p.push(body);return p.finish({exact:whole});
+}
+
+/** Streaming column profile for a whole file (scripts/full-check.mjs): push(text) with consecutive decoded pieces, then
+ *  finish({exact:true}). Same output as profileColumns, plus duplicate_rows (rows identical to an earlier row). */
+export function createColumnProfiler(delimiter){
+  const cols=[],seen=new Set();let duplicates=0,dupCapped=false;
+  const a=createDelimitedAccumulator(delimiter,{sampleRows:0,inferRows:250,onRow(values,headers){
     if(!cols.length)headers.slice(0,MAX_COLUMNS).forEach(h=>cols.push({name:h,filled:0,distinct:new Map(),capped:false,min:null,max:null,dmin:null,dmax:null,nums:0,ints:0,dates:0,keySample:[]}));
+    // duplicate rows: a 53-bit hash per row (a Set of numbers stays small); past MAX_ROW_HASHES the count stops growing
+    // and is reported as a lower bound. False matches are ~1 in 10^4 files at a million rows.
+    if(!dupCapped){const b=createHash("sha1").update(values.join("\u0001")).digest(),h=b.readUInt32BE(0)*2**21+(b.readUInt32BE(4)>>>11);
+      if(seen.has(h))duplicates++;else{seen.add(h);if(seen.size>=MAX_ROW_HASHES)dupCapped=true}}
     for(let i=0;i<cols.length;i++){
       const c=cols[i],v=clean(values[i]);if(!v)continue;
       c.filled++;
@@ -95,6 +105,12 @@ export function profileColumns(text,{url="",format="",bytesRead=null,totalBytes=
       else if(n!=null){c.nums++;if(Number.isInteger(n))c.ints++;if(c.min==null||n<c.min)c.min=n;if(c.max==null||n>c.max)c.max=n}
     }
   }});
+  return{push:t=>a.push(t),finish({exact=true}={}){
+    const parsed=a.finish();seen.clear();
+    return summarise(cols,parsed,exact,exact?{duplicate_rows:duplicates,...(dupCapped?{duplicate_rows_lower_bound:true}:{})}:{},delimiter);
+  }};
+}
+function summarise(cols,parsed,whole,extra,delimiter){
   const rows=parsed.rowCount;
   const columns=cols.map((c,i)=>{
     const type=c.filled&&c.dates/c.filled>=0.9?"date":c.filled&&c.nums/c.filled>=0.9?(c.ints===c.nums?"integer":"number"):parsed.types[i]==="boolean"?"boolean":"text";
@@ -107,7 +123,7 @@ export function profileColumns(text,{url="",format="",bytesRead=null,totalBytes=
     return out;
   });
   const fingerprint=createHash("sha256").update(cols.map(c=>c.name.toLowerCase()).join("\u0001")).digest("hex").slice(0,12);
-  return{rows,rows_exact:whole,delimiter,columns,column_count:parsed.headers.length,fingerprint};
+  return{rows,rows_exact:whole,delimiter,columns,column_count:parsed.headers.length,fingerprint,...extra};
 }
 
 // ---------- freshness ----------
@@ -165,11 +181,14 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
   if(keys.some(k=>k.kind==="wgs84_point"))add("Column '"+keys.find(k=>k.kind==="wgs84_point").column+"' holds WGS84 points inside Belgium, so it can be mapped directly.",keys.find(k=>k.kind==="wgs84_point"));
   else if(keys.some(k=>k.kind==="latitude")&&keys.some(k=>k.kind==="longitude"))add("Every row has WGS84 coordinates inside Belgium, so it can be mapped directly.",{columns:keys.filter(k=>/itude/.test(k.kind)).map(k=>k.column)});
   else if(keys.filter(k=>k.kind==="lambert72").length>=2)add("Rows carry Belgian Lambert 72 coordinates, so it can be mapped.",{columns:keys.filter(k=>k.kind==="lambert72").map(k=>k.column)});
-  for(const s of sparse.slice(0,3))add("Column '"+s.column+"' is empty in "+num(Math.round((100-s.filled_pct)*10)/10)+" % of the rows read.",s);
+  const ofRows=profile.rows_exact?"rows":"rows read";   // a whole-file profile speaks about the file, a partial one about the part read
+  for(const s of sparse.slice(0,3))add("Column '"+s.column+"' is empty in "+num(Math.round((100-s.filled_pct)*10)/10)+" % of the "+ofRows+".",s);
   const cats=cols.filter(c=>c.top&&c.top.length>1&&c.filled_pct>=90).slice(0,2);
-  for(const c of cats){const [v,n]=c.top[0];add("The most common value of '"+c.name+"' is '"+v+"' ("+fmtInt(n)+" of "+fmtInt(profile.rows)+" rows read).",{column:c.name,value:v,count:n,rows:profile.rows})}
+  for(const c of cats){const [v,n]=c.top[0];add("The most common value of '"+c.name+"' is '"+v+"' ("+fmtInt(n)+" of "+fmtInt(profile.rows)+" "+ofRows+").",{column:c.name,value:v,count:n,rows:profile.rows})}
   const measures=cols.filter(c=>(c.type==="number"||c.type==="integer")&&!c.key&&c.min!=null&&c.min!==c.max&&c.filled_pct>=90).slice(0,2);
-  for(const c of measures)add("'"+c.name+"' ranges from "+num(c.min)+" to "+num(c.max)+" in the rows read.",{column:c.name,min:c.min,max:c.max});
+  for(const c of measures)add("'"+c.name+"' ranges from "+num(c.min)+" to "+num(c.max)+" in the "+ofRows+".",{column:c.name,min:c.min,max:c.max});
+  if(profile.duplicate_rows>0)add((profile.duplicate_rows_lower_bound?"At least ":"")+fmtInt(profile.duplicate_rows)+" of the "+fmtInt(profile.rows)+" rows ("+num(Math.round(profile.duplicate_rows/profile.rows*1000)/10)+" %) repeat an earlier row exactly.",
+    {duplicate_rows:profile.duplicate_rows,rows:profile.rows,...(profile.duplicate_rows_lower_bound?{lower_bound:true}:{})});
   if(constant.length)add("Column"+(constant.length>1?"s ":" ")+constant.slice(0,3).map(c=>"'"+c+"'").join(", ")+" "+(constant.length>1?"have":"has")+" a single value "+(profile.rows_exact?"throughout.":"in all rows read."),{columns:constant});
 
   let schema={fingerprint:profile.fingerprint};
@@ -181,7 +200,7 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
   }else if(previous?.schema)schema={...schema,stable_since:previous.schema.stable_since||previous.profiled_at};
 
   return{v:CARD_VERSION,id:record.id,...(record.title?{title:record.title,publisher:record.publisher||null,topic:record.topic||null}:{}),...(record.authoritative?{hand_reviewed:true}:{}),profiled_at:now.slice(0,10),
-    file:{url:file.url||null,format:file.format||null,bytes_read:file.bytesRead??null,total_bytes:file.totalBytes??null,rows:profile.rows,rows_exact:profile.rows_exact},
-    freshness:fresh,coverage:{time,keys},quality:{sparse_columns:sparse,constant_columns:constant},schema,
+    file:{url:file.url||null,format:file.format||null,read:profile.rows_exact?"whole file":"first bytes",bytes_read:file.bytesRead??null,total_bytes:file.totalBytes??null,rows:profile.rows,rows_exact:profile.rows_exact,...(file.sha256?{sha256:file.sha256}:{})},
+    freshness:fresh,coverage:{time,keys},quality:{sparse_columns:sparse,constant_columns:constant,...(profile.duplicate_rows!=null?{duplicate_rows:profile.duplicate_rows}:{})},schema,
     columns:cols.map(({key,...c})=>c).slice(0,40),facts};
 }

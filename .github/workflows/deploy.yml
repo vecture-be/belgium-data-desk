@@ -85,6 +85,13 @@ jobs:
           path: .cache/link-probe.jsonl
           key: link-health-none
           restore-keys: link-health-
+      # whole-file profiles (full-check.yml) replace the probe's partial profile of the same file in the dataset cards
+      - name: Restore full-file check
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/full-check.jsonl
+          key: full-check-none
+          restore-keys: full-check-
 
       - name: Build search index and pages (catalogue sanity gates compare with the deployed catalogue)
         env:
