@@ -2,7 +2,7 @@
 // answers shaped like Infrabel's Explore API v2.1 (the recorded fixture covers the real shapes).
 import assert from "node:assert/strict";
 import { makeDovClient } from "../dov.mjs";
-import { trainPunctuality, matchStation, normIc, fmtRel, connections, TRAIN_HOSTS } from "../trains.mjs";
+import { trainPunctuality, matchStation, normIc, fmtRel, connections, clockTime, TRAIN_HOSTS } from "../trains.mjs";
 import { atTime } from "../lib/fixtures.mjs";
 import { checkAnswer } from "../lib/tool-contract.mjs";
 
@@ -139,6 +139,13 @@ const run=(args,opts)=>atTime(NOW,()=>trainPunctuality(makeDovClient({fetchImpl:
   assert.deepEqual(back.map(x=>x.train_no),["400"]);
   assert.equal(go[2].planned_min,30,"23:50 -> 00:20 the next day is 30 minutes");
   assert.equal(go[0].actual_min,36,"30 min planned, left 1 min late, arrived 7 min late");
+}
+{ // Infrabel's midnight: "1899-12-30 00:00:00" is 00:00 on the row's own date (seen on train 545, Leuven, 2026-11-15)
+  assert.equal(clockTime("1899-12-30 00:00:00"),"00:00:00");assert.equal(clockTime("23:40:00"),"23:40:00");assert.equal(clockTime(""),"");
+  const rows=[{datdep:"2026-11-15",train_no:"545",ptcar_lg_nm_nl:"LEUVEN",planned_date_arr:"2026-11-15",planned_time_arr:"23:40:00",planned_date_dep:"2026-11-16",planned_time_dep:clockTime("1899-12-30 00:00:00"),delay_arr:204,delay_dep:186},
+    {datdep:"2026-11-15",train_no:"545",ptcar_lg_nm_nl:"BRUSSEL-CENTRAAL",planned_date_arr:"2026-11-16",planned_time_arr:"00:22:00",planned_date_dep:"2026-11-16",planned_time_dep:"00:23:00",delay_arr:120,delay_dep:120}];
+  const [c]=connections(rows,"LEUVEN","BRUSSEL-CENTRAAL");
+  assert.equal(c.dep,"00:00 (after midnight)");assert.equal(c.planned_min,22);
 }
 { // between two stations: on time judged on arrival at the second; peak split; return direction; monthly figures; incidents
   const out=await run({from_station:"Louvain",to_station:"Groot"});

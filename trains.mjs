@@ -51,11 +51,15 @@ const localTime=iso=>new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Brussels"
 const titleCase=s=>String(s||"").toLowerCase().replace(/(^|[\s\-\/(])([a-zà-ÿ])/g,(m,a,b)=>a+b.toUpperCase());
 
 /** One Explore API call; rows or {error}. Records answer at most 100 rows; exports answer all matching rows. */
+// Infrabel writes a time of exactly midnight as a spreadsheet zero date ("1899-12-30 00:00:00"); the date lives in the matching *_date_* field.
+const TIME_FIELDS=["planned_time_arr","planned_time_dep","real_time_arr","real_time_dep"];
+export function clockTime(v){const m=/(\d{2}:\d{2}(?::\d{2})?)\s*$/.exec(String(v));return m?m[1]:String(v)}
 async function ods(client,ds,params,{ttl=6*HOUR,exportAll=false,maxBytes=512*1024}={}){
   const r=await getJson(client,ODS+ds+(exportAll?"/exports/json?":"/records?")+new URLSearchParams(params),{maxBytes,ttl});
   if(r.error)return{error:r.error};
   const rows=exportAll?r.json:r.json?.results;
   if(!Array.isArray(rows))return{error:"Infrabel answered without records"+(r.json?.message?": "+String(r.json.message).slice(0,120):"")};
+  for(const row of rows)if(row&&typeof row==="object")for(const f of TIME_FIELDS)if(row[f]!=null)row[f]=clockTime(row[f]);
   return{rows};
 }
 
@@ -207,7 +211,8 @@ export function connections(rows,A,B){
     const dep=stamp(a.planned_date_dep,a.planned_time_dep),arr=stamp(b.planned_date_arr,b.planned_time_arr);
     if(dep==null||arr==null||arr<=dep)continue;
     const planned=(arr-dep)/60e3,dd=a.delay_dep??null,da=b.delay_arr??null;
-    out.push({train_no:a.train_no,relation:a.relation,direction:a.relation_direction,operator:a.train_serv,dep:hm(a.planned_time_dep),arr:hm(b.planned_time_arr),
+    const nextDay=String(a.planned_date_dep||"").slice(0,10)>String(a.datdep||"").slice(0,10);   // left after midnight on a train of the previous service day
+    out.push({train_no:a.train_no,relation:a.relation,direction:a.relation_direction,operator:a.train_serv,dep:hm(a.planned_time_dep)+(nextDay?" (after midnight)":""),arr:hm(b.planned_time_arr),
       dep_delay_s:dd,arr_delay_s:da,planned_min:planned,actual_min:dd!=null&&da!=null?planned+(da-dd)/60:null,t:dep});
   }
   return out.sort((x,y)=>x.t-y.t);
