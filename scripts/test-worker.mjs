@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { isBlockedHostname, validateRelayTarget, requestedBytesFromRange, proxyDatasetFile } from "../worker.mjs";
+import worker, { openaiAppsChallenge, isBlockedHostname, validateRelayTarget, requestedBytesFromRange, proxyDatasetFile } from "../worker.mjs";
 
 assert.equal(isBlockedHostname("localhost"),true);
 assert.equal(isBlockedHostname("127.0.0.1"),true);
@@ -74,3 +74,10 @@ assert.equal(limited.status,429);
 assert.equal(limitedFetches,0);
 
 console.log(JSON.stringify({ok:true,relay:"catalogue-id",blockedPrivate:true,headersForwarded:false,rateLimited:true}));
+
+{
+  const res=await worker.fetch(new Request("https://data.vecture.be/.well-known/openai-apps-challenge"),{OPENAI_APPS_CHALLENGE:"tok_123"});
+  assert.equal(res.status,200);assert.equal(await res.text(),"tok_123");
+  assert.ok(res.headers.get("content-type").startsWith("text/plain"));
+  assert.equal(openaiAppsChallenge({}).status,404);
+}

@@ -17,7 +17,9 @@
   "routes": [{ "pattern": "data.vecture.be", "custom_domain": true }],
   // Address used in links the MCP tools return. Forks: delete it (the request origin is used) or set your own domain.
   "vars": {
-    "PUBLIC_ORIGIN": "https://data.vecture.be"
+    "PUBLIC_ORIGIN": "https://data.vecture.be",
+    // Domain verification token for the OpenAI Apps directory, served at /.well-known/openai-apps-challenge. Forks: delete it.
+    "OPENAI_APPS_CHALLENGE": "W3eC2C_EaoEOK9FfiQVZPBQVkYq3GXIu3VVjdhFhi_4"
   },
   // Report queue for report_data_issue (feedback.mjs). Sending stays off until the MAIL_API_KEY and FEEDBACK_SECRET secrets and the
   // FEEDBACK_MAIL_FROM var are set; FEEDBACK_DIGEST=send releases the weekly publisher digests (default: held).

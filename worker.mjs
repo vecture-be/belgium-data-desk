@@ -168,9 +168,17 @@ export async function dovRateLimit(env){
   try{return (await binding.limit({key:"dov"}))?.success!==false}catch{return false}
 }
 
+/** Domain verification for the OpenAI Apps directory: plain-text token from the OPENAI_APPS_CHALLENGE var, 404 when unset. */
+export function openaiAppsChallenge(env){
+  const token=String(env?.OPENAI_APPS_CHALLENGE||"").trim();
+  if(!token)return new Response("Not found",{status:404,headers:{"content-type":"text/plain; charset=utf-8"}});
+  return new Response(token,{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"no-store"}});
+}
+
 export default{
   async fetch(request,env){
     const url=new URL(request.url);
+    if(url.pathname==="/.well-known/openai-apps-challenge")return openaiAppsChallenge(env);
     if(url.pathname.startsWith("/api/dataset-file/"))return proxyDatasetFile(request,env);
     if(url.pathname==="/mcp")return handleMcp(request,env,{previewFile:makePreviewFile(env),dov:{fetchImpl:(u,init)=>fetch(u,init),rateLimit:()=>dovRateLimit(env)}});
     if(url.pathname==="/api/publisher-file")return errorResponse("This URL-based proxy has been removed. Use a catalogue-backed dataset relay ID.",410);
