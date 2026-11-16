@@ -328,5 +328,87 @@
     ],
     "source": "https://www.dov.vlaanderen.be/",
     "why": "DOV publishes the PFAS soil measurements (Lantis and others) as OGC API Features collections."
+  },
+  {
+    "question": "How much solar power did Belgium produce on 21 June 2026?",
+    "tool": "electricity_grid",
+    "args": {
+      "date": "2026-06-21"
+    },
+    "expect": [
+      {
+        "path": "solar.gwh",
+        "between": [
+          55,
+          75
+        ]
+      },
+      {
+        "path": "solar.peak_mw",
+        "between": [
+          6500,
+          8500
+        ]
+      },
+      {
+        "path": "generation_mix.by_fuel.0.fuel",
+        "equals": "solar"
+      }
+    ],
+    "source": "https://opendata.elia.be/explore/dataset/ods032/",
+    "why": "Elia measured about 64 GWh of solar on 21 June 2026, peaking near 7.6 GW, the largest source in Belgian generation that day."
+  },
+  {
+    "question": "What was the largest source of electricity generated in Belgium on 1 March 2021?",
+    "tool": "electricity_grid",
+    "args": {
+      "date": "2021-03-01"
+    },
+    "expect": [
+      {
+        "path": "generation_mix.by_fuel.0.fuel",
+        "equals": "nuclear"
+      },
+      {
+        "path": "generation_mix.by_fuel.0.share_pct",
+        "between": [
+          40,
+          60
+        ]
+      },
+      {
+        "path": "load.gwh",
+        "between": [
+          220,
+          270
+        ]
+      }
+    ],
+    "source": "https://opendata.elia.be/explore/dataset/ods201/",
+    "why": "In 2021 Belgium still ran most of its nuclear fleet: about half of generation that day (142.6 of 286.5 GWh)."
+  },
+  {
+    "question": "How much electricity is Belgium using today?",
+    "tool": "electricity_grid",
+    "args": {},
+    "expect": [
+      {
+        "path": "today.load.peak_mw",
+        "between": [
+          6000,
+          16000
+        ]
+      },
+      {
+        "path": "provenance.licence",
+        "equals": "CC BY 4.0"
+      },
+      {
+        "path": "mode",
+        "equals": "today"
+      }
+    ],
+    "source": "https://opendata.elia.be/explore/dataset/ods002/",
+    "why": "Belgian peak load lies between about 7 and 14 GW on any day; the answer must have today measured or forecast, with Elia attribution."
   }
 ]

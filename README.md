@@ -26,6 +26,7 @@ The public service combines a searchable catalogue, browser-based analysis and r
 | `river_levels` | waterinfo.be (VMM, HIC): live river, canal and tide levels against watch and alarm levels, and the publishers' 48-60 hour level and tide forecasts (Flanders) |
 | `weather` | KMI/IRM: measured weather now, last 24 hours and 7 days, ALARO forecast for 48 hours, KMI's official weather warnings (via MeteoAlarm) |
 | `train_punctuality` | Infrabel: punctuality between two stations, of a station, a train yesterday, an IC line or the network, with causes, major incidents, cancellations and today so far |
+| `electricity_grid` | Elia: Belgium's electricity now (consumption, solar, wind, border flows, imbalance price), today and tomorrow, a past day since 2015 (with generation mix and CO2) or forecasts up to 10 days |
 | `subsurface_at_location`, `search_subsurface`, `get_subsurface_record` | Databank Ondergrond Vlaanderen: soil, geology, boreholes, groundwater |
 | `search`, `fetch` | Same catalogue, in the shape ChatGPT deep research expects |
 
