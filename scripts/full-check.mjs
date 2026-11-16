@@ -17,7 +17,8 @@ import { loadRecords } from "./build-cards.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(__dirname,".."),pub=path.join(root,"public");
 const UA="Belgium-Data-Desk-QA/1.0 (+https://data.vecture.be)";
-const PER_HOST=2,MAX_LANES=16,FILE_TIMEOUT_MS=6*60*1000;
+const PER_HOST=2,MAX_LANES=16,FILE_TIMEOUT_MS=6*60*1000,RETRY_DELAY_MS=15000;
+const TRANSIENT=/^(UND_ERR_CONNECT_TIMEOUT|EAI_AGAIN|ECONNRESET|ECONNREFUSED|ETIMEDOUT|UND_ERR_SOCKET|HTTP 429|HTTP 502|HTTP 503|HTTP 504)$/;
 
 export function loadWork(items){
   const seen=new Map();
@@ -178,7 +179,7 @@ async function main(){
   const queues=[...byHost.values()].sort((a,b)=>b.length-a.length);
   const out=fs.createWriteStream(outFile,{flags:"a"});
   // unchanged/changed = same or different bytes than the previous run; headers = how the Last-Modified headers fared
-  const stats={checked:0,profiled:0,unchanged:0,changed:0,reordered:0,too_large:0,failed:0,bytes:0,skipped_budget:0,last_modified:{},issues:{}};
+  const stats={checked:0,retried:0,profiled:0,unchanged:0,changed:0,reordered:0,too_large:0,failed:0,bytes:0,skipped_budget:0,last_modified:{},issues:{}};
   // each lane takes the next host with free capacity: at most PER_HOST lanes per host, MAX_LANES in total
   const active=new Map();
   const nextItem=()=>{for(const q of queues){const h=q.length&&hostOf(q[0].url);if(h&&(active.get(h)||0)<PER_HOST)return q.shift()}return null};
@@ -187,9 +188,11 @@ async function main(){
       if(Date.now()>deadline){stats.skipped_budget=queues.reduce((s,q)=>s+q.length,0);return}
       const w=nextItem();if(!w){if(queues.some(q=>q.length)){await new Promise(r=>setTimeout(r,250));continue}return}
       const h=hostOf(w.url);active.set(h,(active.get(h)||0)+1);
-      const r=await checkFile(w,{previous:previous.get(w.url),maxBytes});
+      let r=await checkFile(w,{previous:previous.get(w.url),maxBytes});
+      // a connection that never opened or a DNS hiccup says more about the runner's network than about the publisher: try once more
+      if(TRANSIENT.test(r.error||"")){await new Promise(z=>setTimeout(z,RETRY_DELAY_MS));r=await checkFile(w,{previous:previous.get(w.url),maxBytes});if(!r.error)r.retried=true}
       active.set(h,active.get(h)-1);
-      out.write(JSON.stringify(r)+"\n");stats.checked++;
+      out.write(JSON.stringify(r)+"\n");stats.checked++;if(r.retried)stats.retried++;
       if(r.too_large)stats.too_large++;else if(r.error)stats.failed++;else{stats.profiled++;stats.bytes+=r.bytes||0;if(r.unchanged)stats.unchanged++;if(r.content_changed_at===r.checkedAt)stats.changed++;if(r.row_order_unstable)stats.reordered++;
         const hc=r.header_check;stats.last_modified[hc.last_modified]=(stats.last_modified[hc.last_modified]||0)+1;for(const i of hc.issues)stats.issues[i]=(stats.issues[i]||0)+1}
       if(stats.checked%200===0)console.error("[full-check] "+stats.checked+"/"+work.length+" "+JSON.stringify(stats));
