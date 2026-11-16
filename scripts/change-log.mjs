@@ -9,6 +9,15 @@ import { fileURLToPath } from "node:url";
 const fmt=n=>n==null?"":Number(n).toLocaleString("en-GB");
 const signed=n=>n==null?"":(n>0?"+":n<0?"−":"±")+fmt(Math.abs(n));
 
+const hostOf=u=>{try{return new URL(u).host}catch{return"?"}};
+/** Hosts that refused the checker this run (scripts/full-check.mjs createHostGate): files not read and the refusal seen. */
+export function refusedHosts(records){
+  const hosts=new Set(records.filter(r=>r.error==="host_refused").map(r=>hostOf(r.url))),out={};
+  for(const r of records){const h=hostOf(r.url);if(!hosts.has(h)||!r.error)continue;
+    const x=out[h]||(out[h]={files:0,refusal:null});x.files++;x.refusal=x.refusal||r.refused_with||r.error}
+  return out;
+}
+
 /** The run's change log from merged full-check records. titles: Map id -> {title, publisher}. */
 export function buildChangeLog(records,{since,titles=new Map(),date=new Date().toISOString()}={}){
   const t0=Date.parse(since);
@@ -25,7 +34,8 @@ export function buildChangeLog(records,{since,titles=new Map(),date=new Date().t
     run:{date:date.slice(0,10),since,files_checked:thisRun.length,files_profiled:profiled.length,files_compared:profiled.filter(r=>r.header_check?.compared_with).length,
       files_changed:changed.length,row_order_unstable:profiled.filter(r=>r.row_order_unstable).length,
       last_modified:count(profiled,r=>r.header_check?.last_modified),header_issues:count(profiled,r=>r.header_check?.issues||[]),
-      failed:thisRun.filter(r=>r.error).length,too_large:thisRun.filter(r=>r.too_large).length},
+      failed:thisRun.filter(r=>r.error).length,too_large:thisRun.filter(r=>r.too_large).length,
+      refused_hosts:refusedHosts(thisRun)},
     changed,
   };
 }
@@ -56,6 +66,7 @@ export function renderReadme(log,history){
     "- Same rows, different order on each download: "+fmt(r.row_order_unstable),
     "- Last-Modified header: "+Object.entries(r.last_modified).map(([k,v])=>k.replace("_"," ")+" "+fmt(v)).join(", "),
     ...(Object.keys(r.header_issues).length?["- Change headers that contradict the content: "+Object.entries(r.header_issues).map(([k,v])=>"`"+k+"` "+fmt(v)).join(", ")]:[]),
+    ...(Object.keys(r.refused_hosts||{}).length?["- Not checked, because the host refuses automated requests from cloud servers: "+Object.entries(r.refused_hosts).map(([h,v])=>h+" ("+fmt(v.files)+" files, "+v.refusal+")").join(", ")]:[]),
     "",
   ];
   if(log.changed.length){
