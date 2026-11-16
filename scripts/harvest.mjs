@@ -335,7 +335,16 @@ const jobs=[
   ["geo-be",()=>harvestCsw("geo-be","geo.be / National Geographic Institute","https://publish.geo.be/geonetwork/srv/eng/csw",10)]
 ];
 const partialSources=[];   // parts of a source that kept earlier records (an OGC service that did not answer)
+// What a source that does not answer falls back to. On a deploy that is the LIVE catalogue (PREVIOUS_CATALOGUE_URL): the committed
+// snapshot is older and may lack whole sources (DOV, until it is next committed), so falling back to it would drop them from the site.
 let previous={items:[],sources:{}};try{previous=JSON.parse(fs.readFileSync(outPath,"utf8"))}catch{}
+if(process.env.PREVIOUS_CATALOGUE_URL){
+  try{
+    const live=await getJsonRetry(process.env.PREVIOUS_CATALOGUE_URL,{ua,timeouts:[30000,60000],tries:2});
+    if(!Array.isArray(live?.items)||!live.items.length)throw new Error("no items in it");
+    previous=live;console.log("[harvest] fallback records: the live catalogue ("+live.items.length+" items, "+(live.generatedAt||"undated")+")");
+  }catch(e){console.warn("[harvest] live catalogue not readable ("+e.message+"); fallback records from the committed snapshot")}
+}
 const items=[],sources={};
 for(const [name,fn] of jobs){
   try{const rows=await fn();if(!rows.length)throw new Error("source returned 0 rows");items.push(...rows);sources[name]={ok:true,count:rows.length,structured:rows.filter(x=>x.enrichment?.level==="structured").length,previews:rows.filter(x=>x.previewRows?.length).length,harvestedAt:now,attemptedAt:now};console.log(`[harvest] ${name}: ${rows.length} (${sources[name].structured} structured, ${sources[name].previews} previews)`)}
