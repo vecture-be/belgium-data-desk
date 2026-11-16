@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { buildCard } from "./dataset-card.mjs";
 import { pickTabularDistribution } from "./tabular-profile.mjs";
 import { idShard } from "../mcp-server.mjs";
+import { buildScorecards } from "./health.mjs";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),".."),pub=path.join(root,"public"),out=path.join(pub,"cards");
 const arg=(name,def)=>{const i=process.argv.indexOf("--"+name);return path.resolve(i>=0?process.argv[i+1]:def)};
@@ -73,7 +74,7 @@ export function mergeFull(probe,full){
 function main(){
   const full=loadProfiles(fullFile),current=mergeFull(loadProfiles(probeFile),full);
   if(!current.size){console.log("[cards] no column profiles in "+probeFile+" or "+fullFile+"; nothing to build");return}
-  const cards=buildCards(loadRecords(),current,loadProfiles(prevFile));
+  const records=loadRecords(),cards=buildCards(records,current,loadProfiles(prevFile));
   fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(out,{recursive:true});
   const shards=new Map();
   for(const [id,card] of cards){const k=idShard(id);if(!shards.has(k))shards.set(k,{});shards.get(k)[id]=card}
@@ -88,7 +89,15 @@ function main(){
     catalogue_date_not_in_file:count(c=>c.freshness.metadata_date_not_reflected_in_file),
     row_order_unstable:count(c=>c.quality.row_order_unstable),
     with_change_seen:count(c=>c.last_change_seen),
-    with_time_coverage:count(c=>c.coverage.time),join_keys:keyKinds,schema_changed:count(c=>c.schema.changed_since)};
+    with_time_coverage:count(c=>c.coverage.time),join_keys:keyKinds,schema_changed:count(c=>c.schema.changed_since),
+    data_stopped:count(c=>c.freshness.data_stopped)};
+  // publisher scorecards from every full-check result, readable or not (scripts/health.mjs)
+  if(fs.existsSync(fullFile)){
+    const checks=fs.readFileSync(fullFile,"utf8").split("\n").flatMap(l=>{try{return[JSON.parse(l)]}catch{return[]}});
+    const sc=buildScorecards(checks,records);
+    fs.writeFileSync(path.join(out,"publishers.json"),JSON.stringify(sc));
+    summary.publisher_health={...sc.totals,publishers:sc.publishers.length,details:"/cards/publishers.json"};
+  }
   fs.writeFileSync(path.join(out,"summary.json"),JSON.stringify(summary));
   console.log("[cards] "+all.length+" dataset cards in "+shards.size+" shards; "+JSON.stringify(summary.freshness)+"; keys "+JSON.stringify(keyKinds)+"; schema changed "+summary.schema_changed);
 }

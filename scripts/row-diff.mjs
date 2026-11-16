@@ -60,7 +60,15 @@ export function describeChange(prev,cur,diff=null){
     if(c.to!=null&&p.to!=null&&(c.to!==p.to||c.from!==p.from))coverage.push({column:name,before:[p.from,p.to],after:[c.from,c.to]});
     else if((c.type==="number"||c.type==="integer")&&p.min!=null&&(c.min!==p.min||c.max!==p.max))ranges.push({column:name,before:[p.min,p.max],after:[c.min,c.max]});
   }
+  const before=prev.profile?.rows??null,after=cur.profile?.rows??null;
+  // changes that usually mean something broke rather than new data arrived
+  const alerts=[];
+  if(before>0&&after===0)alerts.push("emptied");
+  else if(before>=20&&after!=null&&after<before*0.7)alerts.push("rows_dropped");
+  if(removed.length)alerts.push("columns_removed");
+  if(coverage.some(v=>v.after[1]<v.before[1]))alerts.push("coverage_shrank");
   return{
+    ...(alerts.length?{alerts}:{}),
     since:prev.checkedAt,
     rows:{before:prev.profile?.rows??null,after:cur.profile?.rows??null},
     ...(diff?{distinct_rows_added:diff.added,distinct_rows_removed:diff.removed}:{}),

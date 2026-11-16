@@ -66,6 +66,51 @@ Each full-file check also says *what* changed since the previous check, without 
 
 Numbers are parsed the Belgian way where it is unambiguous (`1.234,5` is one thousand two hundred and thirty-four and a half); dates accept ISO, `YYYY-MM`, and `DD/MM/YYYY`, `DD-MM-YYYY` or `DD.MM.YYYY`.
 
+## Data health: alerts and publisher scorecards
+
+`scripts/health.mjs` and `scripts/change-log.mjs` turn the full-file check into a health report.
+
+**Stopped updating** (`freshness.data_stopped`, with `latest_data_age_days`) is judged from the data, never the metadata, and only when all of these hold:
+
+- the whole file was read;
+- the dataset declares a cadence faster than yearly (yearly figures are routinely published months later);
+- the latest date in its reporting-period column lies more than three cycles back;
+- for a year-only column, more than a year back.
+
+Columns that date things in a register (`Begindatum`, `datum_plaatsing`, `DATUM INSCHRIJVING`, `attrib_start`, `date_dernier_encodage` and similar) never count: a road-sign inventory with an old placement date is not a stopped feed.
+
+**Alerts** (`changes/<date>.json` → `alerts`, and the alerts feed):
+
+| Alert | When |
+| --- | --- |
+| `emptied` | The file had rows and now has none. |
+| `rows_dropped` | At least 20 rows before, and fewer than 70 % of them now. |
+| `columns_removed` | A column disappeared. |
+| `coverage_shrank` | A dated column now ends earlier than before. |
+| `became_unreadable` | Readable at the previous check, now gone (404/410), a web page instead of a table, or empty. |
+| `stopped_updating` | Newly matches the rule above. A dataset already listed in the previous log does not alert again. |
+
+**Failure classes** (`classify`):
+
+| Class | Meaning |
+| --- | --- |
+| `gone`, `not_a_table`, `empty` | The publisher's problems: these count against it. |
+| `cloud_refused` | The host refuses automated requests from cloud servers. Not counted. |
+| `access_denied` | 401 or 403. Not counted, since some hosts send it to cloud addresses. |
+| `unreachable` | Timeouts, server errors, DNS trouble. Not counted. |
+| `too_large` | Over 100 MB. Not counted. |
+
+A file that was readable before and fails this week for a reason that is not counted keeps its earlier profile.
+
+**Scorecards**:
+
+- `readable_pct` is readable files out of files that could be judged (readable + gone + web page + empty). It is `null` when fewer than three could be judged, so a publisher whose host refuses our servers gets no score rather than a bad one.
+- Published as `public/cards/publishers.json` (the totals also appear in `catalogue_overview` as `dataset_cards.publisher_health`) and, by the weekly run, as `publishers.md` / `publishers.json` on the `data-changes` branch.
+
+**Feeds** (Atom, last twelve checks) on the `data-changes` branch: `feeds/changes.xml` (changes and alerts), `feeds/alerts.xml`, and `feeds/publishers/<publisher>.xml`.
+
+Nothing here contacts a publisher. Reports to publishers stay a separate, deliberate step.
+
 ## Writing about a dataset from its card
 
 The card is meant to replace screenshot trivia with statements a reader can use:
