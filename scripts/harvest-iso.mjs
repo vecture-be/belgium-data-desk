@@ -2,6 +2,8 @@
 // The Dublin Core "summary" element set carries no links, licence, contact, extent or update frequency, so Metawal and geo.be records
 // harvested that way were all "metadata only". The full ISO record has them.
 const decode=s=>String(s||"").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'");
+import { canonicalPublisher, cleanPeriod, validUpdated } from "./metadata-clean.mjs";
+import { canonicalFormat } from "./national-dcat.mjs";
 const clean=s=>String(s??"").replace(/\s+/g," ").trim();
 const text=s=>clean(decode(String(s||"").replace(/<[^>]+>/g," ")));
 const uniq=a=>[...new Set((a||[]).filter(Boolean).map(clean))];
@@ -36,7 +38,8 @@ export function protocolFormat(protocol,url,name=""){
   if(ext)return{csv:"CSV",tsv:"TSV",json:"JSON",geojson:"GeoJSON",xlsx:"XLSX",xls:"XLS",zip:"ZIP",pdf:"PDF",gpkg:"GeoPackage",shp:"Shapefile",gml:"GML",kml:"KML",tif:"GEOTIFF",tiff:"GEOTIFF",xml:"XML"}[ext[1]];
   if(/download/.test(p))return"download";
   if(/link|www:link|http/.test(p))return"HTML";
-  return"URL";
+  // a link with no data protocol or file extension is a web page (it made WMS-only records look like downloadable datasets)
+  return"HTML";
 }
 
 /** The smallest Belgian region whose extent holds the bounding box [w,s,e,n] (0.15° slack for rounded publisher boxes), else "". */
@@ -88,13 +91,24 @@ export function parseIsoRecord(r,{slug,provider,recordPage=null}){
   const parties=[...blocks(ident,"pointOfContact"),...blocks(r,"contact")];
   const emails=uniq(parties.flatMap(p=>blocks(p,"electronicMailAddress").map(text))).filter(e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
   const org=parties.map(p=>firstText(p,"organisationName")).find(Boolean)||"";
+  // Who publishes it: the owner, then the custodian…, never the catalogue that lists it or its helpdesk (1,954 records said "Metawal").
+  const roleOf=p=>attr(p,"CI_RoleCode","codeListValue").toLowerCase();
+  const orgName=p=>mainText(p,"organisationName");
+  const allParties=[...blocks(ident,"CI_ResponsibleParty"),...blocks(r,"CI_ResponsibleParty")];
+  const publisherParty=["owner","custodian","publisher","originator","resourceprovider","pointofcontact","author","distributor"]
+    .map(role=>allParties.find(p=>roleOf(p)===role&&orgName(p)&&!/helpdesk|help desk/i.test(orgName(p)))).find(Boolean);
+  let publisher=publisherParty?canonicalPublisher(orgName(publisherParty)):"";
+  // "Service public de Wallonie" as owner says less than the directorate-general a custodian names
+  if(publisher==="Service public de Wallonie (SPW)"){
+    const dg=allParties.map(p=>canonicalPublisher(orgName(p))).find(n=>/^SPW[ -]/.test(n));if(dg)publisher=dg;
+  }
   const online=blocks(r,"CI_OnlineResource").map(o=>{
     const url=firstText(o,"URL"),protocol=firstText(o,"protocol")||attr(o,"Anchor","xlink:href"),name=firstText(o,"name");
     return url&&/^https?:\/\//i.test(url)?{url,protocol,name}:null;
   }).filter(Boolean);
   const links=[...new Map(online.map(o=>[o.url,o])).values()];
   const distributions=links.slice(0,10).map(o=>({name:o.name||o.protocol||"link",format:protocolFormat(o.protocol,o.url,o.name),url:o.url}));
-  const formats=uniq([...blocks(r,"MD_Format").map(f=>firstText(f,"name")),...distributions.map(d=>d.format).filter(f=>!["URL","download"].includes(f))]).slice(0,12);
+  const formats=uniq([...blocks(r,"MD_Format").map(f=>canonicalFormat(firstText(f,"name"))).filter(f=>f&&f!=="Other"),...distributions.map(d=>d.format).filter(f=>!["URL","download","HTML"].includes(f))]).slice(0,12);
   const num=n=>{const v=Number(firstText(r,n));return Number.isFinite(v)?v:null};
   const bbox=[num("westBoundLongitude"),num("southBoundLatitude"),num("eastBoundLongitude"),num("northBoundLatitude")];
   const begin=firstText(r,"beginPosition").slice(0,10),end=firstText(r,"endPosition").slice(0,10);
@@ -105,13 +119,14 @@ export function parseIsoRecord(r,{slug,provider,recordPage=null}){
   const crs=uniq(blocks(first(r,"referenceSystemInfo"),"code").map(text).map(c=>{const m=c.match(/EPSG\/?[^0-9]*(\d{4,5})|^(\d{4,5})$/i);return m?"EPSG:"+(m[1]||m[2]):""})).slice(0,4);
   const resM=Number(firstText(first(ident,"spatialResolution"),"Distance"));
   const dateStamp=(firstText(first(r,"dateStamp"),"DateTime")||firstText(first(r,"dateStamp"),"Date")||firstText(r,"dateStamp")).slice(0,10);
-  const updatedAt=citationDate(ident,"revision")||citationDate(ident,"publication")||citationDate(ident,"creation")||dateStamp||null;
+  const updatedAt=validUpdated(citationDate(ident,"revision"))||validUpdated(citationDate(ident,"publication"))||validUpdated(citationDate(ident,"creation"))||validUpdated(dateStamp)||null;
+  const period=cleanPeriod(begin||end?{start:begin||null,end:end||null}:null);
   return{
-    id:"harvest:"+slug+":"+id,provider,platform:"OGC CSW / GeoNetwork (ISO 19139)",datasetId:id,title:clean(title),
-    description:mainText(ident,"abstract").slice(0,1200),kind:level,formats,updatedAt,catalogueModifiedAt:dateStamp||null,
+    id:"harvest:"+slug+":"+id,provider:publisher||provider,...(publisher&&publisher!==provider?{aggregator:provider}:{}),platform:"OGC CSW / GeoNetwork (ISO 19139)",datasetId:id,title:clean(title),
+    description:mainText(ident,"abstract").slice(0,1200),kind:level,formats,updatedAt,catalogueModifiedAt:validUpdated(dateStamp)||null,
     recordCount:null,fields:[],previewRows:[],schemaOrigin:"none",sampleOrigin:"none",
-    extent:{spatial:bbox.every(v=>v!=null)?bbox:null,temporal:begin||end?{start:begin||null,end:end||null}:null},
-    temporal:begin||end?{start:begin||null,end:end||null}:null,
+    extent:{spatial:bbox.every(v=>v!=null)?bbox:null,temporal:period},
+    temporal:period,
     geoCoverage:bboxRegion(bbox),
     frequency:ISO_FREQUENCY[freqCode.replace(/[^a-z]/g,"")]||"",
     languages:langs,crs,...(resM>0?{spatialResolutionM:resM}:{}),

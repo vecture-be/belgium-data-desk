@@ -10,16 +10,28 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { mergeDiscoveredAssets } from "../public/dataset-discovery-v1.mjs";
 import { SCOPES, enviOverride, scopeCounts, scopeOf, TOPIC_LABELS, topicOf } from "../public/dataset-taxonomy-v1.mjs";
+import { canonicalPublisher, cityGeography, cleanFrequency, cleanPeriod, cutText, htmlToText, httpsLink, unifyPublisherNames, validUpdated } from "./metadata-clean.mjs";
 import { normalizeLicense } from "../public/dataset-licence-v1.mjs";
 import { AUTHORITIES } from "../public/dataset-authority-v1.mjs";
 import { DETAIL_CHUNK, DOC_CHUNK, idShard, prefixKey, tokenShard, tokenize } from "../mcp-server.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url)),pub=path.resolve(__dirname,"../public");
 const clean=s=>String(s??"").replace(/\s+/g," ").trim();
-const stripHtml=s=>{let t=String(s??"");for(let i=0;i<2;i++)t=t.replace(/&nbsp;/g," ").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,"&").replace(/<[^>]*>/g," ");return clean(t);};
 const relayIdFor=url=>"f_"+createHash("sha256").update(url).digest("hex").slice(0,32);
 /** Some catalogues declare a format as a vocabulary URI; show the last path segment. */
-const formatLabel=f=>{const s=clean(f);return /^https?:\/\//i.test(s)?s.split(/[/#]/).filter(Boolean).pop()||s:s};
+// One label per format: ISO and DCAT records spell them "ESRI Shapefile (.shp)", "CSV CSV", "TIFF (.tif, .tiff)", "application/xml", "x c"…
+const FORMAT_FIX=[
+  [/shapefile|\.shp\b/i,"Shapefile"],[/geopackage|\.gpkg\b/i,"GeoPackage"],[/file ?geodatabase|\bfgdb\b|\.gdb\b/i,"File Geodatabase"],
+  [/^geo ?tiff?\b|^tiff?\b|\(\.tiff?/i,"GEOTIFF"],[/^gml\b|\(\.gml\)/i,"GML"],[/comma.separated|^csv\b/i,"CSV"],[/^(application|text)\/xml$|^xml\b/i,"XML"],
+  [/octet.?stream/i,"BIN"],[/^x[ -](c|tcl|python|r)$|^text\/x-/i,"Source code"],[/^(application\/)?zip\b/i,"ZIP"],[/^(application\/)?pdf\b/i,"PDF"],
+  [/^geo ?json\b/i,"GeoJSON"],[/^(application\/)?json\b/i,"JSON"],[/^kml\b|\.kmz?\b/i,"KML"],[/^png\b|image\/png/i,"PNG"],[/^txt\b|text\/plain/i,"TXT"]
+];
+export function formatLabel(f){
+  let s=clean(f);if(/^https?:\/\//i.test(s))s=s.split(/[/#]/).filter(Boolean).pop()||s;
+  s=s.replace(/^(.+?)\s+\1$/i,"$1");   // "TIFF TIFF"
+  for(const [re,label] of FORMAT_FIX)if(re.test(s))return label;
+  return s;
+}
 
 // The same de-duplication the browser applies, so the MCP index and the UI agree on what a "dataset" is.
 export function mergeItems(national,harvested){
@@ -64,10 +76,13 @@ const rankOf=it=>(5-SCOPE_ORDER[scopeOf(it)])*10000+(it.curated?5000:0)+(TIER_RA
 export function toDocs(it,relay){
   // One label per licence: harvested records keep the publisher's spelling ("Modellicentie Gratis Hergebruik", "CC0 1.0"); show the canonical one.
   const norm=normalizeLicense(it.licenseUri||it.license),lic=norm.raw?norm:{label:"",family:it.licenseFamily||"unknown"};
-  const desc=stripHtml(it.description),formats=(it.formats||[]).map(formatLabel).filter(Boolean).slice(0,5);
-  const period=periodYears(it.temporal);
-  const light={id:it.id,t:clean(it.title),p:clean(it.provider),k:it.dataKind||"dataset",tp:(!it.curated&&it.topic==="environment"&&enviOverride(it))||it.topic||topicOf(it),f:formats,l:lic.label||"",lf:lic.family||"unknown",
-    u:(it.dataProcessedAt||it.updatedAt||"").slice(0,10),tier:it.tier||"",sid:it.seriesId||"",s:desc.slice(0,160),w:it.officialUrl||"",...(it.curated?{c:1}:{}),
+  const desc=htmlToText(it.description),formats=[...new Set((it.formats||[]).map(formatLabel).filter(Boolean))].slice(0,5);
+  const tc=cleanPeriod(it.temporal),period=periodYears(tc);
+  // a licence written out as a paragraph (geo.be, Metawal: ~220 records) is named as the publisher's own terms; the text stays in the detail
+  const termsText=lic.id==="other"&&lic.raw&&!/^https?:\/\//i.test(lic.raw)&&lic.raw.length>60;
+  const licLabel=termsText?"Publisher's own terms (see source)":lic.label||"";
+  const light={id:it.id,t:clean(it.title),p:canonicalPublisher(it.provider),k:it.dataKind||"dataset",tp:(!it.curated&&it.topic==="environment"&&enviOverride(it))||it.topic||topicOf(it),f:formats,l:licLabel,lf:lic.family||"unknown",
+    u:validUpdated(it.dataProcessedAt)||validUpdated(it.updatedAt),tier:it.tier||"",sid:it.seriesId||"",s:cutText(desc,160),w:httpsLink(it.officialUrl||""),...(it.curated?{c:1}:{}),
     // search filters: years the data covers (declared), languages, and access other than public
     ...(period?{y:period}:{}),...(it.languages?.length?{lg:it.languages.slice(0,4)}:{}),...(it.accessRights&&it.accessRights!=="PUBLIC"?{ar:it.accessRights}:{})};
   const seen=new Set();
@@ -75,10 +90,11 @@ export function toDocs(it,relay){
     const r=relayIdFor(d.url);
     return{f:formatLabel(d.format||""),u:d.url,...(d.byteSize?{s:d.byteSize}:{}),...(relay&&relay[r]?{r}:{})};
   });
-  const detail={fq:it.frequency||"",g:it.geoCoverage||"",url:it.officialUrl||"",ce:it.contactEmail||"",cu:it.contactUrl||"",d:desc.slice(0,600),
+  const detail={fq:cleanFrequency(it.frequency),g:cityGeography(it.provider,it.geoCoverage),url:httpsLink(it.officialUrl||""),ce:it.contactEmail||"",cu:it.contactUrl||"",d:cutText(desc,600),
+    ...(termsText?{lt:cutText(lic.raw,400)}:{}),
     cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.licenseFrom?{lsrc:it.licenseFrom}:{}),
-    ...(it.temporal?{tc:{s:it.temporal.start||null,e:it.temporal.end||null}}:{}),...(it.languages?.length?{lang:it.languages}:{}),
-    ...(it.accessRights?{ar:it.accessRights}:{}),...(it.provenance?{prov:stripHtml(it.provenance).slice(0,400)}:{}),...(it.crs?.length?{crs:it.crs}:{}),
+    ...(tc?{tc:{s:tc.start||null,e:tc.end||null,...(tc.plannedEnd?{pe:tc.plannedEnd}:{})}}:{}),...(it.languages?.length?{lang:it.languages}:{}),
+    ...(it.accessRights?{ar:it.accessRights}:{}),...(it.provenance?{prov:cutText(htmlToText(it.provenance),400)}:{}),...(it.crs?.length?{crs:it.crs}:{}),
     ...(it.spatialResolutionM?{res:it.spatialResolutionM}:{}),...(it.hvdCategories?.length?{hvd:it.hvdCategories}:{}),...(it.standards?.length?{std:it.standards.slice(0,4)}:{}),
     ...(it.contactName?{cn:clean(it.contactName).slice(0,120)}:{}),...(it.publisherInferredFrom?{pinf:it.publisherInferredFrom}:{}),
     ...(it.issuedAt?{iss:it.issuedAt}:{}),...(it.probe?{pr:it.probe}:{}),...(it.streamCheck?{sc:it.streamCheck}:{}),files};
@@ -162,6 +178,9 @@ async function main(){
     import("../public/dataset-atlas-completeness-v3.mjs"),import("../public/dataset-atlas-completeness-v4.mjs"),import("../public/data.mjs"),import("../public/deep-data.mjs")]);
   const curated=curatedToItems([...ASSETS,...EXTRA_ATLAS_ASSETS,...COMPLETENESS_ASSETS,...COMPLETENESS_ASSETS_V2,...COMPLETENESS_ASSETS_V3,...COMPLETENESS_ASSETS_V4],[...SOURCES,...EXTRA_SOURCES]);
   items.push(...curated);
+  // one spelling per publisher across all sources (national, portals, curated)
+  for(const it of items)it.provider=canonicalPublisher(it.provider);
+  unifyPublisherNames(items);
   const {RELAY_INDEX}=await import("../relay-index.mjs");
   const built=buildIndex(items,{relay:RELAY_INDEX});
   const counts=scopeCounts(items),topics={};

@@ -167,8 +167,8 @@ for(const a of AUTHORITIES){assert.ok(a.ids.length&&a.why&&a.need&&a.when.length
   const vcall=mcpCall(venv,{previewFile:makePreviewFile({},{index,fetchImpl})});
   const gv=(await vcall("get_dataset",{id:"national:pv"})).structuredContent;
   assert.equal(gv.preview_available,true);
-  // an unresolved blank-node frequency is "not stated", and empty fields say why they are empty
-  assert.equal(gv.update_cycle,"not declared by the publisher");assert.ok(gv.not_declared_by_publisher.fields.includes("licence"));assert.equal(gv.licence.label,"not declared by the publisher");assert.ok(gv.analysis.download_via_relay.startsWith("https://desk.example/api/dataset-file/f_"));assert.deepEqual(gv.analysis.hosts_to_allow,["statbel.example","desk.example"]);assert.match(gv.update_cycle_note,/cannot be resolved/);
+  // an unresolved blank-node frequency is "not declared", and empty fields say why they are empty
+  assert.equal(gv.update_cycle,"not declared by the publisher");assert.ok(gv.not_declared_by_publisher.fields.includes("licence"));assert.equal(gv.licence.label,"not declared by the publisher");assert.ok(gv.analysis.download_via_relay.startsWith("https://desk.example/api/dataset-file/f_"));assert.deepEqual(gv.analysis.hosts_to_allow,["statbel.example","desk.example"]);assert.equal(gv.update_cycle_note,undefined,"a blank-node frequency id is dropped at index build (scripts/metadata-clean.mjs)");
   assert.match(gv.field_notes.columns,/preview_dataset reads the real columns/);assert.match(gv.field_notes.link_check,/not a sign of a broken link/);assert.match(gv.field_notes.updated,/not necessarily when the data was refreshed/);
   const p=(await vcall("preview_dataset",{id:"national:pv",rows:2})).structuredContent;
   assert.equal(p.delimiter,"semicolon");assert.equal(p.decimal_separator,"comma");assert.equal(p.whole_file_read,true);
