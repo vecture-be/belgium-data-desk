@@ -94,7 +94,10 @@ function geographyFor(a){
   if(/brussels|bruxelles|brussel/.test(h))return"Brussels";
   if(/belgium|belgie|belgique/.test(h))return"Belgium";
   if(/province/.test(h))return"province";
-  return a?.space&&!/see publisher|published spatial/i.test(a.space)?a.space:"not clearly stated";
+  if(a?.space&&!/see publisher|published spatial/i.test(a.space))return a.space;
+  // a city's own portal publishes data about that city
+  const city=String(a?.provider||"").match(/^(?:City of|Ville de|Stad|Gemeente|Commune de)\s+([^-–(]+?)\s*(?:[-–(].*)?$/i);
+  return city?city[1]:"not clearly stated";
 }
 function grainFor(a,hints){
   const g=String(a?.grain||"").trim();

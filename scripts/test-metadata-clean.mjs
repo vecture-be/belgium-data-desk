@@ -86,3 +86,15 @@ assert.equal(s2.length,0,"five different census tables are not one series");
 const s3=detectSeries(["januari","februari","maart","april","mei"].map((m,i)=>mk("Vlaamse Hydrografische Atlas - Waterlopen, "+m+" 2023",i)));
 assert.equal(s3.length,1);assert.equal(s3[0].title,"Vlaamse Hydrografische Atlas - Waterlopen");
 console.log("round 3 tests passed");
+// a finished period is complete, not stale; a city's portal covers the city; "2013-now" runs to today
+import { finishedPeriod, freshness } from "../public/dataset-trust-v1.mjs";
+import { inferDatasetBrief } from "../public/dataset-discovery-intelligence-v1.mjs";
+assert.equal(finishedPeriod({title:"Fietstelpaal Groendreef 2020 Gent"}),"2020");
+assert.equal(finishedPeriod({title:"Air quality 2013-now"}),null);assert.equal(finishedPeriod({title:"Monthly data"}),null);
+assert.equal(finishedPeriod({period:{start:"2015-01-01",end:"2019-12-31"}}),"2015–2019");assert.equal(finishedPeriod({period:{start:"2015-01-01",end:null}}),null);
+assert.equal(freshness({title:"Census 2021 - Bevolking",updatedAt:"2022-01-01"}).state,"static");
+assert.equal(freshness({title:"Census 2021",frequency:"ANNUAL",updatedAt:"2022-01-01"}).state,"stale","a declared cycle still counts");
+assert.equal(inferDatasetBrief({title:"Fietstelpaal Groendreef",provider:"City of Ghent"}).geography,"Ghent");
+assert.equal(inferDatasetBrief({title:"Air Quality download service, 2013-now"}).time,"2013–"+Y);
+assert.equal(inferDatasetBrief({title:"Consumer price index",description:"CPI base 1920, health index 1994"}).time,"not clearly stated","description years are not coverage");
+console.log("round 3b tests passed");

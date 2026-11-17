@@ -3,13 +3,25 @@ import { LICENSE_FAMILY_NOTE, normalizeLicense } from "./dataset-licence-v1.mjs"
 /* ---------- freshness ---------- */
 const DAY=86400000;
 const FREQ_DAYS={"1MIN":1,"5MIN":1,"15MIN":1,"HOURLY":2,CONT:2,REAL_TIME:2,DAILY:3,WEEKLY:10,BIWEEKLY:20,MONTHLY:45,BIMONTHLY:75,QUARTERLY:120,ANNUAL_2:240,ANNUAL_3:300,ANNUAL:430,BIENNIAL:800,TRIENNIAL:1200,QUADRENNIAL:1600,QUINQUENNIAL:2000,DECENNIAL:3800};
+/** "2020" or "2015–2019" when the record covers a period that ended before this year (declared period, else one year in the title). */
+export function finishedPeriod(item,now=Date.now()){
+  const thisYear=new Date(now).getUTCFullYear(),yr=v=>{const m=String(v||"").match(/^(\d{4})/);return m?Number(m[1]):null};
+  const p=item?.period||item?.temporal;
+  if(p&&(p.start||p.end)){const s=yr(p.start),e=yr(p.end);return e&&e<thisYear?(s&&s<e?s+"–"+e:String(e)):null}
+  const ys=[...new Set((String(item?.title||"").match(/\b(?:19|20)\d{2}\b/g)||[]).map(Number))];
+  if(ys.length===1&&ys[0]<thisYear&&!/\b(?:19|20)\d{2}\s*[-–]\s*(now|present|heden|nu)\b|\b(since|sinds|vanaf|depuis)\b/i.test(item.title))return String(ys[0]);
+  return null;
+}
 export function freshness(item,now=Date.now()){
   const modified=Date.parse(item.dataProcessedAt||item.updatedAt||"");
   const age=Number.isFinite(modified)?Math.max(0,Math.floor((now-modified)/DAY)):null;
   const freq=String(item.frequency||"").toUpperCase();
   if(freq==="NEVER"||freq==="NOT_PLANNED")return{state:"static",ageDays:age,note:"Publisher says it will not be updated."};
-  if(age==null)return{state:"unknown",ageDays:null,note:"No modification date in the catalogue record."};
   const expected=FREQ_DAYS[freq];
+  // A file about a finished period ("… 2020", period ending last year) is complete, not stale: an old date is expected.
+  const done=finishedPeriod(item,now);
+  if(!expected&&done)return{state:"static",ageDays:age,note:"Covers "+done+", a finished period, so no updates are expected."};
+  if(age==null)return{state:"unknown",ageDays:null,note:"No modification date in the catalogue record."};
   if(expected)return age<=expected?{state:"current",ageDays:age,note:"Updated within its declared "+freq.toLowerCase().replace(/_/g," ")+" cycle (metadata date)."}:{state:"stale",ageDays:age,note:"Declared "+freq.toLowerCase().replace(/_/g," ")+", but the catalogue record last changed "+(age===0?"today.":age===1?"1 day ago.":age+" days ago.")};
   if(age>1095)return{state:"old",ageDays:age,note:"No update cycle declared; last modified over 3 years ago (metadata date)."};
   return{state:"dated",ageDays:age,note:"No update cycle stated. The catalogue record last changed "+(age===0?"today.":age===1?"1 day ago.":age+" days ago.")};
