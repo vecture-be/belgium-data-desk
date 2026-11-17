@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { asList, bboxRegion, odsTemporal, parseIsoRecord, protocolFormat } from "./harvest-iso.mjs";
 import { catalogueFromNodes, ingestNtLine, inferPublishers } from "./national-dcat.mjs";
 import { LICENSE_RULES, normalizeLicense } from "../public/dataset-licence-v1.mjs";
-import { periodYears, toDocs } from "./build-mcp-index.mjs";
+import { facetsOf, periodYears, toDocs } from "./build-mcp-index.mjs";
 import { backfillDocs } from "./build-cards.mjs";
 import { coversYear, inLanguage } from "../mcp-server.mjs";
 
@@ -136,4 +136,5 @@ assert.deepEqual(docs[0],{id:"a",y:[2019,2023],ym:1});
 assert.deepEqual(docs[1].y,[2001,2002],"a declared period is never overwritten");
 assert.ok(coversYear({y:[2019,2023]},2020));assert.ok(!coversYear({y:[2019,2023]},2024));assert.ok(!coversYear({},2020));assert.ok(coversYear({},null));
 assert.ok(inLanguage({lg:["nl","fr"]},"fr"));assert.ok(!inLanguage({},"fr"));
+assert.deepEqual(facetsOf([{y:[2019,2023],lg:["nl","fr"]},{},{lg:["de"]}]),{y:[[2019,2023],0,0],lg:[3,0,8]});
 console.log("metadata fill tests passed");

@@ -128,6 +128,12 @@ export function buildIndex(rawItems,{relay=null}={}){
   return{docs,details,postings,ids,ranges,ranked};
 }
 
+/**
+ * Per-record filter facets in index order (public/mcp/f.json): years covered ([first,last] or 0) and languages (bits nl=1 fr=2 en=4 de=8).
+ * One small file lets search filter every candidate before it picks which documents to read.
+ */
+export const LANG_BITS={nl:1,fr:2,en:4,de:8};
+export const facetsOf=docs=>({y:docs.map(d=>d.y||0),lg:docs.map(d=>(d.lg||[]).reduce((b,l)=>b|(LANG_BITS[l]||0),0))});
 function writeJson(file,obj){fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,JSON.stringify(obj))}
 
 export function writeIndex(outDir,{docs,details,postings,ids},meta){
@@ -140,6 +146,7 @@ export function writeIndex(outDir,{docs,details,postings,ids},meta){
   const idShards=new Map();
   for(const [id,i] of ids){const k=idShard(id);let s=idShards.get(k);if(!s)idShards.set(k,s={});s[id]=i}
   for(const [k,s] of idShards)writeJson(path.join(outDir,"i",k+".json"),s);
+  writeJson(path.join(outDir,"f.json"),facetsOf(docs));
   writeJson(path.join(outDir,"manifest.json"),meta);
   return{docChunks:Math.ceil(docs.length/DOC_CHUNK),tokenShards:shards.size,idShards:idShards.size};
 }
