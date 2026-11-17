@@ -32,7 +32,7 @@ export function trustChecks(item,{health={},now=Date.now()}={}){
   else checks.push({id:"access",label:"Link works",status:okLinks.length===probed.length?"pass":okLinks.length?"warn":"fail",detail:okLinks.length+" of "+probed.length+" checked file links answered."});
   if(probed.length)checks.push({id:"format",label:"Format is what it says",status:mism.length?"warn":"pass",detail:mism.length?mism.length+" file(s) did not look like their declared format.":"Downloaded bytes match the declared format."});
   checks.push({id:"contact",label:"Who to ask",status:item.contactEmail||item.contactUrl?"pass":"warn",detail:item.contactEmail||item.contactUrl?"Publisher contact is published.":"No publisher contact in the record."});
-  checks.push({id:"structure",label:"Columns known",status:(item.fields||[]).length?"pass":"unknown",detail:(item.fields||[]).length?(item.fields.length)+" publisher-declared fields.":"Not known until the file is profiled in your browser."});
+  checks.push({id:"structure",label:"Columns known",status:(item.fields||[]).length?"pass":"unknown",detail:(item.fields||[]).length?(item.fields.length)+" publisher-declared fields.":(item.distributions||[]).some(d=>/csv|tsv|json|xlsx?|parquet|geojson/i.test(Array.isArray(d)?d[1]:d?.format||""))?"Not declared; the browser profiler reads them from the file.":"Not declared, and there is no table file to read them from (map service, document or metadata only)."});
   return checks;
 }
 export function summarizeChecks(checks){
