@@ -103,6 +103,12 @@ jobs:
       - name: Relevance gate
         run: npm run eval
 
+      # Read-only comparison: show intentional or unexpected tool definition changes before deployment.
+      # Does not block deploy if the public service is briefly unreachable.
+      - name: Report changes against the deployed MCP contract
+        continue-on-error: true
+        run: node scripts/mcp-contract-drift.mjs --origin ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}
+
       - name: Search Console verification tag
         if: vars.GOOGLE_SITE_VERIFICATION != ''
         env:
@@ -123,6 +129,11 @@ jobs:
 
       - name: Smoke test every MCP tool
         run: node scripts/smoke-mcp.mjs ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}
+      # A successful tools/list is not enough: require every name, schema, description and annotation
+      # to match exactly what this revision declares. Retries allow for Cloudflare propagation.
+      - name: Verify deployed MCP tool declarations
+        run: node scripts/mcp-contract-drift.mjs --origin ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }} --strict --attempts 5
+
       - name: Golden facts (answers with officially known values)
         run: node scripts/check-golden.mjs ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}
       - name: Verify catalogue, relay, MCP and pages
