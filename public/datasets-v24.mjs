@@ -864,14 +864,16 @@ function renderJoinPlanLite(a,b){
   return '<article class="join-plan-lite"><p><b>Join on:</b> '+esc(key)+(cardinality!=="validate empirically"?' · '+esc(cardinality):"")+'</p>'+(confidence!=="heuristic"&&detail?'<p>'+esc(detail)+'</p>':"")+'</article>';
 }
 function joinCandidateMarkup(candidates){
-  return candidates.length?candidates.map(x=>'<button type="button" class="join-candidate" data-join-target="'+esc(x.asset.id)+'"><div><b>'+esc(x.asset.title)+'</b><small>'+esc(srcLabel(x.asset))+' · '+esc(inferDatasetBrief(x.asset).grain)+'</small></div></button>').join(""):'<div class="dk-empty">No obvious candidate from the current metadata. Search by dataset title, publisher, field or topic.</div>';
+  return candidates.length?candidates.map(x=>'<button type="button" class="join-candidate" data-join-target="'+esc(x.asset.id)+'"><div><b>'+esc(x.asset.title)+'</b><small>'+esc(srcLabel(x.asset))+(statedGrain(x.asset)?' · '+esc(inferDatasetBrief(x.asset).grain):"")+'</small></div></button>').join(""):'<div class="dk-empty">No obvious candidate from the current metadata. Search by dataset title, publisher, field or topic.</div>';
 }
 function renderJoinCandidates(a,query=""){return joinCandidateMarkup(topJoinCandidates(a,query))}
 function renderJoinFinder(a){
   const best=topJoinCandidates(a),initial=best[0]?.asset||null;
   state.joinTarget=state.joinTarget&&by(state.joinTarget)?state.joinTarget:(initial?.id||"");
   const target=by(state.joinTarget);
-  return '<section class="join-finder"><div class="section-cap"><h3>Join Finder</h3><span>shared identifiers</span></div><div class="join-finder-search"><input id="joinFinderSearch" type="search" placeholder="Find another dataset to combine with…"><button id="joinFinderClear" type="button">Best matches</button></div><div id="joinFinderResults" class="join-candidates">'+joinCandidateMarkup(best)+'</div><div id="joinFinderPlan">'+renderJoinPlanLite(a,target)+'</div><p class="dk-note">Based on shared identifier columns. Test the join in SQL before you rely on it.</p></section>';
+  // say plainly when no candidate shares a recognised code: then they are similar records, not a join
+  const keyed=best.some(x=>joinHint(a,x.asset)?.shared?.length);
+  return '<section class="join-finder"><div class="section-cap"><h3>Join Finder</h3><span>'+(keyed?"shared identifiers":"similar records · no shared code found")+'</span></div><div class="join-finder-search"><input id="joinFinderSearch" type="search" placeholder="Find another dataset to combine with…"><button id="joinFinderClear" type="button">Best matches</button></div><div id="joinFinderResults" class="join-candidates">'+joinCandidateMarkup(best)+'</div><div id="joinFinderPlan">'+renderJoinPlanLite(a,target)+'</div><p class="dk-note">'+(keyed?"Based on shared identifier columns. Test the join in SQL before you rely on it.":"None of these shares a recognised code (NIS, postcode, enterprise number…) with this dataset: they are similar records, not a ready join.")+'</p></section>';
 }
 // The weekly check of an LDES endpoint (scripts/probe-links.mjs): did it answer with LDES/TREE vocabulary?
 function streamCheckLine(a,url){
