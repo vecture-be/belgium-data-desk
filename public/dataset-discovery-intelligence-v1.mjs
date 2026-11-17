@@ -73,6 +73,9 @@ export function inferIdentifierHints(asset){
   return hits;
 }
 function yearsFor(a){
+  // the period the publisher declares (dct:temporal / ISO extent) beats years guessed from text and processing dates
+  const p=a?.period,y=v=>Number(String(v||"").slice(0,4));
+  if(p&&(y(p.start)>1800||y(p.end)>1800)){const s=y(p.start)>1800?y(p.start):y(p.end),e=y(p.end)>1800?y(p.end):new Date().getFullYear();return s===e?[s]:[s,e]}
   const ys=[...new Set(([a?.title,a?.description,a?.time,a?.grain].filter(Boolean).join(" ").match(/\b(?:19|20)\d{2}\b/g)||[]).map(Number))].sort((a,b)=>a-b);
   return ys;
 }

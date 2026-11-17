@@ -75,7 +75,7 @@ assert.equal((await rpc("tools/call",{name:"search_datasets",arguments:{query:"?
 
 const g=(await rpc("tools/call",{name:"get_dataset",arguments:{id:"national:1"}})).body.result.structuredContent;
 assert.equal(g.publisher,"Statbel");assert.equal(g.hand_reviewed,false);assert.equal(g.link_check.files_ok,1);assert.deepEqual(g.columns,["nis","pop"]);assert.equal(g.files[0].url,"https://statbel.example/pop.csv");assert.equal(g.preview_available,false);
-assert.equal(g.update_cycle,"not declared by the publisher");assert.deepEqual(g.not_declared_by_publisher.fields,["update cycle","contact","update date"]);assert.match(g.not_declared_by_publisher.note,/not faults in this tool/);assert.equal(g.licence.label,"CC BY");assert.equal(g.analysis.download,"https://statbel.example/pop.csv");assert.deepEqual(g.analysis.hosts_to_allow,["statbel.example"]);assert.equal(g.field_notes.columns,undefined);assert.equal(g.field_notes.link_check,undefined);
+assert.equal(g.update_cycle,"not declared by the publisher");assert.deepEqual(g.not_declared_by_publisher.fields,["update cycle","contact","update date","period covered"]);assert.match(g.not_declared_by_publisher.note,/not faults in this tool/);assert.equal(g.licence.label,"CC BY");assert.equal(g.analysis.download,"https://statbel.example/pop.csv");assert.deepEqual(g.analysis.hosts_to_allow,["statbel.example"]);assert.equal(g.field_notes.columns,undefined);assert.equal(g.field_notes.link_check,undefined);
 assert.equal((await rpc("tools/call",{name:"get_dataset",arguments:{id:"nope"}})).body.result.isError,true);
 // a query word no record matches is named instead of silently dropped
 const sb=(await rpc("tools/call",{name:"search_datasets",arguments:{query:"bevolking batterijen"}})).body.result.structuredContent;

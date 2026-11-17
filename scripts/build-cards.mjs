@@ -64,6 +64,29 @@ export function headerSummary(cards){
   return{files:cards.length,last_modified:lm,last_modified_usable:usable,etag_present:etag,issues};
 }
 
+/**
+ * Facts the weekly check measured in the file go back into the search documents (public/mcp/d), so search and filters see them:
+ * the years the data covers, when the publisher declares no period. Marked ym:1 (measured), never overwriting a declared period.
+ */
+export function backfillDocs(docs,cards){
+  let n=0;
+  for(const d of docs){
+    const c=d&&cards.get(d.id),t=c?.coverage?.time;if(!t||d.y)continue;
+    const a=Number(String(t.from||"").slice(0,4)),b=Number(String(t.to||"").slice(0,4));
+    if(!(a>1800&&b>=a&&b<2101))continue;
+    d.y=[a,b];d.ym=1;n++;
+  }
+  return n;
+}
+function backfillIndex(cards){
+  const dir=path.join(pub,"mcp","d");let n=0;
+  for(const f of fs.readdirSync(dir).filter(f=>/^\d+\.json$/.test(f))){
+    const file=path.join(dir,f),docs=JSON.parse(fs.readFileSync(file,"utf8")),k=backfillDocs(docs,cards);
+    if(k){fs.writeFileSync(file,JSON.stringify(docs));n+=k}
+  }
+  return n;
+}
+
 /** Whole-file profiles win over the probe's partial read of the same URL. */
 export function mergeFull(probe,full){
   const out=new Map(probe);
@@ -90,7 +113,8 @@ function main(){
     row_order_unstable:count(c=>c.quality.row_order_unstable),
     with_change_seen:count(c=>c.last_change_seen),
     with_time_coverage:count(c=>c.coverage.time),join_keys:keyKinds,schema_changed:count(c=>c.schema.changed_since),
-    cadence_not_met:count(c=>c.freshness.cadence_not_met)};
+    cadence_not_met:count(c=>c.freshness.cadence_not_met),
+    period_read_from_file:backfillIndex(cards)};
   // publisher scorecards from every full-check result, readable or not (scripts/health.mjs)
   if(fs.existsSync(fullFile)){
     const checks=fs.readFileSync(fullFile,"utf8").split("\n").flatMap(l=>{try{return[JSON.parse(l)]}catch{return[]}});

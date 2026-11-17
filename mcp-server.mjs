@@ -84,6 +84,8 @@ const SEARCH_SCHEMA={type:"object",properties:{
   scope:{type:"string",enum:["datasets","maps","publications","research","metadata","all"],description:"Kind of record. Default 'datasets'."},
   topic:{type:"string",description:"Optional topic id: geology, water, energy, transport, health, population, economy, environment, agriculture, education, government, places, other."},
   open_licence_only:{type:"boolean",description:"Only records whose licence permits reuse (open or share-alike)."},
+  covers_year:{type:"integer",minimum:1800,maximum:2100,description:"Only records whose data covers this year (the period the publisher declares, or the dates read from the file). Records with no known period are left out."},
+  language:{type:"string",enum:["nl","fr","en","de"],description:"Only records whose publisher declares this language. Records with no declared language are left out."},
   limit:{type:"integer",minimum:1,maximum:MAX_LIMIT,description:"Number of results, default 10."}
 },required:["query"]};
 const TOOLS=[
@@ -153,7 +155,12 @@ const TRUST_NOTE="Evidence, not correctness: tier 'ready' means a file link answ
 const SCOPE_OF_KIND={"map-service":"maps",publication:"publications",research:"research","metadata-only":"metadata"};
 const isOpen=doc=>doc.lf==="open"||doc.lf==="open-sharealike";
 const NOT_DECLARED="not declared by the publisher";
-const summary=d=>({id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,formats:d.f,licence:d.l||NOT_DECLARED,licence_family:d.lf||"unknown",access_tier:d.tier||null,updated:d.u||null,hand_reviewed:!!d.c,landing_page:d.w||null,snippet:d.s||""});
+const summary=d=>({id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,formats:d.f,licence:d.l||NOT_DECLARED,licence_family:d.lf||"unknown",access_tier:d.tier||null,updated:d.u||null,
+  ...(d.y?{covers_years:d.y,...(d.ym?{covers_years_from:"read from the file"}:{})}:{}),...(d.lg?{languages:d.lg}:{}),...(d.ar?{access_rights:d.ar}:{}),
+  hand_reviewed:!!d.c,landing_page:d.w||null,snippet:d.s||""});
+/** Search filters on the period a record covers and its language. Records that declare neither are left out when the filter is set. */
+export const coversYear=(d,year)=>!year||(Array.isArray(d?.y)&&d.y[0]<=year&&year<=d.y[1]);
+export const inLanguage=(d,lang)=>!lang||(d?.lg||[]).includes(lang);
 
 async function postings(reader,token,shards){
   const shard=tokenShard(token);
@@ -210,7 +217,9 @@ export async function searchDatasets(reader,args){
     return docChunks.get(chunk)[idx%DOC_CHUNK];
   };
   // For a common need (population, enterprise register, air quality...) the hand-reviewed authoritative source goes first, with the reason.
-  const keep=d=>d&&!(args?.topic&&d.tp!==args.topic)&&!(args?.open_licence_only&&!isOpen(d));
+  const year=Number.isInteger(Number(args?.covers_year))&&Number(args.covers_year)>1000?Number(args.covers_year):null;
+  const lang=["nl","fr","en","de"].includes(args?.language)?args.language:null;
+  const keep=d=>d&&!(args?.topic&&d.tp!==args.topic)&&!(args?.open_licence_only&&!isOpen(d))&&coversYear(d,year)&&inLanguage(d,lang);
   const authority=(scope==="datasets"||scope==="all")?authoritiesFor(tokenize(q,{cap:10}))[0]:null;
   const pinned=[];
   if(authority)for(const id of authority.ids){const idx=manifest.pins?.[id];if(idx===undefined)continue;const d=await docAt(idx);if(keep(d))pinned.push(d)}
@@ -312,7 +321,16 @@ export async function getDataset(reader,args){
   };
   const cycle=updateCycle(x.fq),source=x.url||d.w||null;
   // Fields the publisher's own record leaves empty: named as gaps in the source, with the page where the publisher may say more.
-  const gaps=[!d.l&&"licence",cycle.update_cycle_declared===false&&"update cycle",!cols.length&&"column list",!x.ce&&!x.cu&&"contact",!d.u&&"update date"].filter(Boolean);
+  const measuredPeriod=card?.coverage?.time;
+  const gaps=[!d.l&&"licence",cycle.update_cycle_declared===false&&"update cycle",!cols.length&&"column list",!x.ce&&!x.cu&&"contact",!d.u&&"update date",!x.tc&&!measuredPeriod&&"period covered"].filter(Boolean);
+  // What the data is about in time, language, access and lineage: declared by the publisher, or read from the file (said which).
+  const about={
+    ...(x.tc?{period:{from:x.tc.s,to:x.tc.e,source:"declared by the publisher"}}:measuredPeriod?{period:{from:measuredPeriod.from,to:measuredPeriod.to,source:"read from the file (column "+measuredPeriod.column+")"}}:{}),
+    ...(x.lang?{languages:x.lang}:{}),
+    ...(x.ar&&x.ar!=="PUBLIC"?{access_rights:{value:x.ar,note:x.ar==="NON_PUBLIC"?"The publisher marks this dataset as not public: the record describes it, but the data itself is not openly available.":"The publisher restricts access: expect a request, registration or conditions before you get the data."}}:x.ar?{access_rights:{value:x.ar}}:{}),
+    ...(x.prov?{lineage:x.prov}:{}),...(x.crs?{coordinate_systems:x.crs}:{}),...(x.res?{spatial_resolution_m:x.res}:{}),
+    ...(x.hvd?{eu_high_value_dataset:x.hvd}:{}),...(x.std?{conforms_to:x.std}:{}),...(x.iss?{first_published:x.iss}:{})
+  };
   const profile=card?.file?{rows:card.file.rows,rows_exact:!!card.file.rows_exact,...(card.file.rows_exact?{}:{rows_note:"Rows in the first "+Math.round((card.file.bytes_read||0)/1024)+" KiB read by the weekly check; the whole file has more."}),
     ...(card.coverage?.time?{period:{from:card.coverage.time.from,to:card.coverage.time.to,column:card.coverage.time.column}}:{}),profiled_at:card.profiled_at}:null;
   return{id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,hand_reviewed:!!d.c,
@@ -320,7 +338,8 @@ export async function getDataset(reader,args){
     updated:d.u||null,...cycle,
     ...(gaps.length?{not_declared_by_publisher:{fields:gaps,source_page:source,note:"These are gaps in the publisher's own catalogue record, not faults in this tool. The source page may give them."}}:{}),
     ...(profile?{data_profile:profile}:{}),
-    geography:x.g||null,landing_page:x.url||null,contact:{email:x.ce||null,url:x.cu||null},description:x.d||"",columns:cols,access_tier:d.tier||null,
+    ...about,...(x.pinf?{publisher_inferred:"The catalogue record names no publisher; this one is inferred from the record's "+({kbo:"owner enterprise number",mail:"contact address",domain:"contact e-mail domain",host:"landing-page website"}[x.pinf]||x.pinf)+"."}:{}),
+    geography:x.g||null,landing_page:x.url||null,contact:{...(x.cn?{name:x.cn}:{}),email:x.ce||null,url:x.cu||null},description:x.d||"",columns:cols,access_tier:d.tier||null,
     ...(analysisFor(x,reader.origin,d.id)?{analysis:analysisFor(x,reader.origin,d.id)}:{}),
     ...(auth?{authoritative_source:{need:auth.need,why:auth.why,...(auth.caveat?{caveat:auth.caveat}:{})}}:{}),
     preview_available:canPreview,

@@ -6,6 +6,7 @@ import { fetchNationalCatalogue, thinNationalCatalogue, validateNationalCatalogu
 import { kindOf, normalizeLicense, topicOf } from "./curate.mjs";
 import { RELAY_INDEX_PATH, writeRelayIndex } from "./relay-index-lib.mjs";
 import { getJsonOnce, getJsonRetry } from "./harvest-fetch.mjs";
+import { asList, isoRecords, odsTemporal, parseIsoRecord } from "./harvest-iso.mjs";
 import { DOV_CAPABILITIES, DOV_LICENSE, DOV_PROVIDER, collectionsFromCapabilities, groupDov } from "./harvest-dov.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
@@ -99,7 +100,7 @@ async function harvestOds(host,provider,{publisherFromMeta=false,skipPublishers=
     const ext={spatial:m.bbox||m.geographic_reference||m.geographic_area||null,temporal:m.temporal_coverage||null};
     const count=Number(m.records_count??d.records_count??x.records_count);
     const publisher=publisherFromMeta?(metaText(m.publisher)||provider):provider;
-    return{id:"harvest:"+provider.toLowerCase().replace(/\W+/g,"-")+":"+id,provider:publisher,aggregator:publisherFromMeta?provider:undefined,platform:"OpenDataSoft",datasetId:id,title:clean(m.title||id),description:clean(m.description).slice(0,420),kind:"OpenDataSoft dataset",formats:["Explore API 2.1","CSV","JSON"],updatedAt:dataProcessedAt||metadataProcessedAt||catalogueModifiedAt||null,dataProcessedAt,metadataProcessedAt,catalogueModifiedAt,recordCount:Number.isFinite(count)?count:null,fields,extent:ext,themes:uniq([...(m.theme||[]),...(m.keyword||[]),...(m.publisher||[])]).slice(0,15),license:clean(m.license||m.license_url),contactName:metaText(m.contact_name||m.contact||m.publisher||""),contactEmail:metaText(m.contact_email||m.email||dm.contact_email||""),contactUrl:metaText(m.contact_url||m.publisher_url||m.website||""),schemaOrigin:fields.length?"publisher-schema":"none",sampleOrigin:"none",officialUrl:host+"/explore/dataset/"+id+"/",distributions:[{name:"Records API",format:"REST/JSON",url:host+"/api/explore/v2.1/catalog/datasets/"+id+"/records?limit=20"},{name:"CSV export",format:"CSV",url:host+"/explore/dataset/"+id+"/download/?format=csv"}]};
+    return{id:"harvest:"+provider.toLowerCase().replace(/\W+/g,"-")+":"+id,provider:publisher,aggregator:publisherFromMeta?provider:undefined,platform:"OpenDataSoft",datasetId:id,title:clean(m.title||id),description:clean(m.description).slice(0,420),kind:"OpenDataSoft dataset",formats:["Explore API 2.1","CSV","JSON"],updatedAt:dataProcessedAt||metadataProcessedAt||catalogueModifiedAt||null,dataProcessedAt,metadataProcessedAt,catalogueModifiedAt,recordCount:Number.isFinite(count)?count:null,fields,extent:ext,themes:uniq([...asList(m.theme),...asList(m.keyword)]).slice(0,15),languages:asList(m.language).map(l=>String(l).toLowerCase().slice(0,2)).filter(l=>/^(nl|fr|en|de)$/.test(l)),temporal:odsTemporal(m.temporal_coverage||m.temporal),license:clean(m.license||m.license_url),contactName:metaText(m.contact_name||m.contact||m.publisher||""),contactEmail:metaText(m.contact_email||m.email||dm.contact_email||""),contactUrl:metaText(m.contact_url||m.publisher_url||m.website||""),schemaOrigin:fields.length?"publisher-schema":"none",sampleOrigin:"none",officialUrl:host+"/explore/dataset/"+id+"/",distributions:[{name:"Records API",format:"REST/JSON",url:host+"/api/explore/v2.1/catalog/datasets/"+id+"/records?limit=20"},{name:"CSV export",format:"CSV",url:host+"/explore/dataset/"+id+"/download/?format=csv"}]};
   });
   const titlesToSkip=typeof skipTitles==="function"?skipTitles():skipTitles;
   const kept=basics.filter(x=>!(skipPublishers&&skipPublishers.test(x.provider))&&!(titlesToSkip&&titlesToSkip.has(normTitle(x.title))));
@@ -238,17 +239,17 @@ async function cswPage(endpoint,params,start,count){
   return (await cswPage(endpoint,params,start,half))+(await cswPage(endpoint,params,start+half,count-half));
 }
 async function harvestCsw(slug,provider,endpoint,maxPages){
+  // Full ISO 19139 records: the Dublin Core summary set has no links, licence, contact, extent or frequency (scripts/harvest-iso.mjs).
   const out=[];let matched=Infinity;
+  const recordPage=id=>endpoint.replace(/\/csw$/,"/catalog.search#/metadata/")+encodeURIComponent(id);
   for(let page=0;page<maxPages;page++){
-    const start=page*100+1;if(start>matched)break;
-    const params=new URLSearchParams({service:"CSW",version:"2.0.2",request:"GetRecords",resultType:"results",typeNames:"csw:Record",elementSetName:"summary",outputFormat:"application/xml",maxRecords:"100",startPosition:String(start)});
-    const xml=await cswPage(endpoint,params,start,100),total=xml.match(/numberOfRecordsMatched="(\d+)"/);
+    const start=page*50+1;if(start>matched)break;
+    const params=new URLSearchParams({service:"CSW",version:"2.0.2",request:"GetRecords",resultType:"results",typeNames:"gmd:MD_Metadata",outputSchema:"http://www.isotc211.org/2005/gmd",elementSetName:"full",outputFormat:"application/xml",maxRecords:"50",startPosition:String(start)});
+    const xml=await cswPage(endpoint,params,start,50),total=xml.match(/numberOfRecordsMatched="(\d+)"/);
     if(total)matched=Number(total[1]);
-    const records=[...xml.matchAll(/<(?:csw:)?(?:Record|SummaryRecord)\b[\s\S]*?<\/(?:csw:)?(?:Record|SummaryRecord)>|<(?:gmd:)?MD_Metadata\b[\s\S]*?<\/(?:gmd:)?MD_Metadata>/gi)].map(m=>m[0]);
+    const records=isoRecords(xml);
     for(const r of records){
-      const id=xmlOne(r,"identifier")||xmlOne(r,"fileIdentifier")||slug+"-"+out.length,title=xmlOne(r,"title");if(!title)continue;
-      const refs=xmlMany(r,"references").filter(u=>/^https?:/i.test(u)),fmts=uniq(xmlMany(r,"format")),themes=uniq(xmlMany(r,"subject")).slice(0,8);
-      const x={id:"harvest:"+slug+":"+id,provider,platform:"OGC CSW / GeoNetwork",datasetId:id,title:clean(title),description:clean(xmlOne(r,"abstract")).slice(0,320),kind:xmlOne(r,"type")||"catalogue record",formats:fmts,updatedAt:xmlOne(r,"modified")||null,recordCount:null,fields:[],previewRows:[],schemaOrigin:"none",sampleOrigin:"none",extent:{},themes,license:"",officialUrl:refs[0]||null,distributions:refs.slice(0,10).map((u,i)=>({name:"reference "+(i+1),format:"URL",url:u}))};
+      const x=parseIsoRecord(r,{slug,provider,recordPage});if(!x)continue;
       out.push(Object.assign(x,{enrichment:quality(x)}));
     }
     if(!records.length)break;
@@ -331,9 +332,11 @@ const jobs=[
   ["brussels-open-data",()=>harvestOds("https://bruxellesdata.opendatasoft.com","Brussels Open Data",{fieldCap:40})],
   ["open-data-wallonie-bruxelles",()=>harvestOds("https://www.odwb.be","Open Data Wallonie-Bruxelles",{publisherFromMeta:true,skipPublishers:/^(infrabel|elia)$/i,skipTitles:harvestedTitles,fieldCap:40})],
   ["digitaal-vlaanderen",harvestOgc],
-  ["wallonia-metawal",()=>harvestCsw("wallonia","SPW Wallonia: Metawal","https://metawal.wallonie.be/geonetwork/srv/fre/csw",20)],
-  ["geo-be",()=>harvestCsw("geo-be","geo.be / National Geographic Institute","https://publish.geo.be/geonetwork/srv/eng/csw",10)]
+  ["wallonia-metawal",()=>harvestCsw("wallonia","SPW Wallonia: Metawal","https://metawal.wallonie.be/geonetwork/srv/fre/csw",50)],
+  ["geo-be",()=>harvestCsw("geo-be","geo.be / National Geographic Institute","https://publish.geo.be/geonetwork/srv/eng/csw",20)]
 ];
+// jobs whose record ids do not contain the job name (a failed source keeps its earlier records)
+const FALLBACK_PREFIX={"wallonia-metawal":"harvest:wallonia:","geo-be":"harvest:geo-be:"};
 const partialSources=[];   // parts of a source that kept earlier records (an OGC service that did not answer)
 // What a source that does not answer falls back to. On a deploy that is the LIVE catalogue (PREVIOUS_CATALOGUE_URL): the committed
 // snapshot is older and may lack whole sources (DOV, until it is next committed), so falling back to it would drop them from the site.
@@ -348,7 +351,7 @@ if(process.env.PREVIOUS_CATALOGUE_URL){
 const items=[],sources={};
 for(const [name,fn] of jobs){
   try{const rows=await fn();if(!rows.length)throw new Error("source returned 0 rows");items.push(...rows);sources[name]={ok:true,count:rows.length,structured:rows.filter(x=>x.enrichment?.level==="structured").length,previews:rows.filter(x=>x.previewRows?.length).length,harvestedAt:now,attemptedAt:now};console.log(`[harvest] ${name}: ${rows.length} (${sources[name].structured} structured, ${sources[name].previews} previews)`)}
-  catch(e){const fallback=(previous.items||[]).filter(x=>name==="digitaal-vlaanderen"?/Digitaal Vlaanderen|DOV|SPW Wallonia|Brussels Mobility/.test(x.provider||""):String(x.id).includes(name)||x.provider?.toLowerCase().includes(name));items.push(...fallback);sources[name]={ok:false,count:fallback.length,structured:fallback.filter(x=>x.enrichment?.level==="structured").length,previews:fallback.filter(x=>x.previewRows?.length).length,harvestedAt:previous.sources?.[name]?.harvestedAt||previous.generatedAt||null,attemptedAt:now,error:e.message,fallback:true};console.warn(`[harvest] ${name}: failed (${e.message}); fallback ${fallback.length}`)}
+  catch(e){const fallback=(previous.items||[]).filter(x=>FALLBACK_PREFIX[name]?String(x.id).startsWith(FALLBACK_PREFIX[name]):name==="digitaal-vlaanderen"?/Digitaal Vlaanderen|DOV|SPW Wallonia|Brussels Mobility/.test(x.provider||""):String(x.id).includes(name)||x.provider?.toLowerCase().includes(name));items.push(...fallback);sources[name]={ok:false,count:fallback.length,structured:fallback.filter(x=>x.enrichment?.level==="structured").length,previews:fallback.filter(x=>x.previewRows?.length).length,harvestedAt:previous.sources?.[name]?.harvestedAt||previous.generatedAt||null,attemptedAt:now,error:e.message,fallback:true};console.warn(`[harvest] ${name}: failed (${e.message}); fallback ${fallback.length}`)}
 }
 const dedup=[...new Map(items.filter(x=>x?.id&&x?.title).map(x=>[x.id,x])).values()];
 for(const x of dedup){x.dataKind=kindOf(x);x.topic=topicOf(x);x.licenseFamily=normalizeLicense(x.license).family}
