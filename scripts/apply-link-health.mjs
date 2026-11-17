@@ -23,11 +23,33 @@ export function loadProbes(file){
   return{byUrl,at:newest.slice(0,10)};
 }
 
+/**
+ * Column names read from the files by the weekly probe (first 256 KiB of a CSV/TSV) and the full check (whole file), by URL.
+ * The full check wins. Only the header is used here: names and types, not values.
+ */
+export function loadColumns(files){
+  const byUrl=new Map();
+  for(const file of files){
+    if(!file||!fs.existsSync(file))continue;
+    for(const line of fs.readFileSync(file,"utf8").split("\n")){
+      if(!line.trim())continue;let r;try{r=JSON.parse(line)}catch{continue}
+      const cols=r?.profile&&!r.profile.error&&r.profile.rows>0?(r.profile.columns||[]).map(c=>({name:String(c.name||"").trim(),type:c.type||""})).filter(c=>c.name).slice(0,80):[];
+      if(r?.url&&cols.length)byUrl.set(r.url,cols);
+    }
+  }
+  return byUrl;
+}
+
 /** Adds a compact `probe` summary and an access `tier` to every item that has at least one probed distribution. */
-export function annotateItems(items,byUrl){
+export function annotateItems(items,byUrl,columnsByUrl=null){
   let annotated=0;
   const health=Object.fromEntries([...byUrl].map(([u,h])=>[u,h]));
   for(const item of items){
+    // a publisher that declares no columns: the ones read from its file, marked as observed (the site and get_dataset say so)
+    if(columnsByUrl&&!(item.fields||[]).length){
+      const d=(item.distributions||[]).find(d=>columnsByUrl.has(d.url));
+      if(d){item.fields=columnsByUrl.get(d.url).map(c=>({name:c.name,label:c.name,type:c.type,description:""}));item.schemaOrigin="observed-file-header";item.fieldsFrom=d.url}
+    }
     const probed=(item.distributions||[]).filter(d=>byUrl.has(d.url));
     if(!probed.length){delete item.probe;item.tier=accessTier(item,{});continue}
     const hs=probed.map(d=>byUrl.get(d.url));
@@ -47,6 +69,7 @@ function main(){
   const args=process.argv.slice(2),i=args.indexOf("--probe");
   const file=path.resolve(i>=0?args[i+1]:path.join(__dirname,"../.cache/link-probe.jsonl"));
   const {byUrl,at}=loadProbes(file);
+  const columns=loadColumns([file,path.join(path.dirname(file),"full-check.jsonl")]);
   if(!byUrl.size){console.log("[link-health] no probe file at "+file+"; nothing to apply");return}
   const manifestPath=path.join(pub,"catalogue-manifest.json"),manifest=fs.existsSync(manifestPath)?JSON.parse(fs.readFileSync(manifestPath,"utf8")):{files:{}};
   let total=0;
@@ -55,7 +78,7 @@ function main(){
     const index=JSON.parse(fs.readFileSync(indexPath,"utf8"));
     for(const c of index.chunks||[]){
       const fp=path.join(pub,c.file),page=JSON.parse(fs.readFileSync(fp,"utf8"));
-      total+=annotateItems(page.items||[],byUrl);
+      total+=annotateItems(page.items||[],byUrl,columns);
       const body=JSON.stringify(page)+"\n";fs.writeFileSync(fp,body);c.bytes=Buffer.byteLength(body);c.sha256=sha(body);
     }
     index.linkHealth={at,probedUrls:byUrl.size,ok:[...byUrl.values()].filter(h=>h.ok).length};
@@ -65,7 +88,7 @@ function main(){
   const hvPath=path.join(pub,"harvested-catalog.json");
   if(fs.existsSync(hvPath)){
     const hv=JSON.parse(fs.readFileSync(hvPath,"utf8"));
-    total+=annotateItems(hv.items||[],byUrl);hv.linkHealth={at,probedUrls:byUrl.size};
+    total+=annotateItems(hv.items||[],byUrl,columns);hv.linkHealth={at,probedUrls:byUrl.size};
     const body=JSON.stringify(hv)+"\n";fs.writeFileSync(hvPath,body);
     manifest.files["harvested-catalog.json"]={sha256:sha(body),bytes:Buffer.byteLength(body)};
   }

@@ -114,3 +114,22 @@ assert.equal(curatedProbeUrl("https://geo.api.vlaanderen.be/MeetplOppervlwaterkw
 assert.equal(curatedProbeUrl("https://statbel.fgov.be/en/open-data/x"),"https://statbel.fgov.be/en/open-data/x");
 assert.ok((await loadCuratedWork()).length>=100,"the atlas links are in the weekly check");
 console.log("curated link check tests passed");
+// measured columns, searchable column names, portal slug as publisher evidence
+import { annotateItems as annotate, loadColumns } from "./apply-link-health.mjs";
+import { columnTokens } from "./build-mcp-index.mjs";
+import { inferPublishers as infer } from "./national-dcat.mjs";
+import os from "node:os";import fsx from "node:fs";import pathx from "node:path";
+{const f=pathx.join(fsx.mkdtempSync(pathx.join(os.tmpdir(),"cols-")),"probe.jsonl");
+ fsx.writeFileSync(f,JSON.stringify({url:"https://p.example/a.csv",profile:{rows:5,columns:[{name:"code_postal",type:"postcode"},{name:"nb",type:"integer"}]}})+"\n");
+ const cols=loadColumns([f]),it={distributions:[{url:"https://p.example/a.csv",format:"CSV"}]},declared={fields:[{name:"x"}],distributions:[{url:"https://p.example/a.csv"}]};
+ annotate([it,declared],new Map(),cols);
+ assert.deepEqual(it.fields.map(c=>c.name),["code_postal","nb"]);assert.equal(it.schemaOrigin,"observed-file-header");
+ assert.deepEqual(declared.fields.map(c=>c.name),["x"],"declared columns are never replaced")}
+assert.deepEqual(columnTokens(["geo_point_2d","code_postal","id","NACE_code"]).filter(t=>!t.startsWith("~")),["code","postal","nace"]);
+{const xs=[{provider:"Fluvius",officialUrl:"https://opendata.fluvius.be/explore/dataset/1_21-aangemelde-oplaadpunten-voor-ev/"},
+  {provider:"data.gov.be source",officialUrl:"https://www.vlaanderen.be/x",distributions:[{url:"https://fluvius.opendatasoft.com/api/v2/catalog/datasets/1_21-aangemelde-oplaadpunten-voor-ev/exports/csv"}]},
+  {provider:"A",officialUrl:"https://a.example/explore/dataset/communes-belges-2024/"},{provider:"B",officialUrl:"https://b.example/explore/dataset/communes-belges-2024/"},
+  {provider:"data.gov.be source",officialUrl:"https://c.example/explore/dataset/communes-belges-2024/"}];
+ infer(xs);assert.equal(xs[1].provider,"Fluvius");assert.equal(xs[1].publisherInferredFrom,"slug");
+ assert.equal(xs[4].provider,"data.gov.be source","a slug two publishers use names neither")}
+console.log("measured columns tests passed");

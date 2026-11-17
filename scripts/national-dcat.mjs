@@ -210,12 +210,16 @@ const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch{retur
  * how it was inferred (publisherInferredFrom), so the UI can show it as inferred rather than declared.
  */
 export function inferPublishers(items){
-  const keysOf=x=>[...(x.ownerKbo||[]).map(k=>"kbo:"+k),x.contactEmail?"mail:"+x.contactEmail.toLowerCase():"",
+  // A portal dataset slug ("1_21-aangemelde-oplaadpunten-voor-ev") identifies the same dataset copied into another catalogue under
+  // another host (fluvius.opendatasoft.com vs opendata.fluvius.be): one record suffices when every record with that slug agrees.
+  const slugOf=u=>{const m=String(u||"").match(/\/(?:explore\/dataset|catalog\/datasets)\/([^/?#]+)/i);return m&&m[1].length>=12&&/[-_]/.test(m[1])?m[1].toLowerCase():""};
+  const keysOf=x=>[...new Set([x.officialUrl,...(x.distributions||[]).map(d=>d.url)].map(slugOf).filter(Boolean))].map(s=>"slug:"+s).concat([...(x.ownerKbo||[]).map(k=>"kbo:"+k),x.contactEmail?"mail:"+x.contactEmail.toLowerCase():"",
     x.contactEmail?"domain:"+x.contactEmail.split("@")[1].toLowerCase():"",x.officialUrl?"host:"+hostOf(x.officialUrl):"",
-    ...(x.distributions||[]).slice(0,2).map(d=>d.url?"host:"+hostOf(d.url):"")].filter(k=>k&&k!=="host:data.gov.be"&&k!=="host:");
+    ...(x.distributions||[]).slice(0,2).map(d=>d.url?"host:"+hostOf(d.url):"")]).filter(k=>k&&k!=="host:data.gov.be"&&k!=="host:");
   const votes=new Map();
   for(const x of items){if(x.provider===UNKNOWN_PUBLISHER)continue;for(const k of keysOf(x)){const m=votes.get(k)||votes.set(k,new Map()).get(k);m.set(x.provider,(m.get(x.provider)||0)+1)}}
-  const winner=k=>{const m=votes.get(k);if(!m)return null;let total=0,best=null,n=0;for(const [p,c] of m){total+=c;if(c>n){n=c;best=p}}return n>=3&&n/total>=0.8?best:null};
+  const winner=k=>{const m=votes.get(k);if(!m)return null;let total=0,best=null,n=0;for(const [p,c] of m){total+=c;if(c>n){n=c;best=p}}
+    return k.startsWith("slug:")?(m.size===1?best:null):n>=3&&n/total>=0.8?best:null};
   let fixed=0;
   for(const x of items){
     if(x.provider!==UNKNOWN_PUBLISHER)continue;
