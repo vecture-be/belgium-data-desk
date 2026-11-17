@@ -32,9 +32,9 @@ export function normalizeLicense(raw){
 export const LICENSE_FAMILY_NOTE={
   open:"Reuse allowed, usually with attribution.",
   "open-sharealike":"Reuse allowed, derived work must keep the same licence.",
-  "non-commercial":"Non-commercial reuse only — not an open licence.",
-  "no-derivatives":"No modified versions allowed — not an open licence.",
-  custom:"Publisher-specific terms — read them before reuse.",
+  "non-commercial":"Non-commercial reuse only, not an open licence.",
+  "no-derivatives":"No modified versions allowed, not an open licence.",
+  custom:"Publisher-specific terms, read them before reuse.",
   unknown:"No licence stated in the catalogue record."
 };
 

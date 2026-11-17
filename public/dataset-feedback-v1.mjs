@@ -117,7 +117,7 @@ export function openDatasetFeedback(asset,{publisherName="",profile=null}={}){
   };
   const open=d.querySelector("#datasetFeedbackOpen");if(open)open.onclick=()=>window.open(c.url,"_blank","noopener");
   const mail=d.querySelector("#datasetFeedbackMail");if(mail)mail.onclick=()=>{
-    const subject="[Open data feedback] "+(asset?.title||asset?.datasetId||"dataset")+" — "+issueLabel(type.value);
+    const subject="[Open data feedback] "+(asset?.title||asset?.datasetId||"dataset")+", "+issueLabel(type.value);
     location.href="mailto:"+c.email+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(payload());
     status.textContent="Email draft opened in your mail app. Nothing was sent by Belgium Data Desk.";
   };

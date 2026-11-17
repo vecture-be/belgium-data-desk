@@ -6,7 +6,7 @@ export const TOPIC_LABELS={
 };
 export const KIND_LABELS={dataset:"Dataset","map-service":"Map / web service","data-service":"Data service (API / event stream)",publication:"Publication (documents)",research:"Research supplement","metadata-only":"Metadata only"};
 
-// "What do you want to see?" — the default view shows real datasets; the rest is one click away and always counted.
+// "What do you want to see?", the default view shows real datasets; the rest is one click away and always counted.
 export const SCOPES=[
   {id:"datasets",label:"Datasets",hint:"Data files and APIs"},
   {id:"maps",label:"Maps & services",hint:"WMS, WFS and other map layers"},

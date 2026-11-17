@@ -278,7 +278,7 @@ export const EXTRA_SOURCES=[
     "verifiedNote":"The crime table supports CSV/XLSX export and multiple geographic levels; attempts and completed offences are both included."
   },
   {
-    "id":"elections","name":"FPS Interior Election Results","org":"FPS Interior — Directorate of Elections","url":"https://verkiezingen.fgov.be/node/111614","region":"Belgium",
+    "id":"elections","name":"FPS Interior Election Results","org":"FPS Interior, Directorate of Elections","url":"https://verkiezingen.fgov.be/node/111614","region":"Belgium",
     "access":["Download"],"topics":["Government","Elections","Society"],"formats":["ZIP","XLSX"],"friction":"Low",
     "summary":"Official fixed-vintage result tables for Belgian European, federal and regional elections, including municipality, canton, constituency, list and candidate views.",
     "use":["Analyse official election results by municipality or canton","Separate list totals from candidate preference votes","Preserve election and electoral-geography vintage in reproducible analysis"],
@@ -332,7 +332,7 @@ export const EXTRA_SOURCES=[
     "verifiedNote":"The catalogue record reviewed is NomenSoft coordinated reference data rather than patient-level health data."
   },
   {
-    "id":"finance","name":"FPS Finance Open Patrimony Data","org":"FPS Finance — Patrimonial Documentation","url":"https://financien.belgium.be/nl/experten-partners/open-patrimoniumdata","region":"Belgium",
+    "id":"finance","name":"FPS Finance Open Patrimony Data","org":"FPS Finance, Patrimonial Documentation","url":"https://financien.belgium.be/nl/experten-partners/open-patrimoniumdata","region":"Belgium",
     "access":["Download","Geospatial service"],"topics":["Parcels","Geography","Property","Government"],"formats":["Geodata","Reference tables","WFS/WMS"],"friction":"Medium",
     "summary":"Open patrimonial reference datasets including cadastral-plan products and identifier/geography mapping tables.",
     "use":["Work with cadastral-plan geometry","Use explicit parcel-to-geography crosswalks","Preserve fiscal/reference vintage in property analysis"],
@@ -377,7 +377,7 @@ export const EXTRA_SOURCES=[
     "verifiedNote":"The curated mobile-coverage record is explicitly historical (2016) and should not be presented as current coverage."
   },
   {
-    "id":"omgeving","name":"Departement Omgeving Open Data","org":"Departement Omgeving — Vlaamse overheid","url":"https://data.omgeving.vlaanderen.be/","region":"Flanders",
+    "id":"omgeving","name":"Departement Omgeving Open Data","org":"Departement Omgeving, Vlaamse overheid","url":"https://data.omgeving.vlaanderen.be/","region":"Flanders",
     "access":["Download","API / web service","Geospatial service"],"topics":["Planning","Land use","Environment","Geography"],"formats":["RDF","SPARQL","GIS raster","Geodata"],"friction":"Low",
     "summary":"Flemish environmental and spatial-planning data, including linked DSI planning information and versioned land-use/space-take raster products.",
     "use":["Query planning data as linked entities","Download land-use rasters","Keep legal/planning concepts separate from observed land use"],

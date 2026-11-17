@@ -73,3 +73,20 @@ console.log(JSON.stringify({ok:true,cards:"profile/keys/freshness/facts/drift",f
   assert.equal(buildCard({id:"u"},profileColumns(only,{bytesRead:only.length,totalBytes:only.length}),{now:"2026-11-10T00:00:00Z",file:{}}).coverage.time,null,"a creation timestamp alone gives no coverage");
 }
 console.log(JSON.stringify({ok:true,coverage:"reporting periods only"}));
+
+// row grain: the label columns that together identify a row, tested on the file
+{
+  const lines=["maand,postcode,sector,regime,aantal"];let k=0;
+  for(const m of ["2024-01","2024-02"])for(const p of ["9300","1000","2000"])for(const s of ["Elektriciteit","Gas"])for(const r of ["Digitaal","Klassiek"])lines.push([m,p,s,r,100+(k++)].join(","));
+  const text=lines.join("\n")+"\n",prof=profileColumns(text,{bytesRead:text.length,totalBytes:text.length});
+  assert.equal(prof.grain.unique,true);
+  assert.deepEqual([...prof.grain.columns].sort(),["maand","postcode","regime","sector"],"the count column is a measure, not a label");
+  const card=buildCard({id:"g"},prof,{now:"2026-11-17T00:00:00Z",file:{}});
+  assert.ok(card.facts.some(f=>/^Each row is one combination of .* \(tested on all 24 rows\)\.$/.test(f.text)));
+  assert.equal(card.coverage.grain.columns.length,4);
+  const bad="gemeente,jaar,waarde\nA,2020,1.5\nA,2020,2.5\nB,2020,3.5\n";
+  const pb=profileColumns(bad,{bytesRead:bad.length,totalBytes:bad.length});
+  assert.equal(pb.grain.unique,false);
+  assert.ok(buildCard({id:"h"},pb,{now:"2026-11-17T00:00:00Z",file:{}}).facts.some(f=>/^No set of label columns identifies each row: even by 'gemeente', 1 row shares its labels/.test(f.text)));
+  console.log(JSON.stringify({ok:true,grain:"tested on the file"}));
+}

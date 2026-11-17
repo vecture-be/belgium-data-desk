@@ -7,7 +7,7 @@ export const SOURCE_OVERRIDES = {
     evidence: [
       ["Statbel Open Data","https://statbel.fgov.be/en/open-data"],
       ["Statistical sectors 2026","https://statbel.fgov.be/en/open-data/statistical-sectors-2026"],
-      ["Statistical sectors 2023 — coding warning","https://statbel.fgov.be/en/open-data/statistical-sectors-2023"]
+      ["Statistical sectors 2023, coding warning","https://statbel.fgov.be/en/open-data/statistical-sectors-2023"]
     ],
     verifiedNote: "Verified at dataset level: preserve period, CRS, code-table version and boundary vintage together."
   },
@@ -119,7 +119,7 @@ export const SOURCE_OVERRIDES = {
     note: "Do not model 'Elia load' as one timeless series. Dataset definitions, resolution and historical/near-real-time variants matter. Elia currently warns that the 'Load on the Elia grid' dataset may have a publication issue and recommends Total load instead.",
     evidence: [
       ["Total generation by fuel type","https://opendata.elia.be/explore/dataset/ods201/"],
-      ["Load on Elia grid — publisher warning","https://opendata.elia.be/explore/dataset/ods003/"],
+      ["Load on Elia grid, publisher warning","https://opendata.elia.be/explore/dataset/ods003/"],
       ["Measured/forecast total load","https://opendata.elia.be/explore/dataset/ods001/api/"]
     ],
     verifiedNote: "Use dataset identifier + datetime + resolution + dataset-specific dimensions; 'ENTSO-E fuel type' applies to particular datasets, not every Elia dataset."
@@ -134,7 +134,7 @@ export const SOURCE_OVERRIDES = {
     verifiedNote: "The publisher explicitly exposes both station-style WFS data and modelled outputs, so 'air-quality data' is not one homogeneous grain."
   },
   wallonia: {
-    summary: "Official Walloon catalogue for geographic datasets, web services, interactive maps and—where offered—downloads.",
+    summary: "Official Walloon catalogue for geographic datasets, web services, interactive maps and, where offered, downloads.",
     note: "Access and reuse conditions are resource-specific. The portal recommends web services/interactive maps when freshness matters; direct download is not available for every resource and can require an account.",
     evidence: [
       ["Wallonia maps & data","https://geoportail.wallonie.be/cartes-et-donnees"],
@@ -437,7 +437,7 @@ export const QUIZ_EXTRA = [
 // Additional portal-level corrections discovered during the 2026-09-30 audit.
 SOURCE_OVERRIDES.geopunt = {
   summary:"Geopunt is a Flemish geospatial discovery/viewing ecosystem whose catalogue metadata describes datasets and services; the catalogue is transitioning toward the central Datavindplaats API.",
-  note:"Do not infer one uniform schema, licence or access mode from the portal. Individual metadata records identify owner, content, geographic extent, distributions/services and use restrictions; many—but not all—resources expose direct downloads or OGC services.",
+  note:"Do not infer one uniform schema, licence or access mode from the portal. Individual metadata records identify owner, content, geographic extent, distributions/services and use restrictions; many, but not all, resources expose direct downloads or OGC services.",
   evidence:[
     ["Geopunt catalogue transition / Datavindplaats","https://www.geopunt.be/download"],
     ["Geopunt metadata guidance","https://www.geopunt.be/voor-experts/metadata"]
@@ -454,9 +454,9 @@ SOURCE_OVERRIDES.brussels = {
   summary:"The Brussels-Capital Region's open-data portal, listing and documenting datasets and services produced by Brussels public authorities and participating organisations.",
   note:"This replaces the earlier incorrect link to opendata.brussels.be, which is the City of Brussels portal rather than the regional portal. Datastore resources have dataset-specific access methods and conditions; UrbIS is a separate regional reference-geodata family available through the ecosystem.",
   evidence:[
-    ["Brussels-Capital Region — Datastore service","https://be.brussels/en/about-region/datastore"],
+    ["Brussels-Capital Region, Datastore service","https://be.brussels/en/about-region/datastore"],
     ["Datastore Brussels","https://datastore.brussels/"],
-    ["Brussels-Capital Region — UrbIS data","https://be.brussels/en/about-region/urbis-data"]
+    ["Brussels-Capital Region, UrbIS data","https://be.brussels/en/about-region/urbis-data"]
   ],
   verifiedNote:"Regional scope is now correctly attributed to Brussels-Capital Region / Paradigm; the former City of Brussels portal attribution was wrong."
 };
