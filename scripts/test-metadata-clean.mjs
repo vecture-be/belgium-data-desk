@@ -133,3 +133,14 @@ assert.deepEqual(columnTokens(["geo_point_2d","code_postal","id","NACE_code"]).f
  infer(xs);assert.equal(xs[1].provider,"Fluvius");assert.equal(xs[1].publisherInferredFrom,"slug");
  assert.equal(xs[4].provider,"data.gov.be source","a slug two publishers use names neither")}
 console.log("measured columns tests passed");
+// copies of one portal dataset share a collection id; an unnamed copy takes its publisher; a real series is kept
+import { groupPortalCopies, portalSlug } from "./metadata-clean.mjs";
+{const u="https://opendata.fluvius.be/explore/dataset/1_35-aantal-klachten-fluvius/";
+ const xs=[{id:"a",provider:"Fluvius",officialUrl:u},{id:"b",provider:"data.gov.be source",distributions:[{url:"https://fluvius.opendatasoft.com/api/v2/catalog/datasets/1_35-aantal-klachten-fluvius/exports/csv"}]},
+  {id:"c",provider:"Fluvius",officialUrl:u,seriesId:"series:x"},{id:"d",provider:"Other",officialUrl:"https://x.example/explore/dataset/another-dataset-slug/"}];
+ assert.equal(portalSlug(u),"1_35-aantal-klachten-fluvius");
+ groupPortalCopies(xs);
+ assert.ok(xs[0].seriesId?.startsWith("copy:"));assert.equal(xs[0].seriesId,xs[1].seriesId);assert.equal(xs[1].provider,"Fluvius");assert.equal(xs[2].seriesId,"series:x");assert.equal(xs[3].seriesId,undefined);
+ const two=[{provider:"A",officialUrl:"https://a.example/explore/dataset/communes-belges-2024/"},{provider:"B",officialUrl:"https://b.example/explore/dataset/communes-belges-2024/"}];
+ groupPortalCopies(two);assert.ok(two.every(x=>!x.seriesId),"two publishers with one slug are not copies")}
+console.log("portal copies tests passed");

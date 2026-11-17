@@ -1,4 +1,5 @@
 // Value-level cleaning shared by the harvest (national DCAT, ISO, portals) and the index build.
+import { createHash } from "node:crypto";
 // Each rule fixes a defect measured on the live catalogue (2026-11-17 quality round); the counts are in the comments.
 const clean=s=>String(s??"").replace(/\s+/g," ").trim();
 const thisYear=()=>new Date().getUTCFullYear();
@@ -89,6 +90,34 @@ export function unifyPublisherNames(items,field="provider"){
   for(const x of items){const k=nameKey(x[field]);if(!k)continue;const m=counts.get(k)||counts.set(k,new Map()).get(k);m.set(x[field],(m.get(x[field])||0)+1)}
   const pick=new Map();for(const [k,m] of counts)if(m.size>1)pick.set(k,[...m].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0][0]);
   let n=0;for(const x of items){const p=pick.get(nameKey(x[field]));if(p&&p!==x[field]){x[field]=p;n++}}
+  return n;
+}
+
+/* ---------- copies of one portal dataset ---------- */
+/** The portal dataset slug in an OpenDataSoft-style URL ("…/explore/dataset/<slug>/", "…/catalog/datasets/<slug>/…"), when distinctive. */
+export function portalSlug(u){const m=String(u||"").match(/\/(?:explore\/dataset|catalog\/datasets)\/([^/?#]+)/i);return m&&m[1].length>=12&&/[-_]/.test(m[1])?m[1].toLowerCase():""}
+/**
+ * The same portal dataset is often listed 2-4 times: the portal's own record (Dutch title), data.gov.be (English title), a hand-reviewed
+ * record (370 datasets, 776 records on 2026-11-17). Records sharing a distinctive slug and the same (or an unknown) publisher get one
+ * collection id, so search shows the best one with "more in collection". A real series (series:…) is never overwritten.
+ */
+export function groupPortalCopies(items,{unknown="data.gov.be source"}={}){
+  const bySlug=new Map();
+  for(const x of items){
+    const slugs=new Set([x.officialUrl,...(x.distributions||[]).map(d=>Array.isArray(d)?d[4]:d?.url)].map(portalSlug).filter(Boolean));
+    for(const s of slugs)(bySlug.get(s)||bySlug.set(s,[]).get(s)).push(x);
+  }
+  let n=0;
+  for(const [slug,xs] of bySlug){
+    const members=[...new Set(xs)];if(members.length<2)continue;
+    const pubs=new Set(members.map(x=>x.provider).filter(p=>p&&p!==unknown));if(pubs.size>1)continue;
+    const id="copy:"+createHash("sha1").update(slug).digest("hex").slice(0,10);
+    // a copy without a named publisher takes the one its other copies name
+    if(pubs.size===1){const p=[...pubs][0];for(const x of members)if(!x.provider||x.provider===unknown){x.provider=p;x.publisherInferredFrom="slug"}}
+    const eligible=members.filter(x=>!x.seriesId||/^(same|copy):/.test(x.seriesId));
+    if(eligible.length<2)continue;   // the others already belong to a real series
+    for(const x of eligible)if(x.seriesId!==id){x.seriesId=id;n++}
+  }
   return n;
 }
 

@@ -57,7 +57,7 @@ check(bad(x=>/^v\d|^\d{5,}$/.test(x.license||"")||/^\d{6,}$/.test(x.geoCoverage|
 check(bad(x=>x.probe&&(x.probe.ok>x.probe.n||x.probe.mm>x.probe.ok))===0,"probe summaries are coherent");
 check(bad(x=>x.tier==="ready"&&!(x.probe&&x.probe.ok>0))===0,"READY tier only with a successful probe",bad(x=>x.tier==="ready"&&!(x.probe&&x.probe.ok>0))+" violations");
 const seriesIds=new Set((index.series||[]).map(s=>s.id)),memberCount=new Map();
-for(const x of national)if(x.seriesId)memberCount.set(x.seriesId,(memberCount.get(x.seriesId)||0)+1);
+for(const x of national)if(String(x.seriesId||"").startsWith("series:"))memberCount.set(x.seriesId,(memberCount.get(x.seriesId)||0)+1);
 check([...memberCount.keys()].every(id=>seriesIds.has(id)),"every seriesId exists in the series table");
 const drift=(index.series||[]).filter(s=>memberCount.get(s.id)!==s.count);
 check(!drift.length,"series counts equal member counts",drift.length+" mismatches");
