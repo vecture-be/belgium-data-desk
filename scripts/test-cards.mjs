@@ -84,10 +84,12 @@ console.log(JSON.stringify({ok:true,coverage:"reporting periods only"}));
   const card=buildCard({id:"g"},prof,{now:"2026-11-17T00:00:00Z",file:{}});
   assert.ok(card.facts.some(f=>/^Each row is one combination of .* \(tested on all 24 rows\)\.$/.test(f.text)));
   assert.equal(card.coverage.grain.columns.length,4);
-  const bad="gemeente,jaar,waarde\nA,2020,1.5\nA,2020,2.5\nB,2020,3.5\n";
+  const bad="gemeente,jaar,waarde\n"+[..."ABCDEF"].flatMap((g,i)=>[g+",2020,"+i+".5",g+",2020,"+i+".25"]).join("\n")+"\n";
   const pb=profileColumns(bad,{bytesRead:bad.length,totalBytes:bad.length});
   assert.equal(pb.grain.unique,false);
-  assert.ok(buildCard({id:"h"},pb,{now:"2026-11-17T00:00:00Z",file:{}}).facts.some(f=>/^No set of label columns identifies each row: even by 'gemeente', 1 row shares its labels/.test(f.text)));
+  assert.ok(buildCard({id:"h"},pb,{now:"2026-11-17T00:00:00Z",file:{}}).facts.some(f=>/^No combination of its label columns identifies each row: by 'gemeente', 6 rows still share their labels/.test(f.text)));
+  const tiny="id,naam\n1,a\n2,b\n";
+  assert.ok(!buildCard({id:"t"},profileColumns(tiny,{bytesRead:tiny.length,totalBytes:tiny.length}),{now:"2026-11-17T00:00:00Z",file:{}}).facts.some(f=>/combination|label columns/.test(f.text)),"no grain sentence for a handful of rows");
   console.log(JSON.stringify({ok:true,grain:"tested on the file"}));
 }
 
