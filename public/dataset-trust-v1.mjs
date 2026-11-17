@@ -10,9 +10,9 @@ export function freshness(item,now=Date.now()){
   if(freq==="NEVER"||freq==="NOT_PLANNED")return{state:"static",ageDays:age,note:"Publisher says it will not be updated."};
   if(age==null)return{state:"unknown",ageDays:null,note:"No modification date in the catalogue record."};
   const expected=FREQ_DAYS[freq];
-  if(expected)return age<=expected?{state:"current",ageDays:age,note:"Updated within its declared "+freq.toLowerCase().replace(/_/g," ")+" cycle (metadata date)."}:{state:"stale",ageDays:age,note:"Declared "+freq.toLowerCase().replace(/_/g," ")+", but the catalogue record last changed "+(age===1?"1 day":age+" days")+" ago."};
+  if(expected)return age<=expected?{state:"current",ageDays:age,note:"Updated within its declared "+freq.toLowerCase().replace(/_/g," ")+" cycle (metadata date)."}:{state:"stale",ageDays:age,note:"Declared "+freq.toLowerCase().replace(/_/g," ")+", but the catalogue record last changed "+(age===0?"today.":age===1?"1 day ago.":age+" days ago.")};
   if(age>1095)return{state:"old",ageDays:age,note:"No update cycle declared; last modified over 3 years ago (metadata date)."};
-  return{state:"dated",ageDays:age,note:"No update cycle stated. The catalogue record last changed "+(age===1?"1 day":age+" days")+" ago."};
+  return{state:"dated",ageDays:age,note:"No update cycle stated. The catalogue record last changed "+(age===0?"today.":age===1?"1 day ago.":age+" days ago.")};
 }
 
 /* ---------- trust checks ("receipts") ---------- */
