@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { mergeDiscoveredAssets } from "../public/dataset-discovery-v1.mjs";
 import { SCOPES, enviOverride, scopeCounts, scopeOf, TOPIC_LABELS, topicOf } from "../public/dataset-taxonomy-v1.mjs";
-import { canonicalPublisher, cityGeography, cleanFrequency, cleanPeriod, cutText, htmlToText, httpsLink, unifyPublisherNames, validUpdated } from "./metadata-clean.mjs";
+import { canonicalPublisher, cityGeography, cleanFrequency, cleanPeriod, cutText, groupPortalCopies, htmlToText, httpsLink, unifyPublisherNames, validUpdated } from "./metadata-clean.mjs";
 import { normalizeLicense } from "../public/dataset-licence-v1.mjs";
 import { annotateItems, loadProbes } from "./apply-link-health.mjs";
 import { inferPublishers } from "./national-dcat.mjs";
@@ -256,6 +256,8 @@ async function main(){
   // hand-reviewed assets name their publisher as the catalogue does ("Statbel, Belgian statistical office" -> "Statbel")
   const catalogueNames=new Set(items.filter(x=>!x.curated).map(x=>x.provider));
   for(const it of items)if(it.curated)it.provider=catalogueNameFor(it.provider,catalogueNames)||it.provider;
+  // one portal dataset listed by several catalogues (and hand-reviewed) shows once in search, with "more in collection"
+  groupPortalCopies(items);
   const {RELAY_INDEX}=await import("../relay-index.mjs");
   const built=buildIndex(items,{relay:RELAY_INDEX});
   const counts=scopeCounts(items),topics={};

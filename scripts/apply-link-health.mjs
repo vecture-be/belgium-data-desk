@@ -6,6 +6,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { accessTier, interpretProbe, probeIsConclusive } from "./curate.mjs";
+import { groupPortalCopies } from "./metadata-clean.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url)),pub=path.resolve(__dirname,"../public");
 
@@ -70,29 +71,28 @@ function main(){
   const file=path.resolve(i>=0?args[i+1]:path.join(__dirname,"../.cache/link-probe.jsonl"));
   const {byUrl,at}=loadProbes(file);
   const columns=loadColumns([file,path.join(path.dirname(file),"full-check.jsonl")]);
-  if(!byUrl.size){console.log("[link-health] no probe file at "+file+"; nothing to apply");return}
+  if(!byUrl.size)console.log("[link-health] no probe file at "+file+"; only grouping copies of portal datasets");
   const manifestPath=path.join(pub,"catalogue-manifest.json"),manifest=fs.existsSync(manifestPath)?JSON.parse(fs.readFileSync(manifestPath,"utf8")):{files:{}};
   let total=0;
-  const indexPath=path.join(pub,"national-catalog.json");
-  if(fs.existsSync(indexPath)){
-    const index=JSON.parse(fs.readFileSync(indexPath,"utf8"));
-    for(const c of index.chunks||[]){
-      const fp=path.join(pub,c.file),page=JSON.parse(fs.readFileSync(fp,"utf8"));
-      total+=annotateItems(page.items||[],byUrl,columns);
-      const body=JSON.stringify(page)+"\n";fs.writeFileSync(fp,body);c.bytes=Buffer.byteLength(body);c.sha256=sha(body);
-    }
-    index.linkHealth={at,probedUrls:byUrl.size,ok:[...byUrl.values()].filter(h=>h.ok).length};
+  // load every catalogue file first: grouping copies of one portal dataset needs the national and harvested records together
+  const indexPath=path.join(pub,"national-catalog.json"),hvPath=path.join(pub,"harvested-catalog.json");
+  const index=fs.existsSync(indexPath)?JSON.parse(fs.readFileSync(indexPath,"utf8")):null;
+  const pages=(index?.chunks||[]).map(c=>({c,fp:path.join(pub,c.file),page:JSON.parse(fs.readFileSync(path.join(pub,c.file),"utf8"))}));
+  const hv=fs.existsSync(hvPath)?JSON.parse(fs.readFileSync(hvPath,"utf8")):null;
+  if(byUrl.size){for(const p of pages)total+=annotateItems(p.page.items||[],byUrl,columns);if(hv)total+=annotateItems(hv.items||[],byUrl,columns)}
+  const grouped=groupPortalCopies([...pages.flatMap(p=>p.page.items||[]),...(hv?.items||[])]);
+  for(const {c,fp,page} of pages){const body=JSON.stringify(page)+"\n";fs.writeFileSync(fp,body);c.bytes=Buffer.byteLength(body);c.sha256=sha(body)}
+  if(index){
+    if(byUrl.size)index.linkHealth={at,probedUrls:byUrl.size,ok:[...byUrl.values()].filter(h=>h.ok).length};
     const body=JSON.stringify(index)+"\n";fs.writeFileSync(indexPath,body);
     manifest.files["national-catalog.json"]={sha256:sha(body),bytes:Buffer.byteLength(body)};
   }
-  const hvPath=path.join(pub,"harvested-catalog.json");
-  if(fs.existsSync(hvPath)){
-    const hv=JSON.parse(fs.readFileSync(hvPath,"utf8"));
-    total+=annotateItems(hv.items||[],byUrl,columns);hv.linkHealth={at,probedUrls:byUrl.size};
+  if(hv){
+    if(byUrl.size)hv.linkHealth={at,probedUrls:byUrl.size};
     const body=JSON.stringify(hv)+"\n";fs.writeFileSync(hvPath,body);
     manifest.files["harvested-catalog.json"]={sha256:sha(body),bytes:Buffer.byteLength(body)};
   }
   fs.writeFileSync(manifestPath,JSON.stringify(manifest)+"\n");
-  console.log("[link-health] applied "+byUrl.size+" probe results (newest "+at+") to "+total+" catalogue records");
+  console.log("[link-health] applied "+byUrl.size+" probe results (newest "+at+") to "+total+" catalogue records; "+grouped+" records grouped as copies of one portal dataset");
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))main();
