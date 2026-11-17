@@ -33,9 +33,10 @@ function fillGrid(section,c){
   const read=c.file?.rows_exact?"the whole file":"the first "+Math.round((c.file?.bytes_read||0)/1024)+" KB";
   set("when","measured "+esc(c.profiled_at)+" from "+esc(read));
   const g=c.coverage?.grain;
-  if(g){
+  if(g&&g.rows_tested>=10){
     const cols=g.columns.map(esc).join(" × ");
     set("grain",g.unique?cols+' <em>tested on '+(g.rows_total?"the first "+n(g.rows_tested):n(g.rows_tested))+' rows</em>'
+      :g.capped?'not settled <em>'+n(g.rows_tested-g.keys)+' rows still repeat after '+g.columns.length+' columns: '+cols+'</em>'
       :'not unique <em>even by '+cols+', '+n(g.rows_tested-g.keys)+' rows repeat their labels</em>');
   }
   if(c.file?.rows!=null)set("size",(c.file.rows_exact?"":"at least ")+n(c.file.rows)+" rows"+(c.columns?.length?", "+c.columns.length+" columns":""));

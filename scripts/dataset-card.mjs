@@ -143,7 +143,7 @@ export function createColumnProfiler(delimiter){
  * every value of a label column (codes, dates, names, years; not measured numbers) gets a small integer code while streaming,
  * then label columns are added greedily, each time the one that separates the most rows, until every row is unique or no
  * column helps. Counting is exact: a group id times the column's code count stays below 2^53. */
-const MAX_GRAIN_ROWS=500_000,MAX_GRAIN_CODES=50_000,MAX_GRAIN_COLUMNS=24,MAX_GRAIN_KEY=6,GRAIN_CHUNK=65536;
+const MAX_GRAIN_ROWS=500_000,MAX_GRAIN_CODES=50_000,MAX_GRAIN_COLUMNS=24,MAX_GRAIN_KEY=12,GRAIN_CHUNK=65536;
 const LABEL_INT=/code|_id\b|\bid\b|nr\b|nummer|numero|num[eé]ro|jaar|year|ann[eé]e|maand|month|mois|kwartaal|quarter|trimestre|week|semaine|postcode|post_code|code_postal|nis|refnis|ins\b|kbo|bce|ondernemings|sector|niveau|level|klasse|class/i;
 export function createGrainTracker(){
   let n=0,width=-1;const cols=[];
@@ -185,7 +185,7 @@ export function createGrainTracker(){
       }
       for(const c of cols){c.chunks=null;c.codes=null}
       if(!chosen.length)return null;
-      return{columns:chosen.map(c=>c.name),unique:groups===tested,keys:groups,rows_tested:tested,...(n>tested?{rows_total:n}:{})};
+      return{columns:chosen.map(c=>c.name),unique:groups===tested,keys:groups,rows_tested:tested,...(groups<tested&&chosen.length>=MAX_GRAIN_KEY?{capped:true}:{}),...(n>tested?{rows_total:n}:{})};
     }
   };
 }
@@ -350,13 +350,15 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
   if(profile.duplicate_rows>0)add((profile.duplicate_rows_lower_bound?"At least ":"")+fmtInt(profile.duplicate_rows)+" of the "+fmtInt(profile.rows)+" rows ("+num(Math.round(profile.duplicate_rows/profile.rows*1000)/10)+" %) repeat an earlier row exactly.",
     {duplicate_rows:profile.duplicate_rows,rows:profile.rows,...(profile.duplicate_rows_lower_bound?{lower_bound:true}:{})});
   const g=profile.grain;
-  if(g){
+  // a handful of rows says nothing about what a row stands for
+  if(g&&g.rows_tested>=10){
     const list=g.columns.map(c=>"'"+c+"'"),names=list.length>1?list.slice(0,-1).join(", ")+" and "+list.at(-1):list[0];
     const scope=!profile.rows_exact?"the "+fmtInt(g.rows_tested)+" rows read":g.rows_total?"the first "+fmtInt(g.rows_tested)+" of "+fmtInt(g.rows_total)+" rows":"all "+fmtInt(g.rows_tested)+" rows";
     const repeats=g.rows_tested-g.keys,onlyDuplicates=!g.unique&&profile.duplicate_rows>0&&repeats<=profile.duplicate_rows;
     if(g.unique)add("Each row is one combination of "+names+" (tested on "+scope+").",g);
     else if(onlyDuplicates)add("Apart from the repeated rows, each row is one combination of "+names+" (tested on "+scope+").",g);
-    else add("No set of label columns identifies each row: even by "+names+", "+fmtInt(repeats)+(repeats===1?" row shares its":" rows share their")+" labels with another row (tested on "+scope+").",g);
+    else if(g.capped)add("The "+g.columns.length+" label columns that separate rows best ("+names+") still leave "+fmtInt(repeats)+(repeats===1?" row":" rows")+" repeating their labels; more columns were not tested (tested on "+scope+").",g);
+    else add("No combination of its label columns identifies each row: by "+names+", "+fmtInt(repeats)+(repeats===1?" row still shares its":" rows still share their")+" labels with another row (tested on "+scope+").",g);
   }
   if(constant.length)add("Column"+(constant.length>1?"s ":" ")+constant.slice(0,3).map(c=>"'"+c+"'").join(", ")+" "+(constant.length>1?"have":"has")+" a single value "+(profile.rows_exact?"throughout.":"in all rows read."),{columns:constant});
 
