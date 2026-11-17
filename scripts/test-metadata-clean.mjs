@@ -98,3 +98,9 @@ assert.equal(inferDatasetBrief({title:"Fietstelpaal Groendreef",provider:"City o
 assert.equal(inferDatasetBrief({title:"Air Quality download service, 2013-now"}).time,"2013–"+Y);
 assert.equal(inferDatasetBrief({title:"Consumer price index",description:"CPI base 1920, health index 1994"}).time,"not clearly stated","description years are not coverage");
 console.log("round 3b tests passed");
+// round 4: harvested names as the site shows them
+assert.equal(canonicalPublisher("Administration Générale de la Documentation Patrimoniale (SPF Finances - AGDP)"),"FPS Finance");
+assert.equal(canonicalPublisher("Brussels Mobility: Active mobility"),"Brussels Mobility");
+{const xs=[{provider:"BeWaPP"},{provider:"BeWaPP"},{provider:"Be WaPP asbl"},{provider:"Agence du Numérique"},{provider:"Agence du Numérique"},{provider:"Agence du Numérique (AdN)"}];
+ unifyPublisherNames(xs);assert.deepEqual([...new Set(xs.map(x=>x.provider))],["BeWaPP","Agence du Numérique"])}
+console.log("round 4 tests passed");

@@ -321,7 +321,7 @@ const hayCache=new WeakMap();
 function expandedSearchText(a){let h=hayCache.get(a);if(h===undefined){h=expandSearchHay(searchText(a));hayCache.set(a,h)}return h}
 function matchesBase(a){
   const terms=queryTerms(state.q);
-  return(!state.pinnedOnly||state.stack.has(a.id))&&(!state.nationalOnly||isNationalIndexed(a))&&(!terms.length||terms.every(t=>expandedSearchText(a).includes(t)))&&(!state.depth||a.depth===state.depth)&&(!state.source||publisherFilterKey(a)===state.source)&&(!state.kind||a.kind===state.kind)&&(!state.format||normalizedFormats(a).includes(state.format))&&(!state.delivery||matchesDelivery(a,state.delivery))&&(!state.topic||a.topic===state.topic)&&(!state.licence||licenceGroup(a)===state.licence);
+  return(!state.pinnedOnly||state.stack.has(a.id))&&(!state.nationalOnly||isNationalIndexed(a))&&(!terms.length||terms.every(t=>expandedSearchText(a).includes(t))||(a.depth==="modelled"&&authorityIdsFor(state.q).has("curated:"+a.id)))&&(!state.depth||a.depth===state.depth)&&(!state.source||publisherFilterKey(a)===state.source)&&(!state.kind||a.kind===state.kind)&&(!state.format||normalizedFormats(a).includes(state.format))&&(!state.delivery||matchesDelivery(a,state.delivery))&&(!state.topic||a.topic===state.topic)&&(!state.licence||licenceGroup(a)===state.licence);
 }
 function matches(a){return matchesBase(a)&&(!state.analysis||analysisReadiness(a).kind===state.analysis)}
 // Relevance depends only on the asset and the query; cache per asset object and reset when the query changes.
@@ -453,7 +453,7 @@ function row(a,familyCount=1){
   const publisherId=publisherReference(a),evidence=datasetEvidence(a),analysis=analysisReadiness(a),previewable=(a.distributions||[]).some(x=>distributionCapability(x).group==="inspectable"),brief=briefMeta(a),ldes=ldesCapability(a);
   const briefBits=[
     statedGrain(a)?"ROW · "+brief.grain:"",
-    brief.time!=="not clearly stated"&&brief.time!==String(new Date().getFullYear())?"TIME · "+brief.time:"",
+    brief.time!=="not clearly stated"?"TIME · "+brief.time:"",
     brief.geography!=="not clearly stated"?"GEO · "+brief.geography:"",
     brief.identifierText?"KEY · "+brief.identifierText:""
   ].filter(Boolean);
@@ -771,7 +771,7 @@ function renderAboutData(a){
   const b=inferDatasetBrief(a),ids=mergedIdentifierHints(a),checks=trustChecks(assetAsTrustItem(a));
   const guess=b.oneRow.replace(/^Likely one row represents |^One row represents /,"").replace(/\.$/,"");
   const tested=a.depth==="modelled";
-  const period=b.time&&b.time!==String(new Date().getFullYear())?b.time.replace(/–/g," to "):"";
+  const period=b.time&&b.time!=="not clearly stated"?b.time.replace(/–/g," to "):"";
   const cell=(k,label,value,note)=>'<div><dt>'+label+'</dt><dd data-about="'+k+'">'+value+(note?' <em>'+note+'</em>':"")+'</dd></div>';
   const rows=checks.map(c=>'<li class="trust-check '+c.status+'"><span class="trust-mark" aria-label="'+c.status+'">'+CHECK_MARK[c.status]+'</span><div><b>'+esc(c.label)+'</b><span>'+esc(plainDash(c.detail))+'</span></div></li>').join("");
   return '<section class="about-data" data-about-for="'+esc(a.id)+'"><div class="section-cap"><h3>About this data</h3><span data-about="when"></span></div>'+
@@ -820,7 +820,7 @@ function familyComparison(a,members){
 function renderDatasetBrief(a){
   const b=inferDatasetBrief(a),ids=mergedIdentifierHints(a);
   return '<section class="dataset-brief"><header><b>At a glance</b></header>'+
-    '<div class="dataset-brief-grid"><div><small>ONE ROW</small><b>'+esc(b.oneRow.replace(/^Likely one row represents |^One row represents /,"").replace(/\.$/,""))+'</b></div>'+(b.time&&b.time!==String(new Date().getFullYear())?'<div><small>TIME COVERAGE</small><b>'+esc(b.time)+'</b></div>':"")+'<div><small>GEOGRAPHY</small><b>'+esc(b.geography)+'</b></div></div>'+
+    '<div class="dataset-brief-grid"><div><small>ONE ROW</small><b>'+esc(b.oneRow.replace(/^Likely one row represents |^One row represents /,"").replace(/\.$/,""))+'</b></div>'+(b.time&&b.time!=="not clearly stated"?'<div><small>TIME COVERAGE</small><b>'+esc(b.time)+'</b></div>':"")+'<div><small>GEOGRAPHY</small><b>'+esc(b.geography)+'</b></div></div>'+
     (ids.length?'<div class="dataset-id-hints">'+ids.slice(0,6).map(x=>'<span>'+esc(x.label)+'</span>').join("")+'</div>':"")+
     '</section>';
 }

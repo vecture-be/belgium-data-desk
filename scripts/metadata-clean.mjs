@@ -57,7 +57,7 @@ const ALIASES=[
   [/^(geo\.be \/ )?national geographic institute|^ngi$|^institut g[ée]ographique national\b|^nationaal geografisch instituut\b/i,"National Geographic Institute (NGI)"],
   [/^royal belgian institute (?:of|for) natural sciences|^koninklijk belgisch instituut voor natuurwetenschappen|^institut royal des sciences naturelles/i,"Royal Belgian Institute of Natural Sciences"],
   [/^royal meteorological institute|^koninklijk meteorologisch instituut|^institut royal m[ée]t[ée]orologique/i,"Royal Meteorological Institute of Belgium"],
-  [/^(fps|spf|fod) finan(ce|ces|ciën)\b/i,"FPS Finance"],
+  [/^(fps|spf|fod) finan(ce|ces|ciën)\b|\((spf|fps|fod) finan(ces?|ciën)\b|documentation patrimoniale|patrimoniumdocumentatie|patrimonial documentation/i,"FPS Finance"],
   [/^(le )?forem$/i,"Le Forem"],
   // product or portal names used as publisher by direct harvests and hand-reviewed sources
   [/^(agentschap )?digitaal vlaanderen(:.*)?$/i,"Agentschap Digitaal Vlaanderen"],
@@ -80,7 +80,9 @@ export function canonicalPublisher(name){
   for(const [re,canon] of ALIASES)if(re.test(s))return canon;
   return s;
 }
-const nameKey=s=>clean(s).normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+// spellings compare without accents, case, spaces, legal form or a trailing acronym: "Be WaPP asbl" = "BeWaPP", "Agence du Numérique (AdN)" = "Agence du Numérique"
+const nameKey=s=>clean(s).replace(/\s*\([A-Za-zÀ-ÿ.\-]{2,12}\)\s*$/,"").normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase()
+  .replace(/\b(asbl|vzw|nv|sa|bv|srl|scrl|cvba|n\.v\.|s\.a\.)\.?$/,"").replace(/[^a-z0-9]+/g,"").trim();
 /** Spellings that differ only in case, accents or punctuation (BEBAT/Bebat, Université Libre/libre) take the most used one. */
 export function unifyPublisherNames(items,field="provider"){
   const counts=new Map();

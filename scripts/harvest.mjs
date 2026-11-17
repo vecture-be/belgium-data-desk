@@ -7,7 +7,7 @@ import { kindOf, normalizeLicense, topicOf } from "./curate.mjs";
 import { RELAY_INDEX_PATH, writeRelayIndex } from "./relay-index-lib.mjs";
 import { getJsonOnce, getJsonRetry } from "./harvest-fetch.mjs";
 import { asList, isoRecords, odsTemporal, parseIsoRecord } from "./harvest-iso.mjs";
-import { cutText, htmlToText } from "./metadata-clean.mjs";
+import { canonicalPublisher, cutText, htmlToText, unifyPublisherNames } from "./metadata-clean.mjs";
 import { DOV_CAPABILITIES, DOV_LICENSE, DOV_PROVIDER, collectionsFromCapabilities, groupDov } from "./harvest-dov.mjs";
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
@@ -355,7 +355,9 @@ for(const [name,fn] of jobs){
   catch(e){const fallback=(previous.items||[]).filter(x=>FALLBACK_PREFIX[name]?String(x.id).startsWith(FALLBACK_PREFIX[name]):name==="digitaal-vlaanderen"?/Digitaal Vlaanderen|DOV|SPW Wallonia|Brussels Mobility/.test(x.provider||""):String(x.id).includes(name)||x.provider?.toLowerCase().includes(name));items.push(...fallback);sources[name]={ok:false,count:fallback.length,structured:fallback.filter(x=>x.enrichment?.level==="structured").length,previews:fallback.filter(x=>x.previewRows?.length).length,harvestedAt:previous.sources?.[name]?.harvestedAt||previous.generatedAt||null,attemptedAt:now,error:e.message,fallback:true};console.warn(`[harvest] ${name}: failed (${e.message}); fallback ${fallback.length}`)}
 }
 const dedup=[...new Map(items.filter(x=>x?.id&&x?.title).map(x=>[x.id,x])).values()];
-for(const x of dedup){x.dataKind=kindOf(x);x.topic=topicOf(x);x.licenseFamily=normalizeLicense(x.license).family}
+// one name per publisher, as the index and the national catalogue name it (the site reads this file directly)
+for(const x of dedup){x.provider=canonicalPublisher(x.provider)||x.provider;x.dataKind=kindOf(x);x.topic=topicOf(x);x.licenseFamily=normalizeLicense(x.license).family}
+unifyPublisherNames(dedup);
 const payload={generatedAt:now,itemCount:dedup.length,structuredCount:dedup.filter(x=>x.enrichment?.level==="structured").length,previewCount:dedup.filter(x=>x.previewRows?.length).length,sources,items:dedup};
 fs.writeFileSync(outPath,JSON.stringify(payload)+"\n");
 console.log(`[harvest] wrote ${payload.itemCount} catalogue items (${payload.structuredCount} structured, ${payload.previewCount} previews) -> ${outPath}`);
