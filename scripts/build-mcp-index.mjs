@@ -13,6 +13,7 @@ import { SCOPES, enviOverride, scopeCounts, scopeOf, TOPIC_LABELS, topicOf } fro
 import { canonicalPublisher, cityGeography, cleanFrequency, cleanPeriod, cutText, htmlToText, httpsLink, unifyPublisherNames, validUpdated } from "./metadata-clean.mjs";
 import { normalizeLicense } from "../public/dataset-licence-v1.mjs";
 import { annotateItems, loadProbes } from "./apply-link-health.mjs";
+import { inferPublishers } from "./national-dcat.mjs";
 import { AUTHORITIES } from "../public/dataset-authority-v1.mjs";
 import { DETAIL_CHUNK, DOC_CHUNK, idShard, prefixKey, tokenShard, tokenize } from "../mcp-server.mjs";
 
@@ -112,7 +113,7 @@ export function toDocs(it,relay){
   });
   const detail={fq:cleanFrequency(it.frequency),g:cityGeography(it.provider,it.geoCoverage),url:httpsLink(it.officialUrl||""),ce:it.contactEmail||"",cu:it.contactUrl||"",d:cutText(desc,600),
     ...(termsText?{lt:cutText(lic.raw,400)}:{}),
-    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.licenseFrom?{lsrc:it.licenseFrom}:{}),...(it.licenseShare?{lshare:it.licenseShare}:{}),
+    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.schemaOrigin==="observed-file-header"&&(it.fields||[]).length?{cm:1}:{}),...(it.licenseFrom?{lsrc:it.licenseFrom}:{}),...(it.licenseShare?{lshare:it.licenseShare}:{}),
     ...(tc?{tc:{s:tc.start||null,e:tc.end||null,...(tc.plannedEnd?{pe:tc.plannedEnd}:{})}}:{}),...(it.languages?.length?{lang:it.languages}:{}),
     ...(it.accessRights?{ar:it.accessRights}:{}),...(it.provenance?{prov:cutText(htmlToText(it.provenance),400)}:{}),...(it.crs?.length?{crs:it.crs}:{}),
     ...(it.spatialResolutionM?{res:it.spatialResolutionM}:{}),...(it.hvdCategories?.length?{hvd:it.hvdCategories}:{}),...(it.standards?.length?{std:it.standards.slice(0,4)}:{}),
@@ -176,13 +177,21 @@ export function inheritCuratedLicences(items){
   });
 }
 
+// Column names make a dataset findable by what it holds ("code_postal", "nace", "refnis"). Names every geo or portal export has
+// (geo_point_2d, id, geometry, objectid…) say nothing about the content and would match thousands of records.
+const GENERIC_COLUMN=/^(geo ?point ?2d|geo ?shape|geometry|geom|the ?geom|shape|id|fid|gid|objectid|object ?id|uuid|ogc ?fid|x|y|lat|lon|lng|latitude|longitude|name|nom|naam|type|code|description|omschrijving|libelle|label|value|waarde|valeur|date|datum|record ?id|recordid|timestamp|record ?timestamp|wkt|the_geom)$/i;
+export function columnTokens(cols){
+  const names=(cols||[]).map(c=>String(c||"").replace(/[_.]+/g," ").trim()).filter(c=>c&&!GENERIC_COLUMN.test(c));
+  return tokenize(names.join(" "),{cap:24});
+}
+
 export function buildIndex(rawItems,{relay=null}={}){
   const items=markSameTitle(inheritCuratedLicences(rawItems));
   const ranked=items.slice().sort((a,b)=>rankOf(b)-rankOf(a)||String(a.title).localeCompare(String(b.title)));
   const built=ranked.map(it=>toDocs(it,relay)),docs=built.map(b=>b.light),details=built.map(b=>b.detail),postings=new Map(),ids=new Map();
   docs.forEach((d,i)=>{
     ids.set(d.id,i);for(const alias of ranked[i].aliases||[])if(!ids.has(alias))ids.set(alias,i);
-    const toks=new Set([...tokenize(d.t,{cap:30}),...tokenize(d.p,{cap:6}),...tokenize(details[i].d.slice(0,240),{cap:20}),...tokenize(TOPIC_LABELS[d.tp]||"",{cap:4})]);
+    const toks=new Set([...tokenize(d.t,{cap:30}),...tokenize(d.p,{cap:6}),...tokenize(details[i].d.slice(0,240),{cap:20}),...tokenize(TOPIC_LABELS[d.tp]||"",{cap:4}),...columnTokens(details[i].cols)]);
     for(const t of [...toks]){const pk=prefixKey(t);if(pk)toks.add(pk)}
     for(const t of toks){let l=postings.get(t);if(!l)postings.set(t,l=[]);l.push(i)}
   });
@@ -241,6 +250,8 @@ async function main(){
   items.push(...curated);
   // one spelling per publisher across all sources (national, portals, curated)
   for(const it of items)it.provider=canonicalPublisher(it.provider);
+  // a national record without a publisher can now be named from the portals too (a Fluvius file on opendata.fluvius.be)
+  inferPublishers(items);
   unifyPublisherNames(items);
   // hand-reviewed assets name their publisher as the catalogue does ("Statbel, Belgian statistical office" -> "Statbel")
   const catalogueNames=new Set(items.filter(x=>!x.curated).map(x=>x.provider));

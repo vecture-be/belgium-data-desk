@@ -319,7 +319,7 @@ export async function getDataset(reader,args){
   // Say why a field is empty, so an empty value is not read as "no columns" or "link broken".
   const fieldNotes={
     updated:"Date the publisher last changed the catalogue record, not necessarily when the data was refreshed; files are often replaced without touching the record."+(canPreview?" preview_dataset compares it with dates in the file.":""),
-    ...(!cols.length?{columns:"The publisher declares no column list."+(canPreview?" preview_dataset reads the real columns from the file.":"")}:!x.cols?.length?{columns:"Read from the file by the weekly check (the publisher declares none)."}:{}),
+    ...(!cols.length?{columns:"The publisher declares no column list."+(canPreview?" preview_dataset reads the real columns from the file.":"")}:!x.cols?.length||x.cm?{columns:"Read from the file by the weekly check (the publisher declares none)."}:{}),
     ...(!x.pr?{link_check:"No conclusive weekly link-check result is recorded: the last check of its files was inconclusive (timeout, rate limit or the publisher blocking the checker) or its formats are not checked. This is not a sign of a broken link."+(canPreview?" preview_dataset reads the file live.":"")}:{}),
     ...((x.files||[]).some(f=>!f.s)?{size_bytes:"Null where the publisher declares no file size."}:{}),
     units:"Units are only known when the publisher states them in the description or column names; do not assume one."
@@ -327,7 +327,7 @@ export async function getDataset(reader,args){
   const cycle=updateCycle(x.fq),source=x.url||d.w||null;
   // Fields the publisher's own record leaves empty: named as gaps in the source, with the page where the publisher may say more.
   const measuredPeriod=card?.coverage?.time;
-  const gaps=[!d.l&&"licence",cycle.update_cycle_declared===false&&"update cycle",!cols.length&&"column list",!x.ce&&!x.cu&&"contact",!d.u&&"update date",!x.tc&&!measuredPeriod&&"period covered"].filter(Boolean);
+  const gaps=[!d.l&&"licence",cycle.update_cycle_declared===false&&"update cycle",(!x.cols?.length||x.cm)&&"column list",!x.ce&&!x.cu&&"contact",!d.u&&"update date",!x.tc&&!measuredPeriod&&"period covered"].filter(Boolean);
   // What the data is about in time, language, access and lineage: declared by the publisher, or read from the file (said which).
   const about={
     ...(x.tc?{period:{from:x.tc.s,to:x.tc.e,source:"declared by the publisher",...(x.tc.pe?{planned_end:x.tc.pe,planned_end_note:"The publisher gives an end date in the future: a validity or planning date, so the period is shown as open-ended."}:{})}}:measuredPeriod?{period:{from:measuredPeriod.from,to:measuredPeriod.to,source:"read from the file (column "+measuredPeriod.column+")"}}:{}),
@@ -343,7 +343,7 @@ export async function getDataset(reader,args){
     updated:d.u||null,...cycle,
     ...(gaps.length?{not_declared_by_publisher:{fields:gaps,source_page:source,note:"These are gaps in the publisher's own catalogue record, not faults in this tool. The source page may give them."}}:{}),
     ...(profile?{data_profile:profile}:{}),
-    ...about,...(x.pinf?{publisher_inferred:"The catalogue record names no publisher; this one is inferred from the record's "+({kbo:"owner enterprise number",mail:"contact address",domain:"contact e-mail domain",host:"landing-page website"}[x.pinf]||x.pinf)+"."}:{}),
+    ...about,...(x.pinf?{publisher_inferred:"The catalogue record names no publisher; this one is inferred from the record's "+({kbo:"owner enterprise number",mail:"contact address",domain:"contact e-mail domain",host:"website or file host",slug:"dataset id on the publisher's own portal"}[x.pinf]||x.pinf)+"."}:{}),
     geography:x.g||null,landing_page:x.url||null,contact:{...(x.cn?{name:x.cn}:{}),email:x.ce||null,url:x.cu||null},description:x.d||"",columns:cols,access_tier:d.tier||null,
     ...(analysisFor(x,reader.origin,d.id)?{analysis:analysisFor(x,reader.origin,d.id)}:{}),
     ...(auth?{authoritative_source:{need:auth.need,why:auth.why,...(auth.caveat?{caveat:auth.caveat}:{})}}:{}),
