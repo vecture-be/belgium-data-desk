@@ -1,6 +1,10 @@
 // Dutch / French / English concept groups for Belgian open-data search. Words in one group are treated as the same concept.
 // Shared by the MCP search (OR within a group, AND across the query's groups) and the browser search. Words are lower-case, accent-free.
 export const CONCEPTS=[
+  // regions and their adjectives: "geologisch 3D model Vlaanderen" must find "… van de Vlaamse ondergrond" in a title
+  ["flanders","vlaanderen","vlaams","vlaamse","flandre","flamand","flamande","flemish"],
+  ["wallonia","wallonie","waals","waalse","wallon","wallonne","walloon"],
+  ["brussels","brussel","bruxelles","brusselse","bruxellois","bruxelloise"],
   ["municipality","gemeente","gemeenten","commune","communes","municipal","gemeentelijk","communal","stad","ville","city"],
   ["population","bevolking","inwoners","habitants","population","demografie","demographie","demography","census","volkstelling","recensement"],
   ["household","huishouden","huishoudens","menage","menages","gezin","family","families"],
