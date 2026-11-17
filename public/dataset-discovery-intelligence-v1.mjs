@@ -78,7 +78,10 @@ function yearsFor(a){
   if(p&&(y(p.start)>1800||y(p.end)>1800)){const s=y(p.start)>1800?y(p.start):y(p.end),e=y(p.end)>1800?y(p.end):new Date().getFullYear();return s===e?[s]:[s,e]}
   // Otherwise only the title (and a hand-written time field) says what period the data is about. Years in descriptions are often
   // reference or legal years ("CPI base 1920" showed as 1920–1994), and harvested records' time field is a processing timestamp.
-  const ys=[...new Set(([a?.title,a?.depth==="modelled"?a?.time:""].filter(Boolean).join(" ").match(/\b(?:19|20)\d{2}\b/g)||[]).map(Number))].sort((a,b)=>a-b);
+  const hay=[a?.title,a?.depth==="modelled"?a?.time:""].filter(Boolean).join(" ");
+  const ys=[...new Set((hay.match(/\b(?:19|20)\d{2}\b/g)||[]).map(Number))].sort((a,b)=>a-b);
+  // "2013-now", "sinds 2015", "depuis 2010": the period runs to today
+  if(ys.length&&/\b(?:19|20)\d{2}\s*[-–]\s*(?:now|present|today|heden|nu|aujourd|maintenant)\b|\b(?:since|sinds|vanaf|depuis)\s+(?:19|20)\d{2}\b/i.test(hay)){const now=new Date().getFullYear();if(ys.at(-1)<now)ys.push(now)}
   return ys;
 }
 function geographyFor(a){
