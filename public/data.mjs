@@ -2,7 +2,7 @@ export const SOURCES = [
   {
     id:"statbel",
     name:"Statbel Open Data",
-    org:"Statbel — Belgian statistical office",
+    org:"Statbel, Belgian statistical office",
     url:"https://statbel.fgov.be/en/open-data",
     region:"Belgium",
     access:["Download"],
@@ -30,7 +30,7 @@ export const SOURCES = [
   {
     id:"kbo",
     name:"KBO / BCE Public Search",
-    org:"FPS Economy — Crossroads Bank for Enterprises",
+    org:"FPS Economy, Crossroads Bank for Enterprises",
     url:"https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?lang=en",
     region:"Belgium",
     access:["Lookup"],

@@ -10,9 +10,9 @@ export function freshness(item,now=Date.now()){
   if(freq==="NEVER"||freq==="NOT_PLANNED")return{state:"static",ageDays:age,note:"Publisher says it will not be updated."};
   if(age==null)return{state:"unknown",ageDays:null,note:"No modification date in the catalogue record."};
   const expected=FREQ_DAYS[freq];
-  if(expected)return age<=expected?{state:"current",ageDays:age,note:"Updated within its declared "+freq.toLowerCase().replace(/_/g," ")+" cycle (metadata date)."}:{state:"stale",ageDays:age,note:"Declared "+freq.toLowerCase().replace(/_/g," ")+" but last modified "+age+" days ago (metadata date)."};
+  if(expected)return age<=expected?{state:"current",ageDays:age,note:"Updated within its declared "+freq.toLowerCase().replace(/_/g," ")+" cycle (metadata date)."}:{state:"stale",ageDays:age,note:"Declared "+freq.toLowerCase().replace(/_/g," ")+", but the catalogue record last changed "+(age===1?"1 day":age+" days")+" ago."};
   if(age>1095)return{state:"old",ageDays:age,note:"No update cycle declared; last modified over 3 years ago (metadata date)."};
-  return{state:"dated",ageDays:age,note:"No update cycle declared; last modified "+age+" days ago (metadata date)."};
+  return{state:"dated",ageDays:age,note:"No update cycle stated. The catalogue record last changed "+(age===1?"1 day":age+" days")+" ago."};
 }
 
 /* ---------- trust checks ("receipts") ---------- */
@@ -22,7 +22,7 @@ export function trustChecks(item,{health={},now=Date.now()}={}){
   const probed=dists.filter(d=>health[d.url]),okLinks=probed.filter(d=>health[d.url].ok),mism=probed.filter(d=>health[d.url].formatMatch===false);
   const checks=[];
   checks.push({id:"source",label:"Official source",status:item.officialUrl&&/^https?:/.test(item.officialUrl)?"pass":"warn",detail:item.officialUrl?"Landing page published by "+(item.provider||"the publisher")+".":"No landing page in the record."});
-  checks.push({id:"licence",label:"Licence",status:lic.family==="open"||lic.family==="open-sharealike"?"pass":lic.family==="unknown"?"fail":"warn",detail:lic.label?lic.label+" — "+LICENSE_FAMILY_NOTE[lic.family]:LICENSE_FAMILY_NOTE.unknown});
+  checks.push({id:"licence",label:"Licence",status:lic.family==="open"||lic.family==="open-sharealike"?"pass":lic.family==="unknown"?"fail":"warn",detail:lic.label?lic.label+". "+LICENSE_FAMILY_NOTE[lic.family]:LICENSE_FAMILY_NOTE.unknown});
   checks.push({id:"freshness",label:"Freshness",status:{current:"pass",static:"pass",dated:"unknown",unknown:"unknown",old:"warn",stale:"warn"}[fr.state],detail:fr.note});
   // The catalogue ships a compact per-record probe summary (scripts/apply-link-health.mjs); per-URL health is only available offline.
   if(!probed.length&&pr&&pr.n){

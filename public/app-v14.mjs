@@ -101,10 +101,10 @@ function compatibility(a,b){
   if(p.length>1){
     const edges=p.slice(0,-1).map((id,i)=>bridgeBetween(id,p[i+1])).filter(Boolean);
     const weakest=edges.length?Math.min(...edges.map(e=>e[5])):20;
-    return{score:Math.max(10,Math.round(weakest*.72)),label:"Relationship path — not a join guarantee",why:"A typed path exists, but every hop must be validated independently. Graph connectivity does not imply record-level joinability."};
+    return{score:Math.max(10,Math.round(weakest*.72)),label:"Relationship path, not a join guarantee",why:"A typed path exists, but every hop must be validated independently. Graph connectivity does not imply record-level joinability."};
   }
   const keys=commonKeys(a,b);
-  if(keys.length)return{score:42,label:"Shared key label — semantics unverified",why:"Matching field names do not prove shared namespace, grain, version or identity semantics."};
+  if(keys.length)return{score:42,label:"Shared key label, semantics unverified",why:"Matching field names do not prove shared namespace, grain, version or identity semantics."};
   const common=a.topics.filter(t=>b.topics.includes(t));
   if(common.length)return{score:18,label:"Same domain only",why:"Topic overlap is contextual, not a join contract."};
   return{score:5,label:"No documented relationship",why:"No explicit relationship is recorded in this field guide."};
@@ -293,8 +293,8 @@ function generatedCode(mode){
     return lines.join("\n");
   }
   let lines=["# "+p.project,"","**Objective:** "+p.objective+"  ","**Geography:** "+p.geography+"  ","**Automation:** "+p.automation+"  ","**Output:** "+p.output,"","## Sources",""];
-  p.sources.forEach((s,i)=>{lines.push((i+1)+". **"+s.name+"** — "+s.publisher);lines.push("   - Access: "+s.access.join(", "));lines.push("   - Relationship fields: "+(s.relationship_keys.join(", ")||"publisher metadata"));lines.push("   - Docs: "+s.docs_url);lines.push("   - Watch: "+s.caution)});
-  lines.push("","## Typed relationships","");p.relationships.forEach(b=>lines.push("- "+b.from+" → "+b.to+": **"+b.relationship_type+"** — "+b.key_or_alignment+" — "+b.purpose));
+  p.sources.forEach((s,i)=>{lines.push((i+1)+". **"+s.name+"**, "+s.publisher);lines.push("   - Access: "+s.access.join(", "));lines.push("   - Relationship fields: "+(s.relationship_keys.join(", ")||"publisher metadata"));lines.push("   - Docs: "+s.docs_url);lines.push("   - Watch: "+s.caution)});
+  lines.push("","## Typed relationships","");p.relationships.forEach(b=>lines.push("- "+b.from+" → "+b.to+": **"+b.relationship_type+"**, "+b.key_or_alignment+", "+b.purpose));
   return lines.join("\n");
 }
 function renderCode(){$("#codeOutput code").textContent=generatedCode(state.codeMode)}

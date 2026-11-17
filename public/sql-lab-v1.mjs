@@ -220,7 +220,7 @@ async function registerRemote(opts={}){
     try{await conn.query("DROP VIEW IF EXISTS "+qid(table))}catch{}
     try{await db.dropFile(registeredVfs)}catch{}
     document.dispatchEvent(new CustomEvent("bdd:sql-access-result",{detail:{url,ok:false,code:e?.code||"",detail:e?.message||String(e)}}));
-    throw new Error((e?.message||e)+(e?.code?"":" — direct browser loading failed and no complete safe relay fallback was available."));
+    throw new Error((e?.message||e)+(e?.code?"":", direct browser loading failed and no complete safe relay fallback was available."));
   }finally{setEngineStatus("DuckDB ready · restricted","ready")}
 }
 function renderTables(){
@@ -233,7 +233,7 @@ function renderTables(){
   }).join("");
 }
 function options(current=""){
-  const names=[...tables.keys()];return names.map(n=>{const t=tables.get(n),label=t?.label||n,text=label===n?n:label+" — "+n;return'<option value="'+esc(n)+'" '+(n===current?"selected":"")+'>'+esc(text)+'</option>'}).join("");
+  const names=[...tables.keys()];return names.map(n=>{const t=tables.get(n),label=t?.label||n,text=label===n?n:label+", "+n;return'<option value="'+esc(n)+'" '+(n===current?"selected":"")+'>'+esc(text)+'</option>'}).join("");
 }
 function keyOptions(table,current=""){
   const cols=tables.get(table)?.schema||[];return cols.map(c=>'<option value="'+esc(c.name)+'" '+(c.name===current?"selected":"")+'>'+esc(c.name)+' · '+esc(c.type)+'</option>').join("");

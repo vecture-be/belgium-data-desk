@@ -113,24 +113,24 @@ async function harvestOds(host,provider,{publisherFromMeta=false,skipPublishers=
 }
 
 const ogcServices=[
-  ["grb","Digitaal Vlaanderen — GRB","https://geo.api.vlaanderen.be/GRB/ogc/features/v1",999],
-  ["adpf","Digitaal Vlaanderen — Adpf","https://geo.api.vlaanderen.be/Adpf/ogc/features/v1",999],
-  ["vkbo","Digitaal Vlaanderen — VKBO","https://geo.api.vlaanderen.be/VKBO/ogc/features/v1",999],
-  ["gipod","Digitaal Vlaanderen — GIPOD","https://geo.api.vlaanderen.be/GIPOD/ogc/features/v1",999],
-  ["wegenregister","Digitaal Vlaanderen — Wegenregister","https://geo.api.vlaanderen.be/Wegenregister/ogc/features/v1",999],
-  ["buildings","Digitaal Vlaanderen — Buildings","https://geo.api.vlaanderen.be/bu-core2d/ogc/features/v1",999],
-  ["perceelblokken","Digitaal Vlaanderen — Perceelblokken","https://geo.api.vlaanderen.be/Perceelblokken/ogc/features/v1",999],
-  ["brussels-active","Brussels Mobility — Active mobility","https://data.mobility.brussels/datasets/v1/active_mobility",999],
-  ["brussels-parking","Brussels Mobility — Parking","https://data.mobility.brussels/datasets/v1/parking",999],
-  ["brussels-traffic","Brussels Mobility — Traffic","https://data.mobility.brussels/datasets/v1/traffic",999],
+  ["grb","Digitaal Vlaanderen: GRB","https://geo.api.vlaanderen.be/GRB/ogc/features/v1",999],
+  ["adpf","Digitaal Vlaanderen: Adpf","https://geo.api.vlaanderen.be/Adpf/ogc/features/v1",999],
+  ["vkbo","Digitaal Vlaanderen: VKBO","https://geo.api.vlaanderen.be/VKBO/ogc/features/v1",999],
+  ["gipod","Digitaal Vlaanderen: GIPOD","https://geo.api.vlaanderen.be/GIPOD/ogc/features/v1",999],
+  ["wegenregister","Digitaal Vlaanderen: Wegenregister","https://geo.api.vlaanderen.be/Wegenregister/ogc/features/v1",999],
+  ["buildings","Digitaal Vlaanderen: Buildings","https://geo.api.vlaanderen.be/bu-core2d/ogc/features/v1",999],
+  ["perceelblokken","Digitaal Vlaanderen: Perceelblokken","https://geo.api.vlaanderen.be/Perceelblokken/ogc/features/v1",999],
+  ["brussels-active","Brussels Mobility: Active mobility","https://data.mobility.brussels/datasets/v1/active_mobility",999],
+  ["brussels-parking","Brussels Mobility: Parking","https://data.mobility.brussels/datasets/v1/parking",999],
+  ["brussels-traffic","Brussels Mobility: Traffic","https://data.mobility.brussels/datasets/v1/traffic",999],
   // DOV: ~4,300 layers, listed from WFS GetCapabilities (2 s, cached) rather than the OGC collection list (35-60 s; GitHub's runners
   // lose the connection). ~3,900 are layers of a few 3D subsurface models and one map series; harvest-dov.mjs folds each model version
   // into one record. The other ~400 stay individual and are sampled through OGC API Features under the same ids.
   ["dov",DOV_PROVIDER,"https://www.dov.vlaanderen.be/geoserver/ogc/features/v1",450,{list:listDov,group:groupDov,license:DOV_LICENSE}],
-  ["wallonia-buildings","SPW Wallonia — Buildings HVD","https://geoservices.wallonie.be/geoserver/inspire_bu/ogc/features/v1",999],
-  ["wallonia-transport","SPW Wallonia — Transport Networks HVD","https://geoservices.wallonie.be/geoserver/inspire_tn/ogc/features/v1",999],
-  ["wallonia-names","SPW Wallonia — Geographical Names HVD","https://geoservices.wallonie.be/geoserver/inspire_gn/ogc/features/v1",999],
-  ["wallonia-management","SPW Wallonia — Management Zones HVD","https://geoservices.wallonie.be/geoserver/inspire_am/ogc/features/v1",999]
+  ["wallonia-buildings","SPW Wallonia: Buildings HVD","https://geoservices.wallonie.be/geoserver/inspire_bu/ogc/features/v1",999],
+  ["wallonia-transport","SPW Wallonia: Transport Networks HVD","https://geoservices.wallonie.be/geoserver/inspire_tn/ogc/features/v1",999],
+  ["wallonia-names","SPW Wallonia: Geographical Names HVD","https://geoservices.wallonie.be/geoserver/inspire_gn/ogc/features/v1",999],
+  ["wallonia-management","SPW Wallonia: Management Zones HVD","https://geoservices.wallonie.be/geoserver/inspire_am/ogc/features/v1",999]
 ];
 async function listDov(){return{collections:collectionsFromCapabilities(await getJsonRetry(DOV_CAPABILITIES,{ua,as:"text"})),timeStamp:null}}
 async function harvestOgcService([slug,provider,base,sampleLimit=999,{list=null,group=null,license=""}={}]){
@@ -305,7 +305,7 @@ function documentedPublicServices(){
     platform:"Flemish Datavindplaats",discovery:"documented-official-service",
     serviceType:"DCAT DataService",kind:"DCAT data service",
     datasetId:"gipod-geplande-mobiliteitshinder-publieke-informatie-ldes",
-    title:"GIPOD planned mobility hindrance — LDES",
+    title:"GIPOD planned mobility hindrance: LDES",
     description:"Public LDES service for planned mobility hindrances associated with works and events on the public domain, including expected detours and disruptions. Publisher declares the service in production. This catalogue record does not prove live uptime, synchronized history or current road conditions.",
     officialUrl:"https://www.vlaanderen.be/datavindplaats/catalogus/gipod-geplande-mobiliteitshinder-publieke-informatie-ldes",
     sourceRecord:"https://www.vlaanderen.be/datavindplaats/catalogus/gipod-geplande-mobiliteitshinder-publieke-informatie-ldes",
@@ -331,7 +331,7 @@ const jobs=[
   ["brussels-open-data",()=>harvestOds("https://bruxellesdata.opendatasoft.com","Brussels Open Data",{fieldCap:40})],
   ["open-data-wallonie-bruxelles",()=>harvestOds("https://www.odwb.be","Open Data Wallonie-Bruxelles",{publisherFromMeta:true,skipPublishers:/^(infrabel|elia)$/i,skipTitles:harvestedTitles,fieldCap:40})],
   ["digitaal-vlaanderen",harvestOgc],
-  ["wallonia-metawal",()=>harvestCsw("wallonia","SPW Wallonia — Metawal","https://metawal.wallonie.be/geonetwork/srv/fre/csw",20)],
+  ["wallonia-metawal",()=>harvestCsw("wallonia","SPW Wallonia: Metawal","https://metawal.wallonie.be/geonetwork/srv/fre/csw",20)],
   ["geo-be",()=>harvestCsw("geo-be","geo.be / National Geographic Institute","https://publish.geo.be/geonetwork/srv/eng/csw",10)]
 ];
 const partialSources=[];   // parts of a source that kept earlier records (an OGC service that did not answer)

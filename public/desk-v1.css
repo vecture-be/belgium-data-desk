@@ -1,0 +1,24 @@
+/* sub-tabs inside Publishers and Guides */
+.sub-tabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:1540px;margin:18px auto 0;padding:0 clamp(18px,4vw,56px)}
+.sub-tabs .sub-tab{border:1px solid var(--i,#0d1714);background:var(--w,#fffdf7);padding:7px 13px;font:700 .86rem/1.2 inherit;cursor:pointer;color:var(--i,#0d1714)}
+.sub-tabs .sub-tab.active{background:var(--i,#0d1714);color:var(--p,#f3f0e6)}
+.sub-tabs .quiz-mini{margin-left:auto;padding:4px 10px;font-size:.76rem;border-radius:999px;background:var(--a,#d9ff5a)}
+/* datasets: rarely used filters folded away */
+.more-filters{display:contents}
+.more-filters>summary{cursor:pointer;font-weight:700;font-size:.86rem;align-self:center;padding:8px 4px;list-style:none}
+.more-filters>summary::before{content:"+ "}
+.more-filters[open]>summary::before{content:"− "}
+/* "About this data": one section for what a row is, the checks and what the file showed */
+.about-data{border:1px solid var(--i,#0d1714);background:var(--w,#fffdf7);padding:14px 16px;margin:14px 0}
+.about-data .section-cap{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.about-data .section-cap h3{margin:0}
+.about-data .section-cap span{font-size:.78rem;color:var(--m,#66706b)}
+.about-data .about-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 18px;margin:12px 0 14px;padding:0 0 12px;border-bottom:1px solid var(--l,#c8c4b6)}
+.about-data .about-grid dt{font:750 .66rem ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--m,#66706b)}
+.about-data .about-grid dd{margin:3px 0 0;font-weight:700;overflow-wrap:anywhere}
+.about-data .about-grid em{display:block;font-style:normal;font-weight:400;font-size:.78rem;color:var(--m,#66706b)}
+.about-data .trust-checks{margin:0}
+.card-measured{margin-top:12px;padding-top:10px;border-top:1px solid var(--l,#c8c4b6)}
+.card-measured h4{margin:0 0 6px;font-size:.9rem}
+.card-measured .card-facts{margin:0;padding-left:18px}
+.card-measured .card-facts li{margin:3px 0}
