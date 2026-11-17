@@ -33,7 +33,9 @@ async function main(){
       answer=JSON.parse((await r.json()).result.content[0].text);
     }catch(e){answer={error:"no answer: "+e.message}}
     // The official service being down (or only partly answering, complete: false) says nothing about our answer: warn, don't fail.
-    const upstream=(answer.error&&/did not answer|could not be reached|try again in a minute|answered HTTP 5\d\d/i.test(answer.error))||answer.complete===false;
+    // A network failure or a non-JSON reply from the source ("The weather service…" from Meteoalarm, Elia "fetch failed") is the source
+    // being down too; a wrong value is still a failure.
+    const upstream=(answer.error&&/did not answer|could not be reached|try again in a minute|answered HTTP 5\d\d|fetch failed|is not valid JSON|ECONNRESET|ETIMEDOUT|EAI_AGAIN|UND_ERR|timed? ?out|aborted/i.test(answer.error))||answer.complete===false;
     const problems=upstream?[]:answer.error?["answered an error: "+answer.error]:checkExpect(answer,f.expect);
     console.log((upstream?"WARN ":problems.length?"FAIL ":"PASS ")+f.question+(upstream?" (the source did not answer in full; not checked)":"")+(problems.length?"\n     "+problems.join("\n     ")+"\n     source: "+f.source:""));
     if(upstream)warned++;else if(problems.length)failed++;
