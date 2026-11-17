@@ -44,11 +44,11 @@ assert.equal(init.body.result.protocolVersion,"2025-03-26");assert.ok(init.body.
 const note=await worker.fetch(new Request("https://desk.example/mcp",{method:"POST",body:JSON.stringify({jsonrpc:"2.0",method:"notifications/initialized"})}),env);
 assert.equal(note.status,202);
 const list=await rpc("tools/list");
-assert.deepEqual(list.body.result.tools.map(t=>t.name).sort(),["air_quality","belgian_statistics","catalogue_overview","contact_publisher","electricity_grid","fetch","flood_risk","get_dataset","get_subsurface_record","heritage_at_location","preview_dataset","real_estate_prices","river_levels","search","search_datasets","search_subsurface","subsurface_at_location","train_punctuality","weather"]);
+assert.deepEqual(list.body.result.tools.map(t=>t.name).sort(),["air_quality","belgian_statistics","catalogue_overview","contact_publisher","electricity_grid","fetch","flood_risk","get_dataset","get_subsurface_record","heritage_at_location","preview_dataset","real_estate_prices","river_levels","search","search_datasets","search_subsurface","subsurface_at_location","train_punctuality","weather","zoning_at_location"]);
 // Anthropic directory requirements: every tool has a title, readOnlyHint/destructiveHint annotations and a name of at most 64 characters.
 assert.ok(list.body.result.tools.every(t=>t.title&&t.annotations.title&&t.annotations.readOnlyHint===true&&t.annotations.destructiveHint===false&&t.name.length<=64));
 // only preview_dataset (a publisher's server) and the two DOV tools (DOV's services) reach outside (openWorldHint); the rest answer from the static index
-assert.deepEqual(list.body.result.tools.filter(t=>t.annotations.openWorldHint).map(t=>t.name),["preview_dataset","subsurface_at_location","get_subsurface_record","search_subsurface","belgian_statistics","air_quality","flood_risk","heritage_at_location","river_levels","weather","train_punctuality","electricity_grid"]);
+assert.deepEqual(list.body.result.tools.filter(t=>t.annotations.openWorldHint).map(t=>t.name),["preview_dataset","subsurface_at_location","get_subsurface_record","search_subsurface","belgian_statistics","air_quality","flood_risk","heritage_at_location","zoning_at_location","river_levels","weather","train_punctuality","electricity_grid"]);
 // a subsurface question in search points to the live DOV tool; other searches do not
 assert.equal((await rpc("tools/call",{name:"search_datasets",arguments:{query:"grondwater boringen"}})).body.result.structuredContent.related_tool.name,"subsurface_at_location");
 assert.equal((await rpc("tools/call",{name:"search_datasets",arguments:{query:"bevolking"}})).body.result.structuredContent.related_tool.name,"belgian_statistics");

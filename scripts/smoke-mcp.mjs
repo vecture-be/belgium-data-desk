@@ -24,6 +24,7 @@ const CALLS=[
   ["train_punctuality",{station:"Leuven"}],
   ["electricity_grid",{}],
   ["heritage_at_location",{address:"Markt 1, 8000 Brugge"}],
+  ["zoning_at_location",{address:"Tiensesteenweg 150, 3001 Leuven"}],
   ["subsurface_at_location",{address:"Grote Markt 1, 3000 Leuven"}],
   ["search_subsurface",{record_type:"boreholes",municipality:"Leuven",limit:3}],
   ["get_subsurface_record",{id:"boring/2016-140688"}],
