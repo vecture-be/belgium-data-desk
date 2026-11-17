@@ -28,7 +28,11 @@ const P={
   accessURL:NS.dcat+"accessURL",downloadURL:NS.dcat+"downloadURL",format:NS.dct+"format",mediaType:NS.dcat+"mediaType",byteSize:NS.dcat+"byteSize",
   license:NS.dct+"license",frequency:NS.dct+"accrualPeriodicity",spatial:NS.dct+"spatial",contactPoint:NS.dcat+"contactPoint",
   foafName:NS.foaf+"name",prefLabel:NS.skos+"prefLabel",schemaName:NS.schema+"name",schemaNameHttps:NS.schemaHttps+"name",rdfsLabel:NS.rdfs+"label",
-  vcardFn:NS.vcard+"fn",vcardHasEmail:NS.vcard+"hasEmail",vcardHasURL:NS.vcard+"hasURL"
+  vcardFn:NS.vcard+"fn",vcardHasEmail:NS.vcard+"hasEmail",vcardHasURL:NS.vcard+"hasURL",
+  // fields that make a record usable beyond search: period covered, language, access, lineage, CRS, resolution, EU high-value category
+  temporal:NS.dct+"temporal",startDate:NS.dcat+"startDate",endDate:NS.dcat+"endDate",schemaStart:NS.schema+"startDate",schemaEnd:NS.schema+"endDate",
+  language:NS.dct+"language",provenance:NS.dct+"provenance",spatialResolution:NS.dcat+"spatialResolutionInMeters",
+  hvdCategory:"http://data.europa.eu/r5r/hvdCategory",creator:NS.dct+"creator",rightsHolder:NS.dct+"rightsHolder",created:NS.dct+"created"
 };
 const KEEP=new Set(Object.values(P).filter(x=>x!==P.dataset));
 const clean=s=>String(s??"").replace(/\s+/g," ").trim();
@@ -180,13 +184,74 @@ export function catalogueFromNodes(nodes,{generatedAt=new Date().toISOString(),s
       officialUrl:firstResource(n,P.landingPage)||(subject.startsWith("http")?subject:distributions[0]?.url||""),
       sourceRecord:subject,
       distributions:uniqueDistributions.slice(0,8),
-      enrichment:{score:20,level:"harvested",reasons:["national DCAT index"],schemaOrigin:"none",sampled:false}
+      enrichment:{score:20,level:"harvested",reasons:["national DCAT index"],schemaOrigin:"none",sampled:false},
+      ...extraFields(nodes,n)
     });
   }
+  inferPublishers(items);
   const series=detectSeries(items),seriesOf=new Map();
   for(const s of series)for(const id of s.memberIds)seriesOf.set(id,s.id);
   for(const x of items){x.dataKind=kindOf(x);x.topic=topicOf(x);if(seriesOf.has(x.id))x.seriesId=seriesOf.get(x.id)}
   return{generatedAt,source,itemCount:items.length,items,series:series.map(({memberIds,key,...s})=>({...s,members:memberIds.length}))};
+}
+/* ---------- publishers the record does not name ---------- */
+export const UNKNOWN_PUBLISHER="data.gov.be source";
+// Contact domains that belong to exactly one organisation (never a shared parent domain such as vlaanderen.be or fgov.be).
+const DOMAIN_PUBLISHERS={"meteo.be":"Royal Meteorological Institute of Belgium","arch.be":"State Archives of Belgium","adn.be":"Agence du Numérique (Wallonia)",
+  "ngi.be":"geo.be / National Geographic Institute","naturalsciences.be":"Royal Belgian Institute of Natural Sciences","sciensano.be":"Sciensano","statbel.fgov.be":"Statbel"};
+const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch{return""}};
+/**
+ * A record without dct:publisher gets the publisher that other records with the same owner (KBO number), contact address,
+ * contact domain or landing-page host carry, when one publisher clearly dominates (>= 80 % and >= 3 records). The record says
+ * how it was inferred (publisherInferredFrom), so the UI can show it as inferred rather than declared.
+ */
+export function inferPublishers(items){
+  const keysOf=x=>[...(x.ownerKbo||[]).map(k=>"kbo:"+k),x.contactEmail?"mail:"+x.contactEmail.toLowerCase():"",
+    x.contactEmail?"domain:"+x.contactEmail.split("@")[1].toLowerCase():"",x.officialUrl?"host:"+hostOf(x.officialUrl):""].filter(k=>k&&k!=="host:data.gov.be"&&k!=="host:");
+  const votes=new Map();
+  for(const x of items){if(x.provider===UNKNOWN_PUBLISHER)continue;for(const k of keysOf(x)){const m=votes.get(k)||votes.set(k,new Map()).get(k);m.set(x.provider,(m.get(x.provider)||0)+1)}}
+  const winner=k=>{const m=votes.get(k);if(!m)return null;let total=0,best=null,n=0;for(const [p,c] of m){total+=c;if(c>n){n=c;best=p}}return n>=3&&n/total>=0.8?best:null};
+  let fixed=0;
+  for(const x of items){
+    if(x.provider!==UNKNOWN_PUBLISHER)continue;
+    for(const k of keysOf(x)){const p=winner(k)||(k.startsWith("domain:")?DOMAIN_PUBLISHERS[k.slice(7)]:null);if(p){x.provider=p;x.publisherInferredFrom=k.replace(/:.*/,"");fixed++;break}}
+  }
+  return fixed;
+}
+
+/* ---------- extra DCAT fields ---------- */
+const LANG={NLD:"nl",DUT:"nl",FRA:"fr",FRE:"fr",ENG:"en",DEU:"de",GER:"de"};
+const HVD={c_164e0bf5:"Meteorological",c_a9135398:"Companies and company ownership",c_ac64a52d:"Geospatial",c_b79e35eb:"Mobility",c_dd313021:"Earth observation and environment",c_e1da4e07:"Statistics"};
+const isoDay=v=>{const m=String(v||"").match(/^(\d{4})(?:-(\d\d)(?:-(\d\d))?)?/);return m?m[0]:""};
+/** dct:temporal: a PeriodOfTime node with dcat:/schema: start and end. Placeholder periods (1900-01-01, end before start) are dropped. */
+export function temporalOf(nodes,n){
+  for(const ref of vals(n,P.temporal)){
+    const t=nodes.get(ref.v)||{};
+    let start=isoDay(pick(t,P.startDate)||pick(t,P.schemaStart)),end=isoDay(pick(t,P.endDate)||pick(t,P.schemaEnd));
+    // data.gov.be also encodes the period in the node IRI (…/genid/temporal/2013-01-01-2020-05-31)
+    const m=!start&&!end&&String(ref.v).match(/temporal\/(\d{4}-\d\d-\d\d)-(\d{4}-\d\d-\d\d)$/);if(m){start=m[1];end=m[2]}
+    if(/^1900-01-01/.test(start))start="";if(/^1900-01-01/.test(end))end="";
+    if(start&&end&&end<start)continue;
+    if(start||end)return{start:start||null,end:end||null};
+  }
+  return null;
+}
+const kboOf=u=>(String(u||"").match(/CbeRegisteredEntity\/(\d{10})/)||[])[1]||"";
+export function extraFields(nodes,n){
+  const languages=uniq(vals(n,P.language).map(x=>LANG[uriTail(x.v).toUpperCase()]||(/^(dutch|nederlands)$/i.test(x.v)?"nl":/^(french|fran[cç]ais)$/i.test(x.v)?"fr":/^english$/i.test(x.v)?"en":/^(german|deutsch)$/i.test(x.v)?"de":"")));
+  const access=uriTail(firstResource(n,P.accessRights)).toUpperCase();
+  const prov=vals(n,P.provenance).map(x=>x.resource?pick(nodes.get(x.v),P.title)||pick(nodes.get(x.v),P.rdfsLabel)||pick(nodes.get(x.v),P.description):clean(x.v)).find(Boolean)||"";
+  const conforms=vals(n,P.conformsTo).map(x=>x.v);
+  const crs=uniq(conforms.map(u=>{const m=String(u).match(/EPSG\/0\/(\d{4,5})/i);return m?"EPSG:"+m[1]:""})).slice(0,4);
+  const standards=uniq(conforms.filter(u=>!/EPSG/i.test(u)&&!/isotc211\.org\/2005\/(gmd|gfc)/i.test(u))).slice(0,6);
+  const res=Number(pick(n,P.spatialResolution));
+  const hvd=uniq(vals(n,P.hvdCategory).map(x=>HVD[uriTail(x.v)]||"High-value dataset"));
+  const kbo=uniq([...vals(n,P.creator),...vals(n,P.rightsHolder)].map(x=>kboOf(x.v)));
+  return{
+    temporal:temporalOf(nodes,n),languages,accessRights:["PUBLIC","NON_PUBLIC","RESTRICTED"].includes(access)?access:"",
+    provenance:prov.slice(0,600),crs,standards,...(res>0?{spatialResolutionM:res}:{}),hvdCategories:hvd,ownerKbo:kbo.slice(0,3),
+    issuedAt:isoDay(pick(n,P.issued)||pick(n,P.created))||null
+  };
 }
 function searchable(x){return clean([x.datasetId,x.title,x.provider,x.officialUrl].join(" ")).toLowerCase()}
 export function validateNationalCatalogue(payload){
@@ -214,7 +279,9 @@ export function thinNationalCatalogue(payload,maxDescription=320){
       updatedAt:x.updatedAt,frequency:x.frequency,geoCoverage:x.geoCoverage,recordCount:x.recordCount??null,recordCountKind:x.recordCountKind||null,
       fields:(x.fields||[]).slice(0,80),previewRows:(x.previewRows||[]).slice(0,8),schemaOrigin:x.schemaOrigin||"none",sampleOrigin:x.sampleOrigin||"none",
       tabularProfile:x.tabularProfile||null,extent:x.extent||{},themes:(x.themes||[]).slice(0,6),license:x.license||"",licenseFamily:x.licenseFamily||"unknown",euThemes:x.euThemes||[],geoScope:x.geoScope||"",dataKind:x.dataKind||"",topic:x.topic||"",seriesId:x.seriesId||"",
-      officialUrl:x.officialUrl,sourceRecord:x.sourceRecord,distributions:(x.distributions||[]).slice(0,3),enrichment:x.enrichment
+      officialUrl:x.officialUrl,sourceRecord:x.sourceRecord,distributions:(x.distributions||[]).slice(0,3),enrichment:x.enrichment,
+      temporal:x.temporal||null,languages:x.languages||[],accessRights:x.accessRights||"",crs:x.crs||[],hvdCategories:x.hvdCategories||[],ownerKbo:x.ownerKbo||[],issuedAt:x.issuedAt||null,
+      provenance:String(x.provenance||"").slice(0,300),standards:(x.standards||[]).slice(0,4),...(x.spatialResolutionM?{spatialResolutionM:x.spatialResolutionM}:{}),...(x.publisherInferredFrom?{publisherInferredFrom:x.publisherInferredFrom}:{})
     }))
   };
 }

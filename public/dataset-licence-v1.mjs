@@ -3,7 +3,21 @@ const clean=s=>String(s??"").replace(/\s+/g," ").trim();
 /* ---------- licences ---------- */
 // family: open | open-sharealike | non-commercial | no-derivatives | custom | unknown
 export const LICENSE_RULES=[
+  // "not specified" is a missing licence, not a custom one
+  [/^(not specified|licen[cs]e not specified|licence non sp[ée]cifi[ée]e|licentie niet (gespecificeerd|vermeld)|unknown|onbekend|inconnue?)$/i,"","","unknown"],
   [/modellicentie[- ]gratis[- ]hergebruik/i,"flemish-free-reuse","Flemish free-reuse model licence v1.0","open"],
+  // licence URLs and spelled-out names (ISO records and portals write them this way)
+  [/creativecommons\.org\/publicdomain\/zero|creative ?commons[ -]*(cc)?[ -]*zero|\bcc ?zero\b/i,"cc0","CC0 (public domain)","open"],
+  [/creativecommons\.org\/licenses\/by-nc-sa\b|creative ?commons attribution[- ]non-?commercial[- ]share ?alike/i,"cc-by-nc-sa","CC BY-NC-SA","non-commercial"],
+  [/creativecommons\.org\/licenses\/by-nc-nd\b|creative ?commons attribution[- ]non-?commercial[- ]no ?deriv/i,"cc-by-nc-nd","CC BY-NC-ND","non-commercial"],
+  [/creativecommons\.org\/licenses\/by-nc\b|creative ?commons attribution[- ]non-?commercial/i,"cc-by-nc","CC BY-NC","non-commercial"],
+  [/creativecommons\.org\/licenses\/by-nd\b|creative ?commons attribution[- ]no ?deriv/i,"cc-by-nd","CC BY-ND","no-derivatives"],
+  [/creativecommons\.org\/licenses\/by-sa\b|creative ?commons attribution[- ]share ?alike/i,"cc-by-sa","CC BY-SA","open-sharealike"],
+  [/creativecommons\.org\/licenses\/by\b|creative ?commons attribution/i,"cc-by","CC BY","open"],
+  [/open ?data ?commons attribution/i,"odc-by","ODC-BY","open"],
+  [/ConditionsApplyingToAccessAndUse\/noConditionsApply|^no conditions apply/i,"no-conditions","No conditions apply (INSPIRE)","open"],
+  [/conditions d.acc[eè]s et d.utilisation.*(service public de wallonie|\bspw\b)/i,"spw-conditions","SPW Wallonia conditions of use","custom"],
+  [/\.well-known\/genid\//i,"unnamed","Licence stated without a name (see source)","custom"],
   [/(^|[/_ -])CC[_ -]?BY[_ -]?NC[_ -]?SA/i,"cc-by-nc-sa","CC BY-NC-SA","non-commercial"],
   [/(^|[/_ -])CC[_ -]?BY[_ -]?NC[_ -]?ND/i,"cc-by-nc-nd","CC BY-NC-ND","non-commercial"],
   [/(^|[/_ -])CC[_ -]?BY[_ -]?NC/i,"cc-by-nc","CC BY-NC","non-commercial"],
@@ -24,9 +38,11 @@ export const LICENSE_RULES=[
   [/geoportail\.wallonie\.be|DataSPW|LicServicesSPW/i,"spw-conditions","SPW Wallonia conditions of use","custom"],
   [/custom-kuleuven/i,"kuleuven-custom","KU Leuven custom licence","custom"]
 ];
+const decodeURIComponentSafe=s=>{try{return decodeURIComponent(s)}catch{return s}};
 export function normalizeLicense(raw){
   const value=clean(raw);if(!value)return{id:"",label:"",family:"unknown",raw:""};
   for(const [re,id,label,family] of LICENSE_RULES)if(re.test(value))return{id,label,family,raw:value};
+  if(/^https?:\/\//i.test(value)){const tail=value.replace(/[?#].*$/,"").split("/").filter(Boolean).pop()||value;return{id:"other",label:tail.length>60?tail.slice(0,57)+"…":decodeURIComponentSafe(tail),family:"custom",raw:value}}
   return{id:"other",label:value.length>60?value.slice(0,57)+"…":value,family:"custom",raw:value};
 }
 export const LICENSE_FAMILY_NOTE={

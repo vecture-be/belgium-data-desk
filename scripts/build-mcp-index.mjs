@@ -49,22 +49,39 @@ export function curatedToItems(assets,sources){
   });
 }
 
+/** [firstYear, lastYear] of a declared period; an open end means "up to now". */
+export function periodYears(t){
+  const y=v=>{const m=String(v||"").match(/^(\d{4})/);return m?Number(m[1]):null};
+  const a=y(t?.start),b=y(t?.end);
+  if(a==null&&b==null)return null;
+  return[a??b,b??new Date().getUTCFullYear()];
+}
+
 const TIER_RANK={ready:5,download:4,service:3,document:2,metadata:1,broken:0};
 const SCOPE_ORDER=Object.fromEntries(SCOPES.filter(s=>s.id!=="all").map((s,i)=>[s.id,i]));
 const rankOf=it=>(5-SCOPE_ORDER[scopeOf(it)])*10000+(it.curated?5000:0)+(TIER_RANK[it.tier]??2)*100+(["open","open-sharealike"].includes(it.licenseFamily)?20:0)+((it.fields||[]).length?10:0)+(it.probe?.ok?5:0)+(it.description?2:0)-(it.successor?1:0);   // a superseded model version ranks just below its peers
 
 export function toDocs(it,relay){
-  const lic=it.licenseFamily?{label:it.license,family:it.licenseFamily}:normalizeLicense(it.licenseUri||it.license);
+  // One label per licence: harvested records keep the publisher's spelling ("Modellicentie Gratis Hergebruik", "CC0 1.0"); show the canonical one.
+  const norm=normalizeLicense(it.licenseUri||it.license),lic=norm.raw?norm:{label:"",family:it.licenseFamily||"unknown"};
   const desc=stripHtml(it.description),formats=(it.formats||[]).map(formatLabel).filter(Boolean).slice(0,5);
+  const period=periodYears(it.temporal);
   const light={id:it.id,t:clean(it.title),p:clean(it.provider),k:it.dataKind||"dataset",tp:(!it.curated&&it.topic==="environment"&&enviOverride(it))||it.topic||topicOf(it),f:formats,l:lic.label||"",lf:lic.family||"unknown",
-    u:(it.dataProcessedAt||it.updatedAt||"").slice(0,10),tier:it.tier||"",sid:it.seriesId||"",s:desc.slice(0,160),w:it.officialUrl||"",...(it.curated?{c:1}:{})};
+    u:(it.dataProcessedAt||it.updatedAt||"").slice(0,10),tier:it.tier||"",sid:it.seriesId||"",s:desc.slice(0,160),w:it.officialUrl||"",...(it.curated?{c:1}:{}),
+    // search filters: years the data covers (declared), languages, and access other than public
+    ...(period?{y:period}:{}),...(it.languages?.length?{lg:it.languages.slice(0,4)}:{}),...(it.accessRights&&it.accessRights!=="PUBLIC"?{ar:it.accessRights}:{})};
   const seen=new Set();
   const files=(it.distributions||[]).filter(d=>d?.url&&/^https:/i.test(d.url)&&!seen.has(d.url)&&seen.add(d.url)).slice(0,4).map(d=>{
     const r=relayIdFor(d.url);
     return{f:formatLabel(d.format||""),u:d.url,...(d.byteSize?{s:d.byteSize}:{}),...(relay&&relay[r]?{r}:{})};
   });
   const detail={fq:it.frequency||"",g:it.geoCoverage||"",url:it.officialUrl||"",ce:it.contactEmail||"",cu:it.contactUrl||"",d:desc.slice(0,600),
-    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.licenseFrom?{lsrc:it.licenseFrom}:{}),...(it.probe?{pr:it.probe}:{}),...(it.streamCheck?{sc:it.streamCheck}:{}),files};
+    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.licenseFrom?{lsrc:it.licenseFrom}:{}),
+    ...(it.temporal?{tc:{s:it.temporal.start||null,e:it.temporal.end||null}}:{}),...(it.languages?.length?{lang:it.languages}:{}),
+    ...(it.accessRights?{ar:it.accessRights}:{}),...(it.provenance?{prov:stripHtml(it.provenance).slice(0,400)}:{}),...(it.crs?.length?{crs:it.crs}:{}),
+    ...(it.spatialResolutionM?{res:it.spatialResolutionM}:{}),...(it.hvdCategories?.length?{hvd:it.hvdCategories}:{}),...(it.standards?.length?{std:it.standards.slice(0,4)}:{}),
+    ...(it.contactName?{cn:clean(it.contactName).slice(0,120)}:{}),...(it.publisherInferredFrom?{pinf:it.publisherInferredFrom}:{}),
+    ...(it.issuedAt?{iss:it.issuedAt}:{}),...(it.probe?{pr:it.probe}:{}),...(it.streamCheck?{sc:it.streamCheck}:{}),files};
   return{light,detail};
 }
 
