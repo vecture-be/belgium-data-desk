@@ -1,5 +1,5 @@
 import { RELAY_INDEX } from "./relay-index.mjs";
-import { handleMcp, publicOrigin } from "./mcp-server.mjs";
+import { handleMcp, handleSiteApi, publicOrigin } from "./mcp-server.mjs";
 import { handleFeedbackHttp, runDigest } from "./feedback.mjs";
 // The report queue (feedback.mjs): a Durable Object class must be exported from the Worker's main module.
 export { FeedbackDesk } from "./feedback.mjs";
@@ -182,6 +182,7 @@ export default{
     if(url.pathname.startsWith("/api/dataset-file/"))return proxyDatasetFile(request,env);
     if(url.pathname==="/mcp")return handleMcp(request,env,{previewFile:makePreviewFile(env),dov:{fetchImpl:(u,init)=>fetch(u,init),rateLimit:()=>dovRateLimit(env)}});
     if(url.pathname==="/api/publisher-file")return errorResponse("This URL-based proxy has been removed. Use a catalogue-backed dataset relay ID.",410);
+    if(url.pathname==="/api/search"||url.pathname==="/api/dataset"||url.pathname==="/api/overview")return handleSiteApi(request,env);
     if(url.pathname.startsWith("/feedback/"))return handleFeedbackHttp(request,env);
     return env.ASSETS.fetch(request);
   },
