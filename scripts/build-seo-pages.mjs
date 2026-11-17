@@ -73,11 +73,11 @@ function sectionUrl(origin,kind,lang,slug){
 function homeUrl(origin,lang){const b=PATHS.home[lang];return b?urlFor(origin,b+"/"):origin+"/"}
 
 function layout({lang,t,origin,cur,body,switcher}){
-  const nav=[["home",homeUrl(origin,lang),t.nav.home],["topics",sectionUrl(origin,"topics",lang),t.nav.topics],["publishers",sectionUrl(origin,"publishers",lang),t.nav.publishers],["connect",sectionUrl(origin,"connect",lang),t.nav.connect]]
+  const nav=[["search",origin+"/",t.nav.app],["topics",sectionUrl(origin,"topics",lang),t.nav.topics],["publishers",sectionUrl(origin,"publishers",lang),t.nav.publishers],["connect",sectionUrl(origin,"connect",lang),t.nav.connect]]
     .map(([k,h,l])=>'<a href="'+esc(h)+'"'+(k===cur?' class="cur"':"")+'>'+esc(l)+'</a>').join("");
   const sw=(switcher||[]).map(a=>'<a href="'+esc(a.href)+'" hreflang="'+a.lang+'" lang="'+a.lang+'">'+T[a.lang].lang+'</a>').join("");
-  return'<body><header><b><a href="'+esc(homeUrl(origin,lang))+'">'+SITE+'</a></b><nav>'+nav+'<a href="'+esc(origin+"/")+'">'+esc(t.nav.app)+'</a></nav>'+(sw?'<span class="lang">'+sw+'</span>':"")+'</header><main>'+body+'</main>'+
-    '<footer>'+esc(t.footer)+'<span class="site-progress-note">'+esc(t.progressNote)+' <a href="mailto:info@vecture.be">info@vecture.be</a>.</span> <a href="'+origin+'/privacy">'+esc(t.privacy)+'</a> · <a href="'+origin+'/terms">'+esc(t.terms)+'</a></footer></body>';
+  return'<body><header><b><a href="'+esc(homeUrl(origin,lang))+'">'+SITE+'</a></b><nav>'+nav+'</nav>'+(sw?'<span class="lang">'+sw+'</span>':"")+'</header><main>'+body+'</main>'+
+    '<footer>'+esc(t.footer)+' <a href="mailto:info@vecture.be">info@vecture.be</a> · <a href="'+origin+'/privacy">'+esc(t.privacy)+'</a> · <a href="'+origin+'/terms">'+esc(t.terms)+'</a></footer></body>';
 }
 const page=(lang,headHtml,bodyHtml)=>'<!doctype html><html lang="'+lang+'"><head>'+headHtml+'</head>'+bodyHtml+'</html>\n';
 const crumbsLd=(items)=>({"@context":"https://schema.org","@type":"BreadcrumbList",itemListElement:items.map((c,i)=>({"@type":"ListItem",position:i+1,name:c[0],item:c[1]}))});
@@ -137,7 +137,7 @@ export function buildSeoSite(items,{origin=DEFAULT_ORIGIN,generatedAt=null,links
 
   const dsListItem=(r,lang)=>{
     const t=T[lang];
-    return'<li><a href="'+esc(r.url)+'">'+esc(r.title)+'</a><small>'+esc(r.it.provider)+' · '+esc(t.ds.licenceGroup[licenceGroupOf(r.lic)].split(" — ")[0])+(r.it.tier==="ready"?" · ✓":"")+'</small></li>';
+    return'<li><a href="'+esc(r.url)+'">'+esc(r.title)+'</a><small>'+esc(r.it.provider)+(licenceGroupOf(r.lic)==="open"?' · '+esc(t.ds.licenceGroup.open.split(" — ")[0]):"")+'</small></li>';
   };
 
   /* dataset pages */
@@ -172,7 +172,7 @@ export function buildSeoSite(items,{origin=DEFAULT_ORIGIN,generatedAt=null,links
         ...(f.format?{encodingFormat:String(f.format).replace(/^https?:\/\/.*\//,"")}:{}),contentUrl:f.url}))}:{})};
     const rows=[
       [t.ds.publisher,'<a href="'+esc(pubSlugs.has(pubName)?pubHref(pubName,lang):"#")+'">'+esc(pubName)+"</a>"],
-      [t.ds.licence,esc(licName||"—")+'<br><small class="mut">'+esc(t.ds.licenceGroup[group])+"</small>"],
+      [t.ds.licence,(licName?esc(licName)+'<br><small class="mut">'+esc(t.ds.licenceGroup[group])+"</small>":esc(t.ds.licenceGroup[group]))],
       [t.ds.topic,'<a href="'+esc(topicHref(topic,lang))+'">'+esc(topicName(topic,lang))+"</a>"],
       [t.ds.kind,esc(dataService?(ldes.status==="publisher_declared"?"LDES data service":"Data service"):(t.ds.kinds[it.dataKind||"dataset"]||""))],
       ...(updated?[[t.ds.updated,esc(updated)]]:[]),...(cycle?[[t.ds.cycle,esc(cycle)]]:[]),
@@ -183,10 +183,10 @@ export function buildSeoSite(items,{origin=DEFAULT_ORIGIN,generatedAt=null,links
     const body=layout({lang,t,origin,cur:"",switcher:null,body:
       crumbsHtml(crumbs)+"<h1>"+esc(r.title)+"</h1>"+(desc?"<p>"+esc(cut(desc,600))+"</p>":"")+
       "<dl>"+rows+"</dl>"+
-      '<p><a class="btn" href="'+esc(origin+"/?dataset="+encodeURIComponent(it.id))+'">'+esc(t.ds.openDesk)+'</a><span class="mut">'+esc(t.ds.openDeskHint)+"</span></p>"+
+      '<p><a class="btn" href="'+esc(origin+"/?dataset="+encodeURIComponent(it.id))+'">'+esc(t.ds.openDesk)+"</a></p>"+
       (it.officialUrl&&/^https?:/.test(it.officialUrl)?'<p><a href="'+esc(it.officialUrl)+'" rel="noopener nofollow">'+esc(t.ds.official)+" ↗</a></p>":"")+
       (ldes.endpoints.length?'<h2>Published Linked Data Event Stream (LDES)</h2><p>This is an event stream endpoint, not a file download. A compatible client follows its linked fragments to synchronize versions. Current uptime, event freshness and history completeness are not verified by this catalogue.</p><ul class="list">'+ldes.endpoints.map(e=>'<li><a href="'+esc(e.url)+'" rel="noopener noreferrer">Publisher LDES endpoint ↗</a></li>').join("")+'</ul>':"")+
-      '<p class="note">'+esc(pr&&pr.n?fmt(t.ds.linkOk,{date:pr.at,ok:pr.ok,n:pr.n}):t.ds.linkNone)+" "+esc(t.ds.notVerified)+"</p>"+
+      (pr&&pr.n?'<p class="note">'+esc(fmt(t.ds.linkOk,{date:pr.at,ok:pr.ok,n:pr.n}))+"</p>":"")+
       (cols.length?"<h2>"+esc(t.ds.columns)+"</h2><p>"+esc(cols.join(", "))+"</p>":"")+
       (related.length?"<h2>"+esc(t.ds.related)+'</h2><ul class="list">'+related.map(x=>dsListItem(x,lang)).join("")+"</ul>":"")+
       (more.length?"<h2>"+esc(t.ds.moreBy)+'</h2><ul class="list">'+more.map(x=>dsListItem(x,lang)).join("")+"</ul>":"")});
@@ -214,7 +214,7 @@ export function buildSeoSite(items,{origin=DEFAULT_ORIGIN,generatedAt=null,links
       const ld={"@context":"https://schema.org","@type":"CollectionPage",name:fmt(t.topicH1,{topic:name}),description:TOPIC_I18N[id].d[lang],url:canon,inLanguage:lang,
         mainEntity:{"@type":"ItemList",numberOfItems:shown.length,itemListElement:shown.map((r,i)=>({"@type":"ListItem",position:i+1,url:r.url,name:r.title}))}};
       const body=layout({lang,t,origin,cur:"topics",switcher:switcher(a),body:crumbsHtml(crumbs)+"<h1>"+esc(fmt(t.topicH1,{topic:name}))+'</h1><p class="mut">'+esc(fmt(t.topicLead,{desc:TOPIC_I18N[id].d[lang]}))+"</p>"+
-        '<p class="mut">'+esc(fmt(t.showing,{n:shown.length,total:total.toLocaleString("en-US").replace(/,/g,lang==="en"?",":"."),}))+'. <a href="'+esc(origin+"/")+'">'+esc(fmt(t.seeAll,{total:total.toLocaleString("en-US").replace(/,/g,lang==="en"?",":".")}))+"</a></p>"+
+        '<p class="mut">'+esc(fmt(t.showing,{n:shown.length,total:total.toLocaleString("en-US").replace(/,/g,lang==="en"?",":"."),}))+"."+"</p>"+
         '<ul class="list">'+shown.map(r=>dsListItem(r,lang)).join("")+"</ul>"});
       put(PATHS.topics[lang]+"/"+topicSlug(id,lang)+"/index.html",page(lang,head({lang,title:cut(fmt(t.topicH1,{topic:name}),MAX_TITLE),desc:cut(TOPIC_I18N[id].d[lang]+" "+t.ds.metaTail,MAX_DESC),canonical:canon,alternates:a,origin,jsonld:[ld,crumbsLd(crumbs)]}),body));
     }
@@ -303,10 +303,7 @@ function homeInjection({origin,topicIds,topicName,topicHref,pubList,pubHref,topi
      {"@context":"https://schema.org","@type":"DataCatalog",name:SITE,url:origin+"/",description:t.siteDesc,spatialCoverage:"Belgium",inLanguage:["en","nl","fr"]},
      {"@context":"https://schema.org","@type":"FAQPage",mainEntity:t.faq.map(([q,a])=>({"@type":"Question",name:q,acceptedAnswer:{"@type":"Answer",text:a}}))}]
     .map(o=>'<script type="application/ld+json">'+JSON.stringify(o).replace(/</g,"\\u003c")+"</script>").join("");
-  const bodyBlock='<details id="seo-about" style="max-width:900px;margin:24px auto;padding:0 16px"><summary style="cursor:pointer;font-weight:650">'+esc(t.h1Home)+' — '+esc(t.nav.topics)+', '+esc(t.nav.publishers)+', FAQ</summary><h2>'+esc(t.h1Home)+"</h2><p>"+esc(t.lead)+"</p><ul>"+t.homePoints.map(p=>"<li>"+esc(p)+"</li>").join("")+"</ul>"+
-    "<h3>"+esc(t.browseTopics)+"</h3><ul>"+topicIds.map(id=>'<li><a href="'+esc(topicHref(id,"en"))+'">'+esc(topicName(id,"en"))+"</a></li>").join("")+"</ul>"+
-    "<h3>"+esc(t.topPublishers)+"</h3><ul>"+pubList.slice(0,12).map(([n])=>'<li><a href="'+esc(pubHref(n,"en"))+'">'+esc(n)+"</a></li>").join("")+'</ul><p><a href="'+esc(sectionUrl(origin,"publishers","en"))+'">'+esc(t.browsePublishers)+'</a> · <a href="'+esc(sectionUrl(origin,"connect","en"))+'">'+esc(t.nav.connect)+'</a> · <a href="'+esc(homeUrl(origin,"nl"))+'" hreflang="nl" lang="nl">Nederlands</a> · <a href="'+esc(homeUrl(origin,"fr"))+'" hreflang="fr" lang="fr">Français</a></p>'+
-    "<h3>"+esc(t.faqTitle)+"</h3>"+t.faq.map(([q,a])=>"<details><summary>"+esc(q)+"</summary><p>"+esc(a)+"</p></details>").join("")+"</details>";
+  const bodyBlock='<section id="seo-about"><h2>'+esc(t.browseTopics)+'</h2><p class="seo-topics">'+topicIds.map(id=>'<a href="'+esc(topicHref(id,"en"))+'">'+esc(topicName(id,"en"))+"</a>").join(" · ")+'</p><h2>'+esc(t.faqTitle)+"</h2>"+t.faq.map(([q,a])=>"<details><summary>"+esc(q)+"</summary><p>"+esc(a)+"</p></details>").join("")+"</section>";
   return{headBlock,bodyBlock};
 }
 
