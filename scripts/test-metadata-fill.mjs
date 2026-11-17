@@ -119,6 +119,8 @@ for(const [raw,label,family] of [
   ["Creative Commons Non-Commercial (Any)","CC BY-NC","non-commercial"],
   ["Attribution - Partage dans les Mêmes Conditions 2.0 Belgique","CC BY-SA","open-sharealike"]
 ]){const n=normalizeLicense(raw);assert.equal(n.label,label,raw);assert.equal(n.family,family,raw)}
+assert.equal(normalizeLicense("https://data.vlaanderen.be/id/licentie/gebruiksrecht-webdiensten/v1.0").label,"gebruiksrecht-webdiensten","a version segment is not a licence name");
+assert.equal(normalizeLicense("https://example.be/2024/").label,"example.be","a host when nothing else names it");
 // a stored canonical label normalises to itself, with the same family
 for(const [,id,label,family] of LICENSE_RULES)if(label){const n=normalizeLicense(label);assert.equal(n.label,label,"idempotent: "+label);assert.equal(n.family,family,"family kept: "+label)}
 const doc=toDocs({id:"harvest:x:1",title:"t",provider:"p",license:"Modellicentie Gratis Hergebruik",licenseFamily:"open",temporal:{start:"2015-01-01",end:null},languages:["nl"],accessRights:"RESTRICTED",contactName:"Mobiliteitsbedrijf"},null);

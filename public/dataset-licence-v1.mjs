@@ -50,7 +50,7 @@ export function normalizeLicense(raw){
   // already a canonical label (records store the label once normalised): the same answer again
   for(const [,id,label,family] of LICENSE_RULES)if(label&&label.toLowerCase()===value.toLowerCase())return{id,label,family,raw:value};
   for(const [re,id,label,family] of LICENSE_RULES)if(re.test(value))return{id,label,family,raw:value};
-  if(/^https?:\/\//i.test(value)){const tail=value.replace(/[?#].*$/,"").split("/").filter(Boolean).pop()||value;return{id:"other",label:tail.length>60?tail.slice(0,57)+"…":decodeURIComponentSafe(tail),family:"custom",raw:value}}
+  if(/^https?:\/\//i.test(value)){const segs=value.replace(/[?#].*$/,"").split("/").filter(Boolean).slice(1),tail=segs.filter(s=>!/^v?\d+([._-]\d+)*$/i.test(s)).pop()||value;/* ".../gebruiksrecht/v1.0" names the licence, not "v1.0" */return{id:"other",label:tail.length>60?tail.slice(0,57)+"…":decodeURIComponentSafe(tail),family:"custom",raw:value}}
   return{id:"other",label:value.length>60?value.slice(0,57)+"…":value,family:"custom",raw:value};
 }
 export const LICENSE_FAMILY_NOTE={
