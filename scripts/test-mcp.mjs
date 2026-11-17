@@ -203,4 +203,12 @@ assert.equal(withPrecision({key_facts:["x"],location:{precision:"building"}}).ke
 // home batteries point to the Fluvius storage register; used-battery collection does not
 assert.equal(authoritiesFor(["home","battery"])[0]?.ids[0],"curated:fluvius-storage-systems");assert.equal(authoritiesFor(["thuisbatterij"])[0]?.ids[0],"curated:fluvius-storage-systems");
 assert.notEqual(authoritiesFor(["used","batteries","collection"])[0]?.ids[0],"curated:fluvius-storage-systems");
+// website JSON API: same search and records as the MCP tools, GET only
+{const get=p=>worker.fetch(new Request("https://desk.example"+p),env);
+ const s=await get("/api/search?q=bevolking");assert.equal(s.status,200);const sb=await s.json();assert.ok(sb.results.length>=1&&sb.results.every(r=>r.id&&r.title));
+ assert.equal((await get("/api/search?q=")).status,400);
+ const one=await get("/api/dataset?id="+encodeURIComponent(sb.results[0].id));assert.equal(one.status,200);assert.equal((await one.json()).id,sb.results[0].id);
+ assert.equal((await get("/api/dataset?id=nope")).status,404);
+ assert.equal((await (await get("/api/overview")).json()).records,items.length);
+ assert.equal((await worker.fetch(new Request("https://desk.example/api/search?q=x",{method:"POST"}),env)).status,405);}
 console.log(JSON.stringify({ok:true,mcp:"search/get/preview/overview/authority",tools:12}));

@@ -532,3 +532,23 @@ export async function handleMcp(request,env,options={}){
     default:return rpcError(id,-32601,"Method not found.");
   }
 }
+
+/** Read-only JSON for the website (GET /api/search, /api/dataset, /api/overview): the same search and records the MCP tools return. */
+export async function handleSiteApi(request,env){
+  if(request.method!=="GET"&&request.method!=="HEAD")return jsonResponse({error:"Method not allowed."},405,{allow:"GET"});
+  const url=new URL(request.url),origin=publicOrigin(env,request),reader=makeReader(env,origin),p=url.searchParams;
+  const cache={"cache-control":"public, max-age=300"};
+  if(url.pathname==="/api/search"){
+    const args={query:String(p.get("q")||"").slice(0,200),scope:p.get("scope")||"datasets",limit:MAX_LIMIT};
+    if(p.get("topic"))args.topic=p.get("topic");
+    if(p.get("open")==="1")args.open_licence_only=true;
+    const out=await searchDatasets(reader,args);
+    return jsonResponse(out,out?.error?400:200,out?.error?{}:cache);
+  }
+  if(url.pathname==="/api/dataset"){
+    const out=await getDataset(reader,{id:String(p.get("id")||"").slice(0,400)});
+    return jsonResponse(out,out?.error?404:200,out?.error?{}:cache);
+  }
+  if(url.pathname==="/api/overview")return jsonResponse(await catalogueOverview(reader),200,cache);
+  return jsonResponse({error:"Unknown API path."},404);
+}
