@@ -464,5 +464,55 @@
     ],
     "source": "https://inventaris.onroerenderfgoed.be/aanduidingsobjecten/15044",
     "why": "Bruges' historic centre is a UNESCO core zone (2000) and a fixed archaeological zone (2016); the Markt is a protected town view."
+  },
+  {
+    "question": "What may be built at Tiensesteenweg 150 in Leuven?",
+    "tool": "zoning_at_location",
+    "args": {
+      "address": "Tiensesteenweg 150, 3001 Leuven"
+    },
+    "expect": [
+      {
+        "path": "applies.plan",
+        "equals": "GGR-K4 Tiensesteenweg, stad en voorstad"
+      },
+      {
+        "path": "applies.code",
+        "equals": "W1"
+      },
+      {
+        "path": "applies.published",
+        "equals": "2014-09-26"
+      },
+      {
+        "path": "applies.in_force",
+        "equals": true
+      }
+    ],
+    "source": "https://dsi.omgeving.vlaanderen.be/fiche-detail/1f5fa8f7-78aa-454e-9403-eee376fdab27",
+    "why": "The municipal RUP (Belgian Official Gazette 26 Sep 2014) overrides the 1977 gewestplan here; a miss means the ranking or the coordinate system broke."
+  },
+  {
+    "question": "Which plan applies at Leuven station?",
+    "tool": "zoning_at_location",
+    "args": {
+      "address": "Martelarenplein 20, 3000 Leuven"
+    },
+    "expect": [
+      {
+        "path": "applies.plan",
+        "equals": "L23 Station"
+      },
+      {
+        "path": "applies.plan_type",
+        "matches": "BPA"
+      },
+      {
+        "path": "applies.zone",
+        "matches": "openbaar nut"
+      }
+    ],
+    "source": "https://dsi.omgeving.vlaanderen.be/fiche-detail/3a432976-bba0-454a-b8d0-eb4da46b006a",
+    "why": "BPA L23 Station (2004) is the detailed plan over the gewestplan at the station."
   }
 ]
