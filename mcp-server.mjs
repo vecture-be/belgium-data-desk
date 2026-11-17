@@ -330,7 +330,7 @@ export async function getDataset(reader,args){
   const gaps=[!d.l&&"licence",cycle.update_cycle_declared===false&&"update cycle",(!x.cols?.length||x.cm)&&"column list",!x.ce&&!x.cu&&"contact",!d.u&&"update date",!x.tc&&!measuredPeriod&&"period covered"].filter(Boolean);
   // What the data is about in time, language, access and lineage: declared by the publisher, or read from the file (said which).
   const about={
-    ...(x.tc?{period:{from:x.tc.s,to:x.tc.e,source:"declared by the publisher",...(x.tc.pe?{planned_end:x.tc.pe,planned_end_note:"The publisher gives an end date in the future: a validity or planning date, so the period is shown as open-ended."}:{})}}:measuredPeriod?{period:{from:measuredPeriod.from,to:measuredPeriod.to,source:"read from the file (column "+measuredPeriod.column+")"}}:{}),
+    ...(x.tc?{period:{from:x.tc.s,to:x.tc.e,source:d.c?"from the hand-reviewed description of this dataset":"declared by the publisher",...(x.tc.pe?{planned_end:x.tc.pe,planned_end_note:"The publisher gives an end date in the future: a validity or planning date, so the period is shown as open-ended."}:{})}}:measuredPeriod?{period:{from:measuredPeriod.from,to:measuredPeriod.to,source:"read from the file (column "+measuredPeriod.column+")"}}:{}),
     ...(x.lang?{languages:x.lang}:{}),
     ...(x.ar&&x.ar!=="PUBLIC"?{access_rights:{value:x.ar,note:x.ar==="NON_PUBLIC"?"The publisher marks this dataset as not public: the record describes it, but the data itself is not openly available.":"The publisher restricts access: expect a request, registration or conditions before you get the data."}}:x.ar?{access_rights:{value:x.ar}}:{}),
     ...(x.prov?{lineage:x.prov}:{}),...(x.crs?{coordinate_systems:x.crs}:{}),...(x.res?{spatial_resolution_m:x.res}:{}),
