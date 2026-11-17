@@ -12,6 +12,7 @@ import { mergeDiscoveredAssets } from "../public/dataset-discovery-v1.mjs";
 import { SCOPES, enviOverride, scopeCounts, scopeOf, TOPIC_LABELS, topicOf } from "../public/dataset-taxonomy-v1.mjs";
 import { canonicalPublisher, cityGeography, cleanFrequency, cleanPeriod, cutText, htmlToText, httpsLink, unifyPublisherNames, validUpdated } from "./metadata-clean.mjs";
 import { normalizeLicense } from "../public/dataset-licence-v1.mjs";
+import { annotateItems, loadProbes } from "./apply-link-health.mjs";
 import { AUTHORITIES } from "../public/dataset-authority-v1.mjs";
 import { DETAIL_CHUNK, DOC_CHUNK, idShard, prefixKey, tokenShard, tokenize } from "../mcp-server.mjs";
 
@@ -216,16 +217,27 @@ export function writeIndex(outDir,{docs,details,postings,ids},meta){
   return{docChunks:Math.ceil(docs.length/DOC_CHUNK),tokenShards:shards.size,idShards:idShards.size};
 }
 
+/** The hand-reviewed atlas assets as catalogue items (also read by scripts/probe-links.mjs). */
+export async function loadCuratedItems(){
+  const [{ASSETS},{EXTRA_ATLAS_ASSETS},{COMPLETENESS_ASSETS},{COMPLETENESS_ASSETS_V2},{COMPLETENESS_ASSETS_V3},{COMPLETENESS_ASSETS_V4},{SOURCES},{EXTRA_SOURCES}]=await Promise.all([
+    import("../public/dataset-atlas-v1.mjs"),import("../public/dataset-atlas-extra-v1.mjs"),import("../public/dataset-atlas-completeness-v1.mjs"),import("../public/dataset-atlas-completeness-v2.mjs"),
+    import("../public/dataset-atlas-completeness-v3.mjs"),import("../public/dataset-atlas-completeness-v4.mjs"),import("../public/data.mjs"),import("../public/deep-data.mjs")]);
+  return curatedToItems([...ASSETS,...EXTRA_ATLAS_ASSETS,...COMPLETENESS_ASSETS,...COMPLETENESS_ASSETS_V2,...COMPLETENESS_ASSETS_V3,...COMPLETENESS_ASSETS_V4],[...SOURCES,...EXTRA_SOURCES]);
+}
+
 async function main(){
   const idx=path.join(pub,"national-catalog.json"),national=[];
   if(fs.existsSync(idx))for(const c of JSON.parse(fs.readFileSync(idx,"utf8")).chunks||[])national.push(...JSON.parse(fs.readFileSync(path.join(pub,c.file),"utf8")).items||[]);
   const hvPath=path.join(pub,"harvested-catalog.json"),hv=fs.existsSync(hvPath)?JSON.parse(fs.readFileSync(hvPath,"utf8")):{items:[]};
   if(!national.length&&!hv.items.length)throw new Error("no catalogue files in public/; run harvest first");
   const items=mergeItems(national,hv.items||[]);
-  const [{ASSETS},{EXTRA_ATLAS_ASSETS},{COMPLETENESS_ASSETS},{COMPLETENESS_ASSETS_V2},{COMPLETENESS_ASSETS_V3},{COMPLETENESS_ASSETS_V4},{SOURCES},{EXTRA_SOURCES}]=await Promise.all([
-    import("../public/dataset-atlas-v1.mjs"),import("../public/dataset-atlas-extra-v1.mjs"),import("../public/dataset-atlas-completeness-v1.mjs"),import("../public/dataset-atlas-completeness-v2.mjs"),
-    import("../public/dataset-atlas-completeness-v3.mjs"),import("../public/dataset-atlas-completeness-v4.mjs"),import("../public/data.mjs"),import("../public/deep-data.mjs")]);
-  const curated=curatedToItems([...ASSETS,...EXTRA_ATLAS_ASSETS,...COMPLETENESS_ASSETS,...COMPLETENESS_ASSETS_V2,...COMPLETENESS_ASSETS_V3,...COMPLETENESS_ASSETS_V4],[...SOURCES,...EXTRA_SOURCES]);
+  const curated=await loadCuratedItems();
+  // the weekly link check covers hand-reviewed links too (scripts/probe-links.mjs); a probe never demotes them except to "broken"
+  const probeFile=path.resolve(pub,"../.cache/link-probe.jsonl");
+  if(fs.existsSync(probeFile)){
+    const {byUrl}=loadProbes(probeFile);
+    for(const it of curated){const was=it.tier;annotateItems([it],byUrl);if(it.tier!=="broken"&&it.tier!=="ready")it.tier=was}
+  }
   items.push(...curated);
   // one spelling per publisher across all sources (national, portals, curated)
   for(const it of items)it.provider=canonicalPublisher(it.provider);
@@ -250,7 +262,7 @@ async function main(){
   const facts={};
   for(const it of built.ranked)if(it.curated)facts[it.id.replace(/^curated:/,"")]={publisher:it.provider,
     ...(it.license?{license:normalizeLicense(it.licenseUri||it.license).label||it.license,licenseFamily:normalizeLicense(it.licenseUri||it.license).family,licenseFrom:it.licenseFrom||"",...(it.licenseShare?{licenseShare:it.licenseShare}:{})}:{}),
-    ...(it.temporal?{period:it.temporal}:{})};
+    ...(it.temporal?{period:it.temporal}:{}),...(it.probe?{probe:it.probe}:{})};
   fs.writeFileSync(path.join(pub,"curated-facts.json"),JSON.stringify(facts));
   const bytes=fs.readdirSync(path.join(pub,"mcp"),{recursive:true}).reduce((n,f)=>{const p=path.join(pub,"mcp",f);return n+(fs.statSync(p).isFile()?fs.statSync(p).size:0)},0);
   console.log("[mcp-index] "+built.docs.length+" records ("+curated.length+" curated), "+stats.docChunks+" doc chunks, "+stats.tokenShards+" token shards, "+stats.idShards+" id shards, "+(bytes/1048576).toFixed(1)+" MiB");

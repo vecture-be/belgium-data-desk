@@ -104,3 +104,13 @@ assert.equal(canonicalPublisher("Brussels Mobility: Active mobility"),"Brussels 
 {const xs=[{provider:"BeWaPP"},{provider:"BeWaPP"},{provider:"Be WaPP asbl"},{provider:"Agence du Numérique"},{provider:"Agence du Numérique"},{provider:"Agence du Numérique (AdN)"}];
  unifyPublisherNames(xs);assert.deepEqual([...new Set(xs.map(x=>x.provider))],["BeWaPP","Agence du Numérique"])}
 console.log("round 4 tests passed");
+// hand-reviewed links in the weekly link check
+import { curatedFormat, curatedProbeUrl, loadCuratedWork } from "./probe-links.mjs";
+assert.equal(curatedFormat("CSV","https://opendata.apps.mow.vlaanderen.be/fietstellingen/index.html"),"PAGE","a landing page listed as CSV is a page");
+assert.equal(curatedFormat("CSV","https://opendata.apps.mow.vlaanderen.be/fietstellingen/sites.csv"),"CSV");
+assert.equal(curatedFormat("CSV","https://data.stad.gent/explore/dataset/x/download/?format=csv"),"CSV");
+assert.equal(curatedProbeUrl("https://api.basisregisters.vlaanderen.be/v2/percelen/{objectId}"),null,"an API template is not a link to check");
+assert.equal(curatedProbeUrl("https://geo.api.vlaanderen.be/MeetplOppervlwaterkwal/wfs"),"https://geo.api.vlaanderen.be/MeetplOppervlwaterkwal/wfs?service=WFS&request=GetCapabilities");
+assert.equal(curatedProbeUrl("https://statbel.fgov.be/en/open-data/x"),"https://statbel.fgov.be/en/open-data/x");
+assert.ok((await loadCuratedWork()).length>=100,"the atlas links are in the weekly check");
+console.log("curated link check tests passed");

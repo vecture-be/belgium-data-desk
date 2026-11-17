@@ -28,7 +28,7 @@ import { isLdesEndpoint, isLdesDistribution, ldesCapability } from "./dataset-ld
 const CURATED_FACTS=await (async()=>{try{const c=new AbortController(),t=setTimeout(()=>c.abort(),3000);const r=await fetch("/curated-facts.json",{signal:c.signal});clearTimeout(t);return r.ok?await r.json():{}}catch{return{}}})();
 const MODELED=[...ASSETS,...EXTRA_ATLAS_ASSETS,...COMPLETENESS_ASSETS,...COMPLETENESS_ASSETS_V2,...COMPLETENESS_ASSETS_V3,...COMPLETENESS_ASSETS_V4].map(a=>{
   const f=CURATED_FACTS[a.id]||{};
-  return{...a,depth:"modelled",...(f.publisher?{publisherName:f.publisher}:{}),...(f.period?{period:f.period}:{}),
+  return{...a,depth:"modelled",...(f.publisher?{publisherName:f.publisher}:{}),...(f.period?{period:f.period}:{}),...(f.probe?{probe:f.probe}:{}),
     ...(!a.license&&f.license?{license:f.license,licenseFamily:f.licenseFamily||"",licenseFrom:f.licenseFrom||"",licenseShare:f.licenseShare||null}:{})};
 });
 const SOURCES=[...BASE,...EXTRA_SOURCES].map(s=>({...s,...(SOURCE_OVERRIDES[s.id]||{})}));
