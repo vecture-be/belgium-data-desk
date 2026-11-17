@@ -7,15 +7,15 @@ Rows are compared as a set of distinct rows (a fingerprint per row), so an expor
 ## Latest check: 2026-11-16
 
 - Files checked: 3,375 (2,924 read in full, 0 compared with a previous check)
-- Changed since the previous check: **0**
+- Changed since the previous check: **Not yet known (no comparable baseline)**
 - Same rows, different order on each download: 0
 - Last-Modified header: plausible 246, missing 2,673, request time 5
 - Change headers that contradict the content: `last_modified_is_request_time` 5
 
-No dataset changed since the previous check.
+This is an initial baseline: no files were compared with a previous check, so changes cannot yet be determined.
 
 ## Earlier checks
 
-- [2026-11-16](changes/2026-11-16.json): 0 changed of 0 compared
+- [2026-11-16](changes/2026-11-16.json): initial baseline (0 compared)
 
 Data: `changes/<date>.json`, one file per check. Fields are described in the Data Desk repository under `docs/reference/dataset-cards.md` ("Change log").
