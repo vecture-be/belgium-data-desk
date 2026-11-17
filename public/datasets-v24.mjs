@@ -321,7 +321,7 @@ const hayCache=new WeakMap();
 function expandedSearchText(a){let h=hayCache.get(a);if(h===undefined){h=expandSearchHay(searchText(a));hayCache.set(a,h)}return h}
 function matchesBase(a){
   const terms=queryTerms(state.q);
-  return(!state.pinnedOnly||state.stack.has(a.id))&&(!state.nationalOnly||isNationalIndexed(a))&&(!terms.length||terms.every(t=>expandedSearchText(a).includes(t)))&&(!state.depth||a.depth===state.depth)&&(!state.source||publisherFilterKey(a)===state.source)&&(!state.kind||a.kind===state.kind)&&(!state.format||normalizedFormats(a).includes(state.format))&&(!state.delivery||matchesDelivery(a,state.delivery))&&(!state.topic||a.topic===state.topic)&&(!state.licence||licenceGroup(a)===state.licence);
+  return(!state.pinnedOnly||state.stack.has(a.id))&&(!state.nationalOnly||isNationalIndexed(a))&&(!terms.length||terms.every(t=>expandedSearchText(a).includes(t))||(a.depth==="modelled"&&authorityIdsFor(state.q).has("curated:"+a.id)))&&(!state.depth||a.depth===state.depth)&&(!state.source||publisherFilterKey(a)===state.source)&&(!state.kind||a.kind===state.kind)&&(!state.format||normalizedFormats(a).includes(state.format))&&(!state.delivery||matchesDelivery(a,state.delivery))&&(!state.topic||a.topic===state.topic)&&(!state.licence||licenceGroup(a)===state.licence);
 }
 function matches(a){return matchesBase(a)&&(!state.analysis||analysisReadiness(a).kind===state.analysis)}
 // Relevance depends only on the asset and the query; cache per asset object and reset when the query changes.
