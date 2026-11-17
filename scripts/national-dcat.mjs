@@ -1,3 +1,4 @@
+import { canonicalPublisher, cleanFrequency, cleanPeriod, isOpaqueId, landingPage, unifyPublisherNames, validUpdated } from "./metadata-clean.mjs";
 import { createGunzip } from "node:zlib";
 import { Readable } from "node:stream";
 import { createHash } from "node:crypto";
@@ -110,7 +111,9 @@ export function catalogueFromNodes(nodes,{generatedAt=new Date().toISOString(),s
     const title=pick(n,P.title);if(!title)continue;
     const publisherRef=firstResource(n,P.publisher);
     const publisherNode=publisherRef?nodes.get(publisherRef):null;
-    const publisher=publisherRef?(publisherName(publisherNode)||uriTail(publisherRef)):(pick(n,P.publisher)||"data.gov.be source");
+    const rawPublisher=publisherRef?(publisherName(publisherNode)||uriTail(publisherRef)):pick(n,P.publisher);
+    // a blank-node id is not a name (8 publishers were "b6d53d…-3958c…"); inferPublishers may still find the real one
+    const publisher=rawPublisher&&!isOpaqueId(rawPublisher)?canonicalPublisher(rawPublisher):"data.gov.be source";
     const contactRef=firstResource(n,P.contactPoint),contactNode=contactRef?nodes.get(contactRef):null;
     const contactEmail=normalEmail(firstResource(contactNode,P.vcardHasEmail)||pick(contactNode,P.vcardHasEmail));
     const contactUrl=firstResource(contactNode,P.vcardHasURL)||pick(contactNode,P.vcardHasURL)||"";
@@ -171,8 +174,8 @@ export function catalogueFromNodes(nodes,{generatedAt=new Date().toISOString(),s
       servesDataset:isService?vals(n,P.servesDataset).filter(x=>x.resource).map(x=>x.v).slice(0,12):[],
       conformsTo:isService?vals(n,P.conformsTo).map(x=>x.v).slice(0,12):[],
       formats:formats.slice(0,12),
-      updatedAt:pick(n,P.modified)||pick(n,P.issued)||null,
-      frequency:frequency?readableResource(frequency):"",
+      updatedAt:validUpdated(pick(n,P.modified))||validUpdated(pick(n,P.issued))||null,
+      frequency:cleanFrequency(frequency?readableResource(frequency):""),
       geoCoverage:spatial?resolveSpatial(spatial.v).label:"",geoScope:spatial?resolveSpatial(spatial.v).scope:"",
       recordCount:null,fields:[],previewRows:[],schemaOrigin:"none",sampleOrigin:"none",
       extent:{spatial:spatial?readableResource(spatial):null},
@@ -181,7 +184,7 @@ export function catalogueFromNodes(nodes,{generatedAt=new Date().toISOString(),s
       licenseUri:datasetLicense?.resource?datasetLicense.v:(distributions.find(x=>x.licenseUri)?.licenseUri||""),
       licenseFamily:normalizeLicense(datasetLicense?.v||distributions.find(x=>x.licenseUri)?.licenseUri||"").family,
       euThemes:uniq(vals(n,P.theme).map(x=>String(x.v).match(/data-theme\/([A-Z]+)$/)?.[1])),
-      officialUrl:firstResource(n,P.landingPage)||(subject.startsWith("http")?subject:distributions[0]?.url||""),
+      officialUrl:landingPage({landingPage:firstResource(n,P.landingPage),subject,identifier:declaredId,distributions:uniqueDistributions}),
       sourceRecord:subject,
       distributions:uniqueDistributions.slice(0,8),
       enrichment:{score:20,level:"harvested",reasons:["national DCAT index"],schemaOrigin:"none",sampled:false},
@@ -189,6 +192,7 @@ export function catalogueFromNodes(nodes,{generatedAt=new Date().toISOString(),s
     });
   }
   inferPublishers(items);
+  unifyPublisherNames(items);
   const series=detectSeries(items),seriesOf=new Map();
   for(const s of series)for(const id of s.memberIds)seriesOf.set(id,s.id);
   for(const x of items){x.dataKind=kindOf(x);x.topic=topicOf(x);if(seriesOf.has(x.id))x.seriesId=seriesOf.get(x.id)}
@@ -198,7 +202,7 @@ export function catalogueFromNodes(nodes,{generatedAt=new Date().toISOString(),s
 export const UNKNOWN_PUBLISHER="data.gov.be source";
 // Contact domains that belong to exactly one organisation (never a shared parent domain such as vlaanderen.be or fgov.be).
 const DOMAIN_PUBLISHERS={"meteo.be":"Royal Meteorological Institute of Belgium","arch.be":"State Archives of Belgium","adn.be":"Agence du Numérique (Wallonia)",
-  "ngi.be":"geo.be / National Geographic Institute","naturalsciences.be":"Royal Belgian Institute of Natural Sciences","sciensano.be":"Sciensano","statbel.fgov.be":"Statbel"};
+  "ngi.be":"National Geographic Institute (NGI)","naturalsciences.be":"Royal Belgian Institute of Natural Sciences","sciensano.be":"Sciensano","statbel.fgov.be":"Statbel"};
 const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch{return""}};
 /**
  * A record without dct:publisher gets the publisher that other records with the same owner (KBO number), contact address,
@@ -207,7 +211,8 @@ const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch{retur
  */
 export function inferPublishers(items){
   const keysOf=x=>[...(x.ownerKbo||[]).map(k=>"kbo:"+k),x.contactEmail?"mail:"+x.contactEmail.toLowerCase():"",
-    x.contactEmail?"domain:"+x.contactEmail.split("@")[1].toLowerCase():"",x.officialUrl?"host:"+hostOf(x.officialUrl):""].filter(k=>k&&k!=="host:data.gov.be"&&k!=="host:");
+    x.contactEmail?"domain:"+x.contactEmail.split("@")[1].toLowerCase():"",x.officialUrl?"host:"+hostOf(x.officialUrl):"",
+    ...(x.distributions||[]).slice(0,2).map(d=>d.url?"host:"+hostOf(d.url):"")].filter(k=>k&&k!=="host:data.gov.be"&&k!=="host:");
   const votes=new Map();
   for(const x of items){if(x.provider===UNKNOWN_PUBLISHER)continue;for(const k of keysOf(x)){const m=votes.get(k)||votes.set(k,new Map()).get(k);m.set(x.provider,(m.get(x.provider)||0)+1)}}
   const winner=k=>{const m=votes.get(k);if(!m)return null;let total=0,best=null,n=0;for(const [p,c] of m){total+=c;if(c>n){n=c;best=p}}return n>=3&&n/total>=0.8?best:null};
@@ -248,7 +253,7 @@ export function extraFields(nodes,n){
   const hvd=uniq(vals(n,P.hvdCategory).map(x=>HVD[uriTail(x.v)]||"High-value dataset"));
   const kbo=uniq([...vals(n,P.creator),...vals(n,P.rightsHolder)].map(x=>kboOf(x.v)));
   return{
-    temporal:temporalOf(nodes,n),languages,accessRights:["PUBLIC","NON_PUBLIC","RESTRICTED"].includes(access)?access:"",
+    temporal:cleanPeriod(temporalOf(nodes,n)),languages,accessRights:["PUBLIC","NON_PUBLIC","RESTRICTED"].includes(access)?access:"",
     provenance:prov.slice(0,600),crs,standards,...(res>0?{spatialResolutionM:res}:{}),hvdCategories:hvd,ownerKbo:kbo.slice(0,3),
     issuedAt:isoDay(pick(n,P.issued)||pick(n,P.created))||null
   };

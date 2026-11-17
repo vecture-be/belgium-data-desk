@@ -49,7 +49,7 @@ jobs:
             public/national-catalog-*.json
             public/catalogue-manifest.json
             relay-index.mjs
-          key: catalogue-${{ steps.key.outputs.week }}-${{ hashFiles('scripts/harvest.mjs', 'scripts/harvest-iso.mjs', 'scripts/harvest-fetch.mjs', 'public/dataset-licence-v1.mjs', 'scripts/national-dcat.mjs', 'scripts/curate.mjs', 'scripts/relay-index-lib.mjs', 'public/dataset-atlas*.mjs') }}
+          key: catalogue-${{ steps.key.outputs.week }}-${{ hashFiles('scripts/harvest.mjs', 'scripts/harvest-iso.mjs', 'scripts/metadata-clean.mjs', 'scripts/harvest-fetch.mjs', 'public/dataset-licence-v1.mjs', 'scripts/national-dcat.mjs', 'scripts/curate.mjs', 'scripts/relay-index-lib.mjs', 'public/dataset-atlas*.mjs') }}
       - name: Harvest
         id: harvest
         if: steps.catalogue.outputs.cache-hit != 'true'
@@ -69,7 +69,7 @@ jobs:
             public/national-catalog-*.json
             public/catalogue-manifest.json
             relay-index.mjs
-          key: catalogue-${{ steps.key.outputs.week }}-${{ hashFiles('scripts/harvest.mjs', 'scripts/harvest-iso.mjs', 'scripts/harvest-fetch.mjs', 'public/dataset-licence-v1.mjs', 'scripts/national-dcat.mjs', 'scripts/curate.mjs', 'scripts/relay-index-lib.mjs', 'public/dataset-atlas*.mjs') }}
+          key: catalogue-${{ steps.key.outputs.week }}-${{ hashFiles('scripts/harvest.mjs', 'scripts/harvest-iso.mjs', 'scripts/metadata-clean.mjs', 'scripts/harvest-fetch.mjs', 'public/dataset-licence-v1.mjs', 'scripts/national-dcat.mjs', 'scripts/curate.mjs', 'scripts/relay-index-lib.mjs', 'public/dataset-atlas*.mjs') }}
 
       - name: Restore link health and column profiles
         id: health

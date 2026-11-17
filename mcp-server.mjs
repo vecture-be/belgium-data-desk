@@ -330,7 +330,7 @@ export async function getDataset(reader,args){
   const gaps=[!d.l&&"licence",cycle.update_cycle_declared===false&&"update cycle",!cols.length&&"column list",!x.ce&&!x.cu&&"contact",!d.u&&"update date",!x.tc&&!measuredPeriod&&"period covered"].filter(Boolean);
   // What the data is about in time, language, access and lineage: declared by the publisher, or read from the file (said which).
   const about={
-    ...(x.tc?{period:{from:x.tc.s,to:x.tc.e,source:"declared by the publisher"}}:measuredPeriod?{period:{from:measuredPeriod.from,to:measuredPeriod.to,source:"read from the file (column "+measuredPeriod.column+")"}}:{}),
+    ...(x.tc?{period:{from:x.tc.s,to:x.tc.e,source:"declared by the publisher",...(x.tc.pe?{planned_end:x.tc.pe,planned_end_note:"The publisher gives an end date in the future: a validity or planning date, so the period is shown as open-ended."}:{})}}:measuredPeriod?{period:{from:measuredPeriod.from,to:measuredPeriod.to,source:"read from the file (column "+measuredPeriod.column+")"}}:{}),
     ...(x.lang?{languages:x.lang}:{}),
     ...(x.ar&&x.ar!=="PUBLIC"?{access_rights:{value:x.ar,note:x.ar==="NON_PUBLIC"?"The publisher marks this dataset as not public: the record describes it, but the data itself is not openly available.":"The publisher restricts access: expect a request, registration or conditions before you get the data."}}:x.ar?{access_rights:{value:x.ar}}:{}),
     ...(x.prov?{lineage:x.prov}:{}),...(x.crs?{coordinate_systems:x.crs}:{}),...(x.res?{spatial_resolution_m:x.res}:{}),
@@ -339,7 +339,7 @@ export async function getDataset(reader,args){
   const profile=card?.file?{rows:card.file.rows,rows_exact:!!card.file.rows_exact,...(card.file.rows_exact?{}:{rows_note:"Rows in the first "+Math.round((card.file.bytes_read||0)/1024)+" KiB read by the weekly check; the whole file has more."}),
     ...(card.coverage?.time?{period:{from:card.coverage.time.from,to:card.coverage.time.to,column:card.coverage.time.column}}:{}),profiled_at:card.profiled_at}:null;
   return{id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,hand_reviewed:!!d.c,
-    licence:{label:d.l||NOT_DECLARED,family:d.lf||"unknown",...(x.lsrc?{source:"The publisher's licence, from the harvested record "+x.lsrc+" of the same dataset."}:{}),...(!d.l&&source?{check:source}:{})},
+    licence:{label:d.l||NOT_DECLARED,family:d.lf||"unknown",...(x.lt?{terms_text:x.lt}:{}),...(x.lsrc?{source:"The publisher's licence, from the harvested record "+x.lsrc+" of the same dataset."}:{}),...(!d.l&&source?{check:source}:{})},
     updated:d.u||null,...cycle,
     ...(gaps.length?{not_declared_by_publisher:{fields:gaps,source_page:source,note:"These are gaps in the publisher's own catalogue record, not faults in this tool. The source page may give them."}}:{}),
     ...(profile?{data_profile:profile}:{}),

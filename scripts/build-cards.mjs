@@ -72,7 +72,9 @@ export function headerSummary(cards){
 export function backfillDocs(docs,cards){
   let n=0;
   for(const d of docs){
-    const c=d&&cards.get(d.id),t=c?.coverage?.time;if(!t||d.y)continue;
+    // only from a whole-file read: the first 256 KiB of a file sorted newest-first gives the wrong period
+    // (Elia "historical data as of 22/05/2024" read as 2026)
+    const c=d&&cards.get(d.id),t=c?.coverage?.time;if(!t||d.y||!c.file?.rows_exact)continue;
     const a=Number(String(t.from||"").slice(0,4)),b=Number(String(t.to||"").slice(0,4));
     if(!(a>1800&&b>=a&&b<2101))continue;
     d.y=[a,b];d.ym=1;n++;
