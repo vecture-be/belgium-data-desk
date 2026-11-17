@@ -93,7 +93,7 @@ function describe(c){
 const cell=s=>String(s??"").replace(/\|/g,"\\|").replace(/\s+/g," ").slice(0,120);
 
 export function renderReadme(log,history){
-  const r=log.run,lines=[
+  const r=log.run,hasBaseline=r.files_compared>0,lines=[
     "# Belgian open data: what changed",
     "",
     "Every week the [Belgium Data Desk](https://data.vecture.be) downloads each published dataset's main CSV/TSV file in full (up to 100 MB) and compares it with the previous check. This branch keeps the result: which datasets changed, by how many rows, and whether their columns or time coverage moved. Only facts about the files are kept, never the data itself.",
@@ -103,7 +103,7 @@ export function renderReadme(log,history){
     "## Latest check: "+r.date,
     "",
     "- Files checked: "+fmt(r.files_checked)+" ("+fmt(r.files_profiled)+" read in full, "+fmt(r.files_compared)+" compared with a previous check)",
-    "- Changed since the previous check: **"+fmt(r.files_changed)+"**",
+    hasBaseline?"- Changed since the previous check: **"+fmt(r.files_changed)+"**":"- Changed since the previous check: **Not yet known (no comparable baseline)**",
     "- Same rows, different order on each download: "+fmt(r.row_order_unstable),
     "- Last-Modified header: "+Object.entries(r.last_modified).map(([k,v])=>k.replace("_"," ")+" "+fmt(v)).join(", "),
     ...(Object.keys(r.header_issues).length?["- Change headers that contradict the content: "+Object.entries(r.header_issues).map(([k,v])=>"`"+k+"` "+fmt(v)).join(", ")]:[]),
@@ -121,8 +121,8 @@ export function renderReadme(log,history){
     lines.push("| Dataset | Publisher | Rows before → after | Change |","| --- | --- | ---: | --- |");
     for(const c of log.changed.slice(0,100))lines.push("| ["+cell(c.title||c.id)+"]("+c.url+") | "+cell(c.publisher)+" | "+fmt(c.rows.before)+" → "+fmt(c.rows.after)+" | "+cell(describe(c))+" |");
     if(log.changed.length>100)lines.push("","… and "+fmt(log.changed.length-100)+" more in [changes/"+r.date+".json](changes/"+r.date+".json).");
-  }else lines.push("No dataset changed since the previous check.");
-  lines.push("","## Earlier checks","",...history.map(h=>"- ["+h.date+"](changes/"+h.date+".json): "+fmt(h.files_changed)+" changed of "+fmt(h.files_compared)+" compared"),"",
+  }else lines.push(hasBaseline?"No dataset changed among the "+fmt(r.files_compared)+" files compared with a previous check.":"This is an initial baseline: no files were compared with a previous check, so changes cannot yet be determined.");
+  lines.push("","## Earlier checks","",...history.map(h=>"- ["+h.date+"](changes/"+h.date+".json): "+(h.files_compared>0?fmt(h.files_changed)+" changed of "+fmt(h.files_compared)+" compared":"initial baseline (0 compared)")),"",
     "## Follow it","",
     "- [Publisher scorecards](publishers.md) ([JSON](publishers.json)): per publisher, readable files, gone links, web pages served as tables, empty files and datasets that miss their declared update cadence. Files that could not be checked from our servers are listed apart and never counted against a publisher.",
     "- Atom feeds: [all changes and alerts]("+RAW+"feeds/changes.xml), [alerts only]("+RAW+"feeds/alerts.xml), and one per publisher under [feeds/publishers/](feeds/publishers/).",
