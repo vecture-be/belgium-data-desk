@@ -83,3 +83,16 @@ try{
 }finally{server.close();fs.rmSync(tmp,{recursive:true,force:true})}
 
 console.log(JSON.stringify({ok:true,"row-diff":"diff/pack/change/card/log"}));
+
+
+// Regression #58: zero comparable files is not evidence that no datasets changed.
+{
+  const run={date:"2026-11-16",files_checked:3375,files_profiled:2924,files_compared:0,
+    files_changed:0,row_order_unstable:0,last_modified:{missing:2924},header_issues:{},refused_hosts:{}};
+  const md=renderReadme({run,changed:[]},[run]);
+  assert.match(md,/Not yet known \(no comparable baseline\)/);
+  assert.match(md,/initial baseline: no files were compared/);
+  assert.match(md,/initial baseline \(0 compared\)/);
+  assert.doesNotMatch(md,/No dataset changed since the previous check/);
+}
+console.log(JSON.stringify({ok:true,regression:"initial baseline is not called no changes"}));

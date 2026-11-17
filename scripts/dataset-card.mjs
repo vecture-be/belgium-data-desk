@@ -34,6 +34,11 @@ function toDate(s){
 }
 function valid(y,mo,d){const n=Number(y);if(n<1800||n>2100||+mo<1||+mo>12||+d<1||+d>31)return null;return y+"-"+mo+"-"+d}
 const isYearColumn=name=>/^(jaar|year|annee|année|jahr|periode|period|yr|refyear|ref_year|cd_year)$|(^|_)(jaar|year|annee|année)($|_)/i.test(name);
+// Hydrological/agricultural reporting years such as "2002-2003" are periods, not arbitrary text.
+function toYearRange(s){
+  const m=s.match(/^((?:18|19|20)\d{2})\s*[-/–]\s*((?:18|19|20)\d{2})$/);
+  return m&&Number(m[2])===Number(m[1])+1?{from:m[1],to:m[2]}:null;
+}
 
 // ---------- Belgian identifiers ----------
 export function validEnterpriseNumber(s){
@@ -89,7 +94,7 @@ export function profileColumns(text,{url="",format="",bytesRead=null,totalBytes=
 export function createColumnProfiler(delimiter){
   const cols=[],seen=new Set(),grain=createGrainTracker();let duplicates=0,dupCapped=false,sumHi=0,sumLo=0,hdr="";
   const a=createDelimitedAccumulator(delimiter,{sampleRows:0,inferRows:250,onRow(values,headers){
-    if(!cols.length){headers.slice(0,MAX_COLUMNS).forEach(h=>cols.push({name:h,filled:0,distinct:new Map(),capped:false,min:null,max:null,dmin:null,dmax:null,nums:0,ints:0,dates:0,keySample:[]}));hdr=headers.join("\u0001")}
+    if(!cols.length){headers.slice(0,MAX_COLUMNS).forEach(h=>cols.push({name:h,filled:0,distinct:new Map(),capped:false,min:null,max:null,dmin:null,dmax:null,observedMin:null,observedMax:null,pmin:null,pmax:null,periods:0,nums:0,ints:0,dates:0,keySample:[]}));hdr=headers.join("\u0001")}
     grain.row(values);
     // a 53-bit hash per row. Duplicate rows: a Set of these (numbers stay small); past MAX_ROW_HASHES the count stops growing and
     // is reported as a lower bound. False matches are ~1 in 10^4 files at a million rows.
@@ -98,15 +103,26 @@ export function createColumnProfiler(delimiter){
     // order keeps its fingerprint while its bytes (sha256) change. Two sums of 26/27-bit halves stay exact past a billion rows.
     sumLo+=h%2**26;sumHi+=Math.floor(h/2**26);
     if(!dupCapped){if(seen.has(h))duplicates++;else{seen.add(h);if(seen.size>=MAX_ROW_HASHES)dupCapped=true}}
+    const cells=values.slice(0,cols.length).map(clean);
+    const filledCells=cells.reduce((n,v)=>n+(v?1:0),0);
+    // A trailing date-only row is not evidence that a measured series covers that date.
+    // A single-column date list is itself meaningful data, so retain its full range.
+    const hasData=cols.length===1||filledCells>1;
     for(let i=0;i<cols.length;i++){
-      const c=cols[i],v=clean(values[i]);if(!v)continue;
+      const c=cols[i],v=cells[i];if(!v)continue;
       c.filled++;
       if(!c.capped){c.distinct.set(v,(c.distinct.get(v)||0)+1);if(c.distinct.size>MAX_DISTINCT)c.capped=true}
       else if(c.distinct.has(v))c.distinct.set(v,c.distinct.get(v)+1);
       if(c.keySample.length<MAX_KEY_SAMPLE)c.keySample.push(v);
-      const d=toDate(v),n=d?null:toNumber(v);
-      if(d){c.dates++;if(!c.dmin||d<c.dmin)c.dmin=d;if(!c.dmax||d>c.dmax)c.dmax=d}
-      else if(n!=null){c.nums++;if(Number.isInteger(n))c.ints++;if(c.min==null||n<c.min)c.min=n;if(c.max==null||n>c.max)c.max=n}
+      const d=toDate(v),period=d?null:toYearRange(v),n=(d||period)?null:toNumber(v);
+      if(d){
+        c.dates++;if(!c.dmin||d<c.dmin)c.dmin=d;if(!c.dmax||d>c.dmax)c.dmax=d;
+        if(hasData){if(!c.observedMin||d<c.observedMin)c.observedMin=d;if(!c.observedMax||d>c.observedMax)c.observedMax=d}
+      }else if(period){
+        c.periods++;
+        if(!c.pmin||period.from<c.pmin)c.pmin=period.from;
+        if(!c.pmax||period.to>c.pmax)c.pmax=period.to;
+      }else if(n!=null){c.nums++;if(Number.isInteger(n))c.ints++;if(c.min==null||n<c.min)c.min=n;if(c.max==null||n>c.max)c.max=n}
     }
   }});
   const self={push:t=>a.push(t),rowHashes:null,finish({exact=true,keepRowHashes=false}={}){
@@ -176,9 +192,10 @@ export function createGrainTracker(){
 function summarise(cols,parsed,whole,extra,delimiter){
   const rows=parsed.rowCount;
   const columns=cols.map((c,i)=>{
-    const type=c.filled&&c.dates/c.filled>=0.9?"date":c.filled&&c.nums/c.filled>=0.9?(c.ints===c.nums?"integer":"number"):parsed.types[i]==="boolean"?"boolean":"text";
+    const type=c.filled&&c.dates/c.filled>=0.9?"date":c.filled&&c.periods/c.filled>=0.9?"period":c.filled&&c.nums/c.filled>=0.9?(c.ints===c.nums?"integer":"number"):parsed.types[i]==="boolean"?"boolean":"text";
     const out={name:c.name,type,filled_pct:rows?pct(c.filled/rows):0,distinct:c.capped?MAX_DISTINCT+"+":c.distinct.size};
-    if(type==="date")Object.assign(out,{from:c.dmin,to:c.dmax});
+    if(type==="date")Object.assign(out,{from:c.observedMin||c.dmin,to:c.observedMax||c.dmax});
+    if(type==="period")Object.assign(out,{from:c.pmin,to:c.pmax});
     if(type==="integer"||type==="number"){Object.assign(out,{min:c.min,max:c.max});
       if(type==="integer"&&isYearColumn(c.name)&&c.min>=1800&&c.max<=2100)Object.assign(out,{type:"year",from:String(c.min),to:String(c.max)})}
     if(type==="text"&&!c.capped&&c.distinct.size<=50&&c.distinct.size>1&&c.distinct.size<=c.filled/2)out.top=[...c.distinct].sort((a,b)=>b[1]-a[1]).slice(0,MAX_TOP).map(([v,n])=>[v.slice(0,60),n]);

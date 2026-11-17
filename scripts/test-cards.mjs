@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildCard, freshness, profileColumns, setNisReference, validEnterpriseNumber } from "./dataset-card.mjs";
+import { buildCard, createColumnProfiler, freshness, profileColumns, setNisReference, validEnterpriseNumber } from "./dataset-card.mjs";
 
 const pub=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"../public");
 setNisReference(JSON.parse(fs.readFileSync(path.join(pub,"statbel/places-v1.json"),"utf8")).places);
@@ -90,3 +90,31 @@ console.log(JSON.stringify({ok:true,coverage:"reporting periods only"}));
   assert.ok(buildCard({id:"h"},pb,{now:"2026-11-17T00:00:00Z",file:{}}).facts.some(f=>/^No set of label columns identifies each row: even by 'gemeente', 1 row shares its labels/.test(f.text)));
   console.log(JSON.stringify({ok:true,grain:"tested on the file"}));
 }
+
+
+// Regression #56: a publisher can pre-create future months with no measured value.
+// Such placeholders must not extend the actual coverage of a time series.
+{
+  const csv="empty;totaal\n2026-12;\n2026-11;\n2026-10;106591\n2026-09;103297\n";
+  const p=profileColumns(csv,{bytesRead:csv.length,totalBytes:csv.length});
+  const card=buildCard({id:"harvest:infrabel:total-tractie-permaand"},p);
+  assert.deepEqual(card.coverage.time,{from:"2026-09-01",to:"2026-10-01",column:"empty"});
+  assert.match(card.facts.map(f=>f.text).join(" "),/to 2026-10-01/);
+  const streaming=createColumnProfiler(";");
+  streaming.push(csv.slice(0,19));streaming.push(csv.slice(19,41));streaming.push(csv.slice(41));
+  assert.deepEqual(buildCard({id:"train"},streaming.finish({exact:true})).coverage.time,card.coverage.time);
+  const dateOnly="month\n2026-11\n2026-12\n";
+  const justDates=profileColumns(dateOnly,{bytesRead:dateOnly.length,totalBytes:dateOnly.length});
+  assert.equal(justDates.columns[0].to,"2026-12-01","single-column date data must remain valid");
+}
+
+// Regression #57: VMM agricultural reporting years use '2002-2003' rather than ISO dates.
+{
+  const csv="Data,gemiddelde nitraatconcentratie\n2002-2003,23.37\n2003-2004,23.46\n2024-2025,16.1\n";
+  const p=profileColumns(csv,{bytesRead:csv.length,totalBytes:csv.length});
+  assert.equal(p.columns[0].type,"period");
+  assert.deepEqual(buildCard({id:"national:vmm-nitrate"},p).coverage.time,{from:"2002",to:"2025",column:"Data"});
+  const notPeriod="Data,waarde\n2002-2005,1\n2004-2008,2\n";
+  assert.equal(buildCard({id:"other"},profileColumns(notPeriod)).coverage.time,null,"nonconsecutive year-like codes are not assumed to be reporting years");
+}
+console.log(JSON.stringify({ok:true,regressions:"blank future periods and reporting-year ranges"}));
