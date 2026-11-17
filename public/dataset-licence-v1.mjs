@@ -18,6 +18,12 @@ export const LICENSE_RULES=[
   [/ConditionsApplyingToAccessAndUse\/noConditionsApply|^no conditions apply/i,"no-conditions","No conditions apply (INSPIRE)","open"],
   [/conditions d.acc[eè]s et d.utilisation.*(service public de wallonie|\bspw\b)/i,"spw-conditions","SPW Wallonia conditions of use","custom"],
   [/\.well-known\/genid\//i,"unnamed","Licence stated without a name (see source)","custom"],
+  [/(^|[/_ -])CC[ _-]0\b|CC[_ -]?PDM|public ?domain ?mark/i,"cc0","CC0 (public domain)","open"],
+  [/attribution\W+partage dans les m[êe]mes conditions/i,"cc-by-sa","CC BY-SA","open-sharealike"],
+  [/creative ?commons non-?commercial|other \(non-?commercial\)/i,"cc-by-nc","CC BY-NC","non-commercial"],
+  [/open government licen[cs]e|\(OGL\)/i,"ogl-3","Open Government Licence 3.0","open"],
+  [/^(other \(open\)|other-open|open-data|open)$/i,"other-open","Open licence (unnamed)","open"],
+  [/^(other \(attribution\)|attribution)$/i,"other-attribution","Attribution licence (unnamed)","open"],
   [/(^|[/_ -])CC[_ -]?BY[_ -]?NC[_ -]?SA/i,"cc-by-nc-sa","CC BY-NC-SA","non-commercial"],
   [/(^|[/_ -])CC[_ -]?BY[_ -]?NC[_ -]?ND/i,"cc-by-nc-nd","CC BY-NC-ND","non-commercial"],
   [/(^|[/_ -])CC[_ -]?BY[_ -]?NC/i,"cc-by-nc","CC BY-NC","non-commercial"],
@@ -41,6 +47,8 @@ export const LICENSE_RULES=[
 const decodeURIComponentSafe=s=>{try{return decodeURIComponent(s)}catch{return s}};
 export function normalizeLicense(raw){
   const value=clean(raw);if(!value)return{id:"",label:"",family:"unknown",raw:""};
+  // already a canonical label (records store the label once normalised): the same answer again
+  for(const [,id,label,family] of LICENSE_RULES)if(label&&label.toLowerCase()===value.toLowerCase())return{id,label,family,raw:value};
   for(const [re,id,label,family] of LICENSE_RULES)if(re.test(value))return{id,label,family,raw:value};
   if(/^https?:\/\//i.test(value)){const tail=value.replace(/[?#].*$/,"").split("/").filter(Boolean).pop()||value;return{id:"other",label:tail.length>60?tail.slice(0,57)+"…":decodeURIComponentSafe(tail),family:"custom",raw:value}}
   return{id:"other",label:value.length>60?value.slice(0,57)+"…":value,family:"custom",raw:value};

@@ -209,7 +209,13 @@ export async function searchDatasets(reader,args){
     for(const x of related[i])if(inRange(x)){counts.set(x,(counts.get(x)||0)+w*RELATED_WEIGHT);covered.set(x,(covered.get(x)||0)+1)}
   });
   // Candidates: most concepts covered, then highest weighted match, then catalogue rank (a smaller index is a better-evidenced record).
-  const candidates=[...counts].sort((x,y)=>covered.get(y[0])-covered.get(x[0])||y[1]-x[1]||x[0]-y[0]).slice(0,CANDIDATE_POOL);
+  // Period and language filters apply to every candidate (one small facet file), not just to the few documents read below.
+  const year=Number.isInteger(Number(args?.covers_year))&&Number(args.covers_year)>1000?Number(args.covers_year):null;
+  const lang=["nl","fr","en","de"].includes(args?.language)?args.language:null;
+  const facets=year||lang?await reader.json("/mcp/f.json"):null;
+  const LANG_BIT={nl:1,fr:2,en:4,de:8};
+  const passes=idx=>!facets||((!year||(Array.isArray(facets.y?.[idx])&&facets.y[idx][0]<=year&&year<=facets.y[idx][1]))&&(!lang||((facets.lg?.[idx]||0)&LANG_BIT[lang])));
+  const candidates=[...counts].filter(([idx])=>passes(idx)).sort((x,y)=>covered.get(y[0])-covered.get(x[0])||y[1]-x[1]||x[0]-y[0]).slice(0,CANDIDATE_POOL);
   const docChunks=new Map(),scored=[];let skipped=0;
   const docAt=async idx=>{
     const chunk=Math.floor(idx/DOC_CHUNK);
@@ -217,8 +223,6 @@ export async function searchDatasets(reader,args){
     return docChunks.get(chunk)[idx%DOC_CHUNK];
   };
   // For a common need (population, enterprise register, air quality...) the hand-reviewed authoritative source goes first, with the reason.
-  const year=Number.isInteger(Number(args?.covers_year))&&Number(args.covers_year)>1000?Number(args.covers_year):null;
-  const lang=["nl","fr","en","de"].includes(args?.language)?args.language:null;
   const keep=d=>d&&!(args?.topic&&d.tp!==args.topic)&&!(args?.open_licence_only&&!isOpen(d))&&coversYear(d,year)&&inLanguage(d,lang);
   const authority=(scope==="datasets"||scope==="all")?authoritiesFor(tokenize(q,{cap:10}))[0]:null;
   const pinned=[];
@@ -260,6 +264,7 @@ export async function searchDatasets(reader,args){
     ...(absent.length?{words_not_matched:absent,words_note:(nowhere.length?"No record in the catalogue matches "+nowhere.map(w=>"'"+w+"'").join(", ")+". ":"")+
       (absent.length>nowhere.length?"No result shown matches "+absent.filter(w=>!nowhere.includes(w)).map(w=>"'"+w+"'").join(", ")+"; search for it on its own to see those records. ":"")+"These results cover the other words only."}:{}),
     ...(results.some(r=>r.matches_only)?{partial_matches:"Results with matches_only match only those words of the query, not all of it (e.g. 'home' without 'battery'); they are listed because few records match every word."}:{}),
+    ...(facets?{filters:{...(year?{covers_year:year}:{}),...(lang?{language:lang}:{})},filter_note:"Only records whose period"+(lang?" or language":"")+" is known can match"+(year?"; the period is the one the publisher declares, or the dates read from the file":"")+". Records that state neither are left out, not judged."}:{}),
     ...(skipped&&results.length<limit?{note_partial:"Fewer results than asked: some candidates were not scored to stay within the service budget. A shorter or more specific query finds them."}:{}),results,note:TRUST_NOTE};
 }
 

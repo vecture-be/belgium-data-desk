@@ -2,8 +2,8 @@
 import assert from "node:assert/strict";
 import { asList, bboxRegion, odsTemporal, parseIsoRecord, protocolFormat } from "./harvest-iso.mjs";
 import { catalogueFromNodes, ingestNtLine, inferPublishers } from "./national-dcat.mjs";
-import { normalizeLicense } from "../public/dataset-licence-v1.mjs";
-import { periodYears, toDocs } from "./build-mcp-index.mjs";
+import { LICENSE_RULES, normalizeLicense } from "../public/dataset-licence-v1.mjs";
+import { facetsOf, periodYears, toDocs } from "./build-mcp-index.mjs";
 import { backfillDocs } from "./build-cards.mjs";
 import { coversYear, inLanguage } from "../mcp-server.mjs";
 
@@ -113,8 +113,14 @@ for(const [raw,label,family] of [
   ["Open Data Commons Attribution License","ODC-BY","open"],
   ["Not specified","","unknown"],["Licence non spécifiée","","unknown"],
   ["Les Conditions d’accès et d’utilisation des services web géographiques de visualisation du Service public de Wallonie sont d'applications.","SPW Wallonia conditions of use","custom"],
-  ["http://data.gov.be/.well-known/genid/63236b7128d642e2a86d","Licence stated without a name (see source)","custom"]
+  ["http://data.gov.be/.well-known/genid/63236b7128d642e2a86d","Licence stated without a name (see source)","custom"],
+  ["CC 0","CC0 (public domain)","open"],["CC-0","CC0 (public domain)","open"],["CC_PDM_1_0","CC0 (public domain)","open"],
+  ["UK Open Government Licence (OGL)","Open Government Licence 3.0","open"],["Other (Open)","Open licence (unnamed)","open"],
+  ["Creative Commons Non-Commercial (Any)","CC BY-NC","non-commercial"],
+  ["Attribution - Partage dans les Mêmes Conditions 2.0 Belgique","CC BY-SA","open-sharealike"]
 ]){const n=normalizeLicense(raw);assert.equal(n.label,label,raw);assert.equal(n.family,family,raw)}
+// a stored canonical label normalises to itself, with the same family
+for(const [,id,label,family] of LICENSE_RULES)if(label){const n=normalizeLicense(label);assert.equal(n.label,label,"idempotent: "+label);assert.equal(n.family,family,"family kept: "+label)}
 const doc=toDocs({id:"harvest:x:1",title:"t",provider:"p",license:"Modellicentie Gratis Hergebruik",licenseFamily:"open",temporal:{start:"2015-01-01",end:null},languages:["nl"],accessRights:"RESTRICTED",contactName:"Mobiliteitsbedrijf"},null);
 assert.equal(doc.light.l,"Flemish free-reuse model licence v1.0","index shows the canonical label, not the publisher's spelling");
 assert.deepEqual(doc.light.y,[2015,new Date().getUTCFullYear()],"an open-ended period runs to now");
@@ -130,4 +136,5 @@ assert.deepEqual(docs[0],{id:"a",y:[2019,2023],ym:1});
 assert.deepEqual(docs[1].y,[2001,2002],"a declared period is never overwritten");
 assert.ok(coversYear({y:[2019,2023]},2020));assert.ok(!coversYear({y:[2019,2023]},2024));assert.ok(!coversYear({},2020));assert.ok(coversYear({},null));
 assert.ok(inLanguage({lg:["nl","fr"]},"fr"));assert.ok(!inLanguage({},"fr"));
+assert.deepEqual(facetsOf([{y:[2019,2023],lg:["nl","fr"]},{},{lg:["de"]}]),{y:[[2019,2023],0,0],lg:[3,0,8]});
 console.log("metadata fill tests passed");

@@ -10,6 +10,7 @@ import { buildCard } from "./dataset-card.mjs";
 import { pickTabularDistribution } from "./tabular-profile.mjs";
 import { idShard } from "../mcp-server.mjs";
 import { buildScorecards } from "./health.mjs";
+import { facetsOf } from "./build-mcp-index.mjs";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),".."),pub=path.join(root,"public"),out=path.join(pub,"cards");
 const arg=(name,def)=>{const i=process.argv.indexOf("--"+name);return path.resolve(i>=0?process.argv[i+1]:def)};
@@ -79,11 +80,14 @@ export function backfillDocs(docs,cards){
   return n;
 }
 function backfillIndex(cards){
-  const dir=path.join(pub,"mcp","d");let n=0;
-  for(const f of fs.readdirSync(dir).filter(f=>/^\d+\.json$/.test(f))){
+  const dir=path.join(pub,"mcp","d");let n=0;const all=[];
+  for(const f of fs.readdirSync(dir).filter(f=>/^\d+\.json$/.test(f)).sort((a,b)=>parseInt(a)-parseInt(b))){
     const file=path.join(dir,f),docs=JSON.parse(fs.readFileSync(file,"utf8")),k=backfillDocs(docs,cards);
     if(k){fs.writeFileSync(file,JSON.stringify(docs));n+=k}
+    all.push(...docs);
   }
+  // the search filter facets follow the documents
+  fs.writeFileSync(path.join(pub,"mcp","f.json"),JSON.stringify(facetsOf(all)));
   return n;
 }
 
