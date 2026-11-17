@@ -410,5 +410,59 @@
     ],
     "source": "https://opendata.elia.be/explore/dataset/ods002/",
     "why": "Belgian peak load lies between about 7 and 14 GW on any day; the answer must have today measured or forecast, with Elia attribution."
+  },
+  {
+    "question": "Is Leuven station a protected monument?",
+    "tool": "heritage_at_location",
+    "args": {
+      "address": "Martelarenplein 20, 3000 Leuven"
+    },
+    "expect": [
+      {
+        "path": "protected",
+        "equals": true
+      },
+      {
+        "path": "designations.0.kind",
+        "equals": "protected_monument"
+      },
+      {
+        "path": "designations.0.name",
+        "equals": "Station Leuven"
+      },
+      {
+        "path": "designations.0.since",
+        "equals": "1996-03-19"
+      }
+    ],
+    "source": "https://inventaris.onroerenderfgoed.be/aanduidingsobjecten/157",
+    "why": "Protected by ministerial decree of 19 March 1996; a miss means the point lands in the wrong coordinate system or the layer changed."
+  },
+  {
+    "question": "Which heritage rules apply at Markt 1 in Bruges?",
+    "tool": "heritage_at_location",
+    "args": {
+      "address": "Markt 1, 8000 Brugge"
+    },
+    "expect": [
+      {
+        "path": "protected",
+        "equals": true
+      },
+      {
+        "path": "key_facts.0",
+        "matches": "protected town or village view 'Markt en Burg met omgeving'"
+      },
+      {
+        "path": "key_facts",
+        "matches": "UNESCO World Heritage: core zone of 'Historische stadskern van Brugge'"
+      },
+      {
+        "path": "key_facts",
+        "matches": "fixed archaeological zone 'Historische stadskern van Brugge'"
+      }
+    ],
+    "source": "https://inventaris.onroerenderfgoed.be/aanduidingsobjecten/15044",
+    "why": "Bruges' historic centre is a UNESCO core zone (2000) and a fixed archaeological zone (2016); the Markt is a protected town view."
   }
 ]

@@ -17,11 +17,11 @@ export const DOV_ORIGIN="https://www.dov.vlaanderen.be",GEO_ORIGIN="https://geo.
 // VMM flood maps). Anything else is refused before a request is made.
 const HOSTS=new Set(["www.dov.vlaanderen.be","geo.api.vlaanderen.be","geo.irceline.be","bestat.statbel.fgov.be","statbel.fgov.be","inspirepub.waterinfo.be","best.pr.fedservices.be"]);
 // statbel.fgov.be also serves web pages behind a bot check; only its open-data file folder is allowed
-const PATH_ONLY={"statbel.fgov.be":"/sites/default/files/files/opendata/","data.lblod.info":"/sparql"};
+const PATH_ONLY={"statbel.fgov.be":"/sites/default/files/files/opendata/","data.lblod.info":"/sparql","www.mercator.vlaanderen.be":"/raadpleegdienstenmercatorpubliek/"};
 // Errors name the service that failed, so a VMM or Statbel timeout is not reported as a DOV one.
 const SERVICE_NAME={"www.dov.vlaanderen.be":"DOV","geo.api.vlaanderen.be":"The Flemish geolocation service","geo.irceline.be":"IRCEL-CELINE",
   "bestat.statbel.fgov.be":"Statbel","statbel.fgov.be":"Statbel","inspirepub.waterinfo.be":"VMM's map service (waterinfo.be)","best.pr.fedservices.be":"The federal BeST address service",
-  "download.waterinfo.be":"waterinfo.be (VMM)","hicws.vlaanderen.be":"waterinfo.be (HIC)","hydrometrie.wallonie.be":"SPW hydrometry","opendata.meteo.be":"KMI/IRM open data","opendata.elia.be":"Elia Open Data","opendata.infrabel.be":"Infrabel open data","feeds.meteoalarm.org":"MeteoAlarm (EUMETNET)","lokaalbeslist.vlaanderen.be":"Lokaal Beslist","data.lblod.info":"The LBLOD organisation register"};
+  "download.waterinfo.be":"waterinfo.be (VMM)","hicws.vlaanderen.be":"waterinfo.be (HIC)","hydrometrie.wallonie.be":"SPW hydrometry","opendata.meteo.be":"KMI/IRM open data","opendata.elia.be":"Elia Open Data","opendata.infrabel.be":"Infrabel open data","feeds.meteoalarm.org":"MeteoAlarm (EUMETNET)","lokaalbeslist.vlaanderen.be":"Lokaal Beslist","data.lblod.info":"The LBLOD organisation register","www.mercator.vlaanderen.be":"Mercator (Departement Omgeving)"};
 const WFS=DOV_ORIGIN+"/geoserver/wfs",WMS=DOV_ORIGIN+"/geoserver/wms",EXPORT=DOV_ORIGIN+"/xdov/proxy/export",XSD=DOV_ORIGIN+"/xdov/schema/latest/xsd/kern/interpretatie/";
 const TIMEOUT_MS=12000,MAX_UPSTREAM=20,MAX_POINTS=500,NEAREST=5,DEEPEST=3,MAX_LAYERS=80,MAX_TEXT=240;
 const DAY=86400,HOUR=3600;

@@ -23,6 +23,7 @@ The public service combines a searchable catalogue, browser-based analysis and r
 | `belgian_statistics` | Statbel: population, income, inflation, unemployment by municipality, province, region |
 | `air_quality` | IRCEL-CELINE: now, forecast, annual means against WHO and EU limits |
 | `flood_risk` | VMM's official flood-prone maps (Flanders) |
+| `heritage_at_location` | Onroerend Erfgoed via Mercator: whether an address in Flanders is protected or listed heritage (monument, town view, landscape, archaeological site, UNESCO, fixed inventories, archaeology zones), with what each designation means for permits |
 | `river_levels` | waterinfo.be (VMM, HIC): live river, canal and tide levels against watch and alarm levels, and the publishers' 48-60 hour level and tide forecasts (Flanders) |
 | `weather` | KMI/IRM: measured weather now, last 24 hours and 7 days, ALARO forecast for 48 hours, KMI's official weather warnings (via MeteoAlarm) |
 | `train_punctuality` | Infrabel: punctuality between two stations, of a station, a train yesterday, an IC line or the network, with causes, major incidents, cancellations and today so far |
