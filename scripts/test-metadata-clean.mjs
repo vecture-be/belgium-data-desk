@@ -57,3 +57,32 @@ assert.ok(doc.detail.d.endsWith("…")&&doc.detail.d.length<=600);assert.ok(doc.
 // measured period only from a whole-file read
 const docs=[{id:"p"}];assert.equal(backfillDocs(docs,new Map([["p",{file:{rows_exact:false},coverage:{time:{from:"2026",to:"2026"}}}]])),0);
 console.log("metadata clean tests passed");
+
+/* ---------- round 3: what browsing the site showed ---------- */
+import { catalogueNameFor, curatedPeriod, inheritCuratedLicences } from "./build-mcp-index.mjs";
+import { detectSeries } from "./curate.mjs";
+const P=a=>{const p=curatedPeriod(a);return p?(p.start||"").slice(0,4)+".."+(p.end?p.end.slice(0,4):"open"):"-"};
+assert.equal(P({time:"reference year 2026"}),"2026..2026");
+assert.equal(P({time:"CPI since 1920; health index since 1994; monthly series"}),"1920..open","'since' is open-ended, not 1920-1994");
+assert.equal(P({time:"dataset revision metadata; page shows last revision 2013-05-14"}),"-","a revision date is not coverage");
+assert.equal(P({time:"scenario horizons around 2050 and 2100"}),"-");
+assert.equal(P({time:"monthly statistics; current series published through 2026"}),"-","an end without a start");
+assert.equal(P({time:"realtime",title:"Geolocation of road traffic accidents — 2017–2024"}),"2017..2024","title year when the time field has none");
+assert.equal(P({time:"current register state",title:"Address by objectId, v2"}),"-");
+assert.equal(catalogueNameFor("Statbel, Belgian statistical office",new Set(["Statbel","Statbel Open Data X"])),"Statbel");
+assert.equal(catalogueNameFor("Digitaal Vlaanderen",new Set(["Digitaal Vlaanderen: Perceelblokken"])),"","a longer product name is not the publisher");
+const recs=[...Array(24)].map((_,i)=>({id:"national:s"+i,provider:"Statbel",license:"CC BY",licenseFamily:"open",officialUrl:"https://statbel.example/"+i}));
+const geo={id:"harvest:geo-be:x",provider:"National Geographic Institute (NGI)",license:"https://statbel.example/open-data",licenseFamily:"custom",officialUrl:"https://statbel.example/pop"};
+const cur={id:"curated:pop",curated:true,provider:"Statbel, Belgian statistical office",license:"",officialUrl:"https://statbel.example/pop"};
+const out=inheritCuratedLicences([...recs,geo,cur]).find(x=>x.id==="curated:pop");
+assert.equal(out.license,"CC BY","the publisher's own licence, not another catalogue's record of the same page");
+assert.equal(out.licenseFrom,"publisher:Statbel");assert.equal(out.licenseShare,100);
+// series: editions differ only in numbers or months; different tables are not editions
+const mk=(t,i)=>({id:"x"+i,provider:"Statbel",title:t});
+const s1=detectSeries([2015,2016,2017,2018,2019,2020].map((y,i)=>mk("First names of the total population by municipality, "+y,i)));
+assert.equal(s1.length,1);assert.equal(s1[0].title,"First names of the total population by municipality");
+const s2=detectSeries(["Geslacht en Leeftijd (M)","Geslacht en Burgerlijke staat (L)","Geslacht en Positie in het huishouden (M)","Geslacht en Geboorteplaats (L)","Geslacht en Land van staatsburgerschap (L)"].map((t,i)=>mk("Census 2021 - Bevolking naar: Verblijfplaats (Gemeente), "+t,i)));
+assert.equal(s2.length,0,"five different census tables are not one series");
+const s3=detectSeries(["januari","februari","maart","april","mei"].map((m,i)=>mk("Vlaamse Hydrografische Atlas - Waterlopen, "+m+" 2023",i)));
+assert.equal(s3.length,1);assert.equal(s3[0].title,"Vlaamse Hydrografische Atlas - Waterlopen");
+console.log("round 3 tests passed");

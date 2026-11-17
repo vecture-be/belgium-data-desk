@@ -12,8 +12,8 @@ import { expandWord } from "../public/dataset-synonyms-v1.mjs";
 assert.deepEqual(tokenize("Bevolking per gemeente — population of the Région"),["bevolking","gemeente","population","region"]);
 assert.equal(prefixKey("bevolking"),"~bevolk");assert.equal(prefixKey("gas"),null);
 assert.equal(tokenShard("~bevolk"),"be");assert.equal(idShard("national:x").length,2);
-// a hand-reviewed record without a licence takes the publisher licence of a harvested record of the same dataset
-{const [cur]=inheritCuratedLicences([{id:"curated:x",curated:true,license:"",officialUrl:"https://p.example/ds/a/?flg=en",distributions:[]},{id:"harvest:x",license:"CC BY 4.0",licenseFamily:"open",officialUrl:"https://p.example/ds/a/"},{id:"harvest:y",license:"CC0",officialUrl:"https://p.example/ds/b/"}]);
+// a hand-reviewed record without a licence takes the licence of a record of the same publisher that links the same dataset
+{const [cur]=inheritCuratedLicences([{id:"curated:x",curated:true,provider:"Publisher Example",license:"",officialUrl:"https://p.example/ds/a/?flg=en",distributions:[]},{id:"harvest:x",provider:"Publisher Example",license:"CC BY 4.0",licenseFamily:"open",officialUrl:"https://p.example/ds/a/"},{id:"harvest:y",license:"CC0",officialUrl:"https://p.example/ds/b/"}]);
  assert.equal(cur.license,"CC BY 4.0");assert.equal(cur.licenseFrom,"harvest:x");}
 
 const d=(format,url)=>({format,url,name:format});

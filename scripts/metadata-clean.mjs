@@ -59,6 +59,13 @@ const ALIASES=[
   [/^royal meteorological institute|^koninklijk meteorologisch instituut|^institut royal m[ée]t[ée]orologique/i,"Royal Meteorological Institute of Belgium"],
   [/^(fps|spf|fod) finan(ce|ces|ciën)\b/i,"FPS Finance"],
   [/^(le )?forem$/i,"Le Forem"],
+  // product or portal names used as publisher by direct harvests and hand-reviewed sources
+  [/^(agentschap )?digitaal vlaanderen(:.*)?$/i,"Agentschap Digitaal Vlaanderen"],
+  [/^brussels mobility(:.*| open data)?$|^bruxelles mobilit[ée]$/i,"Brussels Mobility"],
+  [/^vlaamse milieumaatschappij|^vmm\b|^flanders environment agency/i,"Flanders Environment Agency"],
+  [/^(belgian interregional environment agency|ircel ?[-\/]? ?celine|irceline)\b/i,"IRCEL-CELINE"],
+  [/^belgian national access point for its$|^transportdata\.be$/i,"transportdata.be"],
+  [/^(riziv|inami)\b|^nihdi$/i,"NIHDI"],
   [/^bebat$/i,"Bebat"]
 ];
 /** One name per organisation. `name` may be an ISO party string such as "Gestion et valorisation de la donnée (SPW - Secrétariat général - …)". */

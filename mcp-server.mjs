@@ -339,7 +339,7 @@ export async function getDataset(reader,args){
   const profile=card?.file?{rows:card.file.rows,rows_exact:!!card.file.rows_exact,...(card.file.rows_exact?{}:{rows_note:"Rows in the first "+Math.round((card.file.bytes_read||0)/1024)+" KiB read by the weekly check; the whole file has more."}),
     ...(card.coverage?.time?{period:{from:card.coverage.time.from,to:card.coverage.time.to,column:card.coverage.time.column}}:{}),profiled_at:card.profiled_at}:null;
   return{id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,hand_reviewed:!!d.c,
-    licence:{label:d.l||NOT_DECLARED,family:d.lf||"unknown",...(x.lt?{terms_text:x.lt}:{}),...(x.lsrc?{source:"The publisher's licence, from the harvested record "+x.lsrc+" of the same dataset."}:{}),...(!d.l&&source?{check:source}:{})},
+    licence:{label:d.l||NOT_DECLARED,family:d.lf||"unknown",...(x.lt?{terms_text:x.lt}:{}),...(x.lsrc?{source:/^publisher:/.test(x.lsrc)?"The licence "+x.lsrc.slice(10)+" states on "+(x.lshare||90)+" % of its catalogue records; this hand-reviewed record has none of its own.":"The publisher's licence, from the harvested record "+x.lsrc+" of the same dataset."}:{}),...(!d.l&&source?{check:source}:{})},
     updated:d.u||null,...cycle,
     ...(gaps.length?{not_declared_by_publisher:{fields:gaps,source_page:source,note:"These are gaps in the publisher's own catalogue record, not faults in this tool. The source page may give them."}}:{}),
     ...(profile?{data_profile:profile}:{}),
