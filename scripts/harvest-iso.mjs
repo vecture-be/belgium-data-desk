@@ -90,7 +90,7 @@ export function parseIsoRecord(r,{slug,provider,recordPage=null}){
   // Contact: the resource's point of contact first, then the metadata contact.
   const parties=[...blocks(ident,"pointOfContact"),...blocks(r,"contact")];
   const emails=uniq(parties.flatMap(p=>blocks(p,"electronicMailAddress").map(text))).filter(e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
-  const org=parties.map(p=>firstText(p,"organisationName")).find(Boolean)||"";
+  const org=parties.map(p=>mainText(p,"organisationName")).find(Boolean)||"";
   // Who publishes it: the owner, then the custodian…, never the catalogue that lists it or its helpdesk (1,954 records said "Metawal").
   const roleOf=p=>attr(p,"CI_RoleCode","codeListValue").toLowerCase();
   const orgName=p=>mainText(p,"organisationName");

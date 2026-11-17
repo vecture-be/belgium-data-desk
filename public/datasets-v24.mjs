@@ -18,11 +18,19 @@ import { feedbackCard, openDatasetFeedback } from "./dataset-feedback-v1.mjs";
 import { createPublisherNamer, publisherReference } from "./dataset-publisher-v1.mjs";
 import { summarizeChecks, trustChecks } from "./dataset-trust-v1.mjs";
 import { LICENSE_FAMILY_NOTE, normalizeLicense } from "./dataset-licence-v1.mjs";
+import { authoritiesFor } from "./dataset-authority-v1.mjs";
 import { fillCardSlots } from "./dataset-card-panel-v3.mjs";
 import { SCOPES, TOPIC_LABELS, inScope, scopeCounts, topicOf } from "./dataset-taxonomy-v1.mjs";
 import { isLdesEndpoint, isLdesDistribution, ldesCapability } from "./dataset-ldes-v1.mjs";
 
-const MODELED=[...ASSETS,...EXTRA_ATLAS_ASSETS,...COMPLETENESS_ASSETS,...COMPLETENESS_ASSETS_V2,...COMPLETENESS_ASSETS_V3,...COMPLETENESS_ASSETS_V4].map(a=>({...a,depth:"modelled"}));
+// Facts the index build adds to hand-reviewed assets (scripts/build-mcp-index.mjs -> /curated-facts.json): the publisher's licence,
+// the period from the written time field, the publisher's catalogue name. Small; missing or slow just means the atlas text alone.
+const CURATED_FACTS=await (async()=>{try{const c=new AbortController(),t=setTimeout(()=>c.abort(),3000);const r=await fetch("/curated-facts.json",{signal:c.signal});clearTimeout(t);return r.ok?await r.json():{}}catch{return{}}})();
+const MODELED=[...ASSETS,...EXTRA_ATLAS_ASSETS,...COMPLETENESS_ASSETS,...COMPLETENESS_ASSETS_V2,...COMPLETENESS_ASSETS_V3,...COMPLETENESS_ASSETS_V4].map(a=>{
+  const f=CURATED_FACTS[a.id]||{};
+  return{...a,depth:"modelled",...(f.publisher?{publisherName:f.publisher}:{}),...(f.period?{period:f.period}:{}),
+    ...(!a.license&&f.license?{license:f.license,licenseFamily:f.licenseFamily||"",licenseFrom:f.licenseFrom||"",licenseShare:f.licenseShare||null}:{})};
+});
 const SOURCES=[...BASE,...EXTRA_SOURCES].map(s=>({...s,...(SOURCE_OVERRIDES[s.id]||{})}));
 const sourceBy=id=>SOURCES.find(s=>s.id===id);
 const modeledBy=id=>MODELED.find(a=>a.id===id);
@@ -89,7 +97,8 @@ const refreshCatalogue=()=>{mergedCatalogue=withTopic(mergeDiscoveredAssets([...
 const all=()=>mergedCatalogue;
 const by=id=>all().find(a=>a.id===id)||all().find(a=>a.aliases?.includes(id));   // aliases: ids of records merged into it
 // publisher names from older harvests read "Brussels Mobility — Parking"; show "Brussels Mobility: Parking"
-const srcLabel=a=>String(a.depth==="modelled"?(sourceBy(a.sourceId)?.name||a.product):publisherDisplayName(a)).replace(/ — /g,": ");
+// hand-reviewed assets show the publisher under the same name as its catalogue records ("Statbel", not "Statbel Open Data")
+const srcLabel=a=>String(a.depth==="modelled"?(a.publisherName||sourceBy(a.sourceId)?.name||a.product):publisherDisplayName(a)).replace(/ — /g,": ");
 const publisherFilterLabel=a=>{const s=srcLabel(a);return /^Belgian organisation\s/i.test(s)?"Other Belgian organisations":s==="data.gov.be publisher"?"Other data.gov.be publishers":s};
 const publisherFilterKey=a=>{const label=publisherFilterLabel(a),named=!/^Other /i.test(label)&&label!=="Other data.gov.be publishers";if(named)return"name:"+norm(label).replace(/[^a-z0-9]+/g,"-");const id=publisherReference(a);return id?"be:"+id:(sourceAlias(a)||norm(srcLabel(a)).replace(/[^a-z0-9]+/g,"-"))};
 function publisherOptions(){
@@ -328,10 +337,19 @@ function computeRelevance(a){
   const q=searchNorm(state.q).trim(),title=searchNorm(a.title),id=searchNorm(a.datasetId),publisher=searchNorm(srcLabel(a)),terms=queryTerms(state.q);
   if(!q)return datasetEvidence(a).score*10+(depthRank[a.depth]||0);
   let score=(depthRank[a.depth]||0)*4;
+  // the official reference source for a common need (population, enterprise register, air quality…) first, as in the MCP search
+  if(a.depth==="modelled"&&authorityIdsFor(state.q).has("curated:"+a.id))score+=400;
   if(id===q)score+=120;if(title===q)score+=100;if(title.startsWith(q))score+=35;if(id.startsWith(q))score+=30;
-  for(const t of terms){if(title.includes(t))score+=14;if(id.includes(t))score+=16;if(publisher.includes(t))score+=8;if(searchNorm(a.kind).includes(t))score+=5;if((a.schema||[]).some(f=>searchNorm(f[0]).includes(t)))score+=3}
-  return score;
+  const titleHay=expandedTitle(a);
+  for(const t of terms){if(title.includes(t))score+=14;else if(titleHay.includes(t))score+=8;   // the word's translation is in the title ("bevolking" -> population)
+    if(id.includes(t))score+=16;if(publisher.includes(t))score+=8;if(searchNorm(a.kind).includes(t))score+=5;if((a.schema||[]).some(f=>searchNorm(f[0]).includes(t)))score+=3}
+  // equal matches: better-evidenced records first, not the alphabet
+  return score+Math.min(datasetEvidence(a).score,100)/100;
 }
+const titleHayCache=new WeakMap();
+function expandedTitle(a){let h=titleHayCache.get(a);if(h===undefined){h=expandSearchHay(searchNorm(a.title));titleHayCache.set(a,h)}return h}
+let authorityQuery=null,authorityIds=new Set();
+function authorityIdsFor(q){if(q!==authorityQuery){authorityQuery=q;authorityIds=new Set(authoritiesFor(queryTerms(q)).flatMap(x=>x.ids))}return authorityIds}
 function familyGroups(items){
   const map=new Map();
   for(const a of items){
@@ -427,12 +445,14 @@ function distributionGroups(a){
     (other.length?'<details class="distribution-other"><summary>Other downloads and resources · '+other.length+'</summary><div class="distribution-list compact">'+other.map(card).join("")+'</div></details>':"");
 }
 const seriesOf=a=>a.seriesId?state.nationalSeries.get(a.seriesId):null;
+// A row description guessed from identifier columns ("postal code" for a list of post boxes) reads as a fact in a list; show stated ones only.
+const statedGrain=a=>{const g=String(a?.grain||"").trim();return !!g&&!/semantic grain|not manually audited|publisher-defined|catalogue|not verified/i.test(g)};
 function row(a,familyCount=1){
   const selectedAsset=by(state.selected),active=a.id===state.selected||(state.groupFamilies&&selectedAsset&&familyKey(a,srcLabel(a))===familyKey(selectedAsset,srcLabel(selectedAsset))),pinned=state.stack.has(a.id),id=esc(a.id);
   const label=a.depth==="modelled"?"CURATED":a.depth==="structured"?"PUBLISHER SCHEMA":a.discovery==="data.gov.be"?"NATIONAL DCAT":"HARVESTED";
   const publisherId=publisherReference(a),evidence=datasetEvidence(a),analysis=analysisReadiness(a),previewable=(a.distributions||[]).some(x=>distributionCapability(x).group==="inspectable"),brief=briefMeta(a),ldes=ldesCapability(a);
   const briefBits=[
-    brief.grain&&!/not verified/i.test(brief.grain)?"ROW · "+brief.grain:"",
+    statedGrain(a)?"ROW · "+brief.grain:"",
     brief.time!=="not clearly stated"&&brief.time!==String(new Date().getFullYear())?"TIME · "+brief.time:"",
     brief.geography!=="not clearly stated"?"GEO · "+brief.geography:"",
     brief.identifierText?"KEY · "+brief.identifierText:""
@@ -609,7 +629,10 @@ function plannerTarget(a){
   if(state.planTarget&&state.planTarget!==a.id&&modeledBy(state.planTarget))return state.planTarget;
   const rel=relations(a.id)[0],rid=rel&&(rel.from===a.id?rel.to:rel.from);
   if(rid&&rid!==a.id&&modeledBy(rid))return state.planTarget=rid;
-  return state.planTarget=MODELED.find(x=>x.id!==a.id)?.id||"";
+  // no explicit relation: the hand-reviewed dataset sharing the most dimensions/identifiers, not simply the first one in the atlas
+  const dims=x=>{const s=grainSignature(x);return new Set([...s.dimensions,...identifierBindings(x).map(b=>b.identifier)])},mine=dims(a);
+  let best=null,bestN=0;for(const x of MODELED){if(x.id===a.id)continue;const n=[...dims(x)].filter(d=>mine.has(d)).length;if(n>bestN){best=x;bestN=n}}
+  return state.planTarget=(best||MODELED.find(x=>x.id!==a.id))?.id||"";
 }
 function pct(v){return Number.isFinite(v)?(v*100).toFixed(1)+"%":"none"}
 function renderObservedValidation(result){
@@ -708,7 +731,12 @@ function renderKnowledge(a){
   const identifiers=binds.length?binds.map(b=>{const m=IDENTIFIER_REGISTRY.find(x=>x.id===b.identifier);return '<div class="dk-id"><div><b>'+esc(m?.label||b.identifier)+'</b><small>'+esc(b.strength+" · "+(m?.namespace||""))+'</small></div><p>'+esc(m?.caveat||"")+'</p></div>'}).join(""):'<div class="dk-empty">No canonical identifier binding was inferred from the curated schema. Grain-based planning remains available.</div>';
   const xwalks=cross.length?'<div class="dk-crosswalks">'+cross.map(x=>'<div><code>'+esc(x.from)+' → '+esc(x.to)+'</code><span>'+esc(x.operation+" · "+x.cardinality)+'</span><small>'+esc(x.caveat)+'</small></div>').join("")+'</div>':"";
   const registry='<details class="dk-registry"><summary>Crosswalk registry · '+CROSSWALK_REGISTRY.length+' mappings / '+IDENTIFIER_REGISTRY.length+' identifiers</summary><div class="dk-registry-grid">'+CROSSWALK_REGISTRY.map(x=>'<div><code>'+esc(x.from)+' → '+esc(x.to)+'</code><b>'+esc(x.operation+' · '+x.cardinality)+'</b><span>'+esc(x.evidenceLevel)+'</span><p>'+esc(x.caveat)+'</p></div>').join("")+'</div></details>';
-  const options=MODELED.filter(x=>x.id!==a.id).slice().sort((x,y)=>x.title.localeCompare(y.title)).map(x=>'<option value="'+esc(x.id)+'" '+(x.id===targetId?"selected":"")+'>'+esc(x.title)+'</option>').join("");
+  // datasets that share a dimension (municipality, year, enterprise…) or identifier come first; the rest are listed after them
+  const dimsOf=x=>{const s=grainSignature(x);return new Set([...s.dimensions,...identifierBindings(x).map(b=>b.identifier)])},mine=new Set([...sig.dimensions,...bound]);
+  const shared=x=>[...dimsOf(x)].filter(d=>mine.has(d)).length;
+  const opt=x=>'<option value="'+esc(x.id)+'" '+(x.id===targetId?"selected":"")+'>'+esc(x.title)+'</option>';
+  const others=MODELED.filter(x=>x.id!==a.id),near=others.filter(x=>shared(x)>0).sort((x,y)=>shared(y)-shared(x)||x.title.localeCompare(y.title)),rest=others.filter(x=>!shared(x)).sort((x,y)=>x.title.localeCompare(y.title));
+  const options=(near.length?'<optgroup label="Shares a dimension or identifier">'+near.map(opt).join("")+'</optgroup>':"")+'<optgroup label="Other hand-reviewed datasets">'+rest.map(opt).join("")+'</optgroup>';
   return '<section class="dk-section"><div class="section-cap"><h3>Grain algebra</h3><span>inferred · curated metadata</span></div><div class="dk-signature"><div><small>DIMENSIONS</small><div class="dk-chips">'+dims+'</div></div><div><small>TEMPORAL GRAIN</small><b>'+esc(sig.temporal+(sig.years.length?" · "+sig.years.join(" / "):""))+'</b></div><div><small>SPATIAL DIMENSIONS</small><b>'+esc(sig.spatial.join(" · ")||"not explicit")+'</b></div></div><p class="dk-note">This signature is inferred from the manually curated grain/schema description. It is a planning aid, not a publisher-declared schema contract.</p></section>'+
     '<section class="dk-section"><div class="section-cap"><h3>Identifiers & crosswalks</h3><span>'+binds.length+' recognised</span></div><div class="dk-identifiers">'+identifiers+'</div>'+xwalks+registry+'</section>'+
     '<section class="dk-section"><div class="section-cap"><h3>Dataset relationship graph</h3><span>'+rels.length+' explicit edges</span></div>'+datasetMiniGraph(a)+'</section>'+
@@ -932,7 +960,8 @@ function init(){
   // Keep the 10k+ national catalogue off the landing-page critical path, even though Dataset Atlas is the default view.
   // A search/filter/national-index action hydrates it once; deep links hydrate immediately because they need an exact record.
   // Deep link: /?dataset=<id> still hydrates the full catalogue before opening its record.
-  const wanted=(()=>{try{return new URLSearchParams(location.search).get("dataset")||""}catch{return ""}})();
+  // the MCP index names hand-reviewed assets "curated:<id>"; the site uses the bare id
+  const wanted=(()=>{try{return (new URLSearchParams(location.search).get("dataset")||"").replace(/^curated:/,"")}catch{return ""}})();
   if(wanted)Promise.all([initialLoads,loadNational()]).then(()=>openPinnedDataset(wanted));
   $("#dsScope").onclick=e=>{const b=e.target.closest("[data-scope]");if(b){state.scope=b.dataset.scope;renderList();if(!state.nationalLoaded)loadNational()}};
   $("#dsTopic").onchange=e=>{state.topic=e.target.value;renderList();if(!state.nationalLoaded)loadNational()};

@@ -73,13 +73,18 @@ const CODE_PREFIX=/^([a-z]\d[a-z])[a-z0-9.]*[\s,:-]/i;
 export function seriesTemplate(title){
   const t=clean(title),code=t.match(CODE_PREFIX);
   if(code)return"code "+code[1].toLowerCase();
-  const toks=norm(t).replace(/[^\p{L}\p{N} ]+/gu," ").split(/\s+/).filter(w=>w.length>1&&!/\d/.test(w)&&!STOP.has(w));
-  return toks.slice(0,4).join(" ");
+  // Editions of one series differ only in numbers (year, issue) and month names. The whole title counts: the first four words
+  // alone grouped different tables ("Census 2021 - Bevolking naar: Verblijfplaats (Gemeente), Geslacht en …") as "editions".
+  const toks=norm(t).replace(/[^\p{L}\p{N} ]+/gu," ").split(/\s+/).filter(w=>w.length>1&&!/\d/.test(w)&&!STOP.has(w)&&!MONTHS.has(w));
+  return toks.slice(0,14).join(" ");
 }
+const MONTHS=new Set("januari februari maart april mei juni juli augustus september oktober november december janvier fevrier février mars avril mai juin juillet aout août septembre octobre novembre decembre décembre january february march may june july august october".split(" "));
+const DANGLING=/(?:\s+(?:by|per|van|de|du|des|of|and|en|et|naar|par|in|the|la|le|les|het|from|to|tot|entre|between|sinds|since|depuis|au|aux|op|on|for|voor|pour|selon|-|–|:))+$/i;
 function readableSeriesTitle(sample,template){
   if(template.startsWith("code "))return clean(sample.title).match(CODE_PREFIX)[1].toUpperCase()+" model layers";
-  const words=clean(sample.title).split(" ").filter(w=>!/\d/.test(w)).join(" ").split(" ").slice(0,7).join(" ").replace(/[,:;(-]+$/,"");
-  return words||clean(sample.title);
+  // the shortest edition's title without its numbers, and without a word left hanging where a number was ("… population by")
+  const t=clean(clean(sample.title).replace(/\b\d+([./-]\d+)*\b/g," ").replace(new RegExp("(?<![\\p{L}])("+[...MONTHS].join("|")+")(?![\\p{L}])","giu")," ").replace(/\(\s*\)/g," ")).replace(/[\s,:;(–-]+$/,"").replace(DANGLING,"").replace(/[\s,:;(–-]+$/,"");
+  return t.length>=6?t:clean(sample.title);
 }
 export function detectSeries(items,{minMembers=5}={}){
   const groups=new Map();

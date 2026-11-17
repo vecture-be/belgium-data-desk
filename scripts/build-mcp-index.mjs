@@ -53,12 +53,31 @@ export function curatedToItems(assets,sources){
     const item={id:"curated:"+a.id,title:a.title,provider:s.org||s.name||a.product||"",description:[a.kind,a.grain,a.caveat].filter(Boolean).join(". "),dataKind:"dataset",
       license:"",officialUrl:a.evidence?.[0]||s.url||"",updatedAt:"",frequency:/^[a-z]+$/i.test(a.cadence||"")?String(a.cadence).toUpperCase():"",
       formats:[...new Set((a.distributions||[]).map(d=>d[1]).filter(Boolean))].slice(0,5),themes:s.topics||[],fields:(a.schema||[]).map(f=>({name:f[0]})),curated:true,
-      distributions:(a.distributions||[]).filter(d=>/^https:/i.test(d[4]||"")).map(d=>({name:d[0],format:d[1],url:d[4]})),tier:"download"};
+      distributions:(a.distributions||[]).filter(d=>/^https:/i.test(d[4]||"")).map(d=>({name:d[0],format:d[1],url:d[4]})),tier:"download",
+      temporal:curatedPeriod(a)};
     // The source's topic list covers everything that publisher does (Statbel: population, economy, mobility...); judge the asset by its own title first.
     const own=topicOf({...item,themes:[]});
     item.topic=own!=="other"?own:topicOf(item);
     return item;
   });
+}
+
+/**
+ * The period a hand-reviewed asset covers, from its written time field ("reference year 2026", "2019–2026", "since 2019"),
+ * else from a year in its title ("…, 2026", "— 2017–2024"). Years in the description are not used: they are often
+ * reference or legal years ("index base 1920", "law of 2004").
+ */
+export function curatedPeriod(a){
+  const parse=raw=>{
+    // revision and metadata dates say when the record changed, not what the data covers
+    const s=String(raw||"").replace(/(last )?revision[^;]*|metadata (updated|modified)[^;]*/gi," ");
+    if(/\b(through|until|up to|tot en met|jusqu)\b/i.test(s)&&!/\b(from|since|vanaf|depuis)\b/i.test(s))return null;   // an end with no start
+    const ys=(s.match(/\b(?:18|19|20)\d{2}\b/g)||[]).map(Number).filter(y=>y<=new Date().getUTCFullYear()+1);if(!ys.length)return null;
+    if(/\bscenario|horizon|projection|forecast\b/i.test(s))return null;
+    const lo=Math.min(...ys),hi=Math.max(...ys),open=/\b(since|from|vanaf|sinds|depuis|onwards|ongoing|to date|present|current|latest|live|real-?time)\b|[–-]\s*$/i.test(s);
+    return{start:lo+"-01-01",end:open?null:hi+"-12-31"};
+  };
+  return parse(a?.time)||parse(String(a?.title||"").match(/(?:,|—|–|-|\bin\b)\s*((?:\d{1,2} \w+ )?(?:18|19|20)\d{2}(?:\s*[–-]\s*(?:18|19|20)\d{2})?)\s*\)?$/)?.[1])||null;
 }
 
 /** [firstYear, lastYear] of a declared period; an open end means "up to now". */
@@ -92,7 +111,7 @@ export function toDocs(it,relay){
   });
   const detail={fq:cleanFrequency(it.frequency),g:cityGeography(it.provider,it.geoCoverage),url:httpsLink(it.officialUrl||""),ce:it.contactEmail||"",cu:it.contactUrl||"",d:cutText(desc,600),
     ...(termsText?{lt:cutText(lic.raw,400)}:{}),
-    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.licenseFrom?{lsrc:it.licenseFrom}:{}),
+    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.licenseFrom?{lsrc:it.licenseFrom}:{}),...(it.licenseShare?{lshare:it.licenseShare}:{}),
     ...(tc?{tc:{s:tc.start||null,e:tc.end||null,...(tc.plannedEnd?{pe:tc.plannedEnd}:{})}}:{}),...(it.languages?.length?{lang:it.languages}:{}),
     ...(it.accessRights?{ar:it.accessRights}:{}),...(it.provenance?{prov:cutText(htmlToText(it.provenance),400)}:{}),...(it.crs?.length?{crs:it.crs}:{}),
     ...(it.spatialResolutionM?{res:it.spatialResolutionM}:{}),...(it.hvdCategories?.length?{hvd:it.hvdCategories}:{}),...(it.standards?.length?{std:it.standards.slice(0,4)}:{}),
@@ -115,14 +134,44 @@ function markSameTitle(items){
 
 /** Hand-reviewed records carry no licence of their own; when a harvested record points at the same landing page or file, its licence
  *  is the publisher's, so the curated record shows it too (with where it came from). */
+const pubKey=s=>String(s||"").normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+/** The catalogue's name for a hand-reviewed asset's publisher ("Statbel, Belgian statistical office" -> "Statbel"), when one clearly matches. */
+export function catalogueNameFor(name,names){
+  const k=pubKey(name);if(!k)return"";
+  let best="";
+  for(const n of names){const nk=pubKey(n);if(nk.length>=4&&(k===nk||k.startsWith(nk+" "))&&nk.length>pubKey(best).length)best=n}
+  return best;
+}
+/**
+ * Hand-reviewed assets carry no licence of their own. Take it from a catalogue record of the SAME publisher that links the same page or file,
+ * else from what that publisher states on nearly all its records (>= 90 % of >= 20 records). A record of another catalogue that happens to
+ * link the page (a geo.be record of a Statbel table said "open-data") is not evidence of the publisher's licence.
+ */
 export function inheritCuratedLicences(items){
   const key=u=>{try{const p=new URL(u);return(p.host+p.pathname).replace(/\/+$/,"").toLowerCase()}catch{return""}};
-  const byUrl=new Map();
-  for(const x of items)if(!x.curated&&(x.license||x.licenseUri))for(const u of [x.officialUrl,...(x.distributions||[]).map(d=>d?.url)])if(key(u)&&!byUrl.has(key(u)))byUrl.set(key(u),x);
+  const known=x=>{const f=x.licenseFamily||normalizeLicense(x.licenseUri||x.license).family;return f&&f!=="unknown"};
+  const byUrl=new Map(),byPublisher=new Map(),names=new Set();
+  for(const x of items){
+    if(x.curated)continue;
+    names.add(x.provider);
+    if(!(x.license||x.licenseUri)||!known(x))continue;
+    for(const u of [x.officialUrl,...(x.distributions||[]).map(d=>d?.url)])if(key(u))(byUrl.get(key(u))||byUrl.set(key(u),[]).get(key(u))).push(x);
+    const lab=normalizeLicense(x.licenseUri||x.license).label;
+    const m=byPublisher.get(x.provider)||byPublisher.set(x.provider,new Map()).get(x.provider);m.set(lab,(m.get(lab)||[]).concat(x));
+  }
+  let total=new Map();for(const x of items)if(!x.curated)total.set(x.provider,(total.get(x.provider)||0)+1);
   return items.map(x=>{
     if(!x.curated||x.license)return x;
-    const m=[x.officialUrl,...(x.distributions||[]).map(d=>d?.url)].map(key).filter(Boolean).map(k=>byUrl.get(k)).find(Boolean);
-    return m?{...x,license:m.license||"",licenseUri:m.licenseUri||"",licenseFamily:m.licenseFamily||"",licenseFrom:m.id}:x;
+    const pub=catalogueNameFor(x.provider,names);
+    const sameUrl=[x.officialUrl,...(x.distributions||[]).map(d=>d?.url)].map(key).filter(Boolean).flatMap(k=>byUrl.get(k)||[]);
+    const m=sameUrl.find(r=>pub&&r.provider===pub);
+    if(m)return{...x,license:m.license||"",licenseUri:m.licenseUri||"",licenseFamily:m.licenseFamily||"",licenseFrom:m.id};
+    if(pub&&byPublisher.has(pub)){
+      const [lab,recs]=[...byPublisher.get(pub)].sort((a,b)=>b[1].length-a[1].length)[0];
+      const n=total.get(pub)||0;
+      if(recs.length>=20&&recs.length>=0.9*n){const r=recs[0];return{...x,license:r.license||lab,licenseUri:r.licenseUri||"",licenseFamily:r.licenseFamily||"",licenseFrom:"publisher:"+pub,licenseShare:Math.round(100*recs.length/n)}}
+    }
+    return x;
   });
 }
 
@@ -181,6 +230,9 @@ async function main(){
   // one spelling per publisher across all sources (national, portals, curated)
   for(const it of items)it.provider=canonicalPublisher(it.provider);
   unifyPublisherNames(items);
+  // hand-reviewed assets name their publisher as the catalogue does ("Statbel, Belgian statistical office" -> "Statbel")
+  const catalogueNames=new Set(items.filter(x=>!x.curated).map(x=>x.provider));
+  for(const it of items)if(it.curated)it.provider=catalogueNameFor(it.provider,catalogueNames)||it.provider;
   const {RELAY_INDEX}=await import("../relay-index.mjs");
   const built=buildIndex(items,{relay:RELAY_INDEX});
   const counts=scopeCounts(items),topics={};
@@ -194,6 +246,12 @@ async function main(){
     pins:Object.fromEntries(AUTHORITIES.flatMap(a=>a.ids).filter(id=>built.ids.has(id)).map(id=>[id,built.ids.get(id)])),
     tiers:Object.fromEntries(["ready","download","service","document","metadata","broken"].map(t=>[t,built.docs.filter(d=>d.tier===t).length]))};
   const stats=writeIndex(path.join(pub,"mcp"),built,meta);
+  // The website renders hand-reviewed assets from the atlas modules; give it the facts the index adds (licence, period, publisher name).
+  const facts={};
+  for(const it of built.ranked)if(it.curated)facts[it.id.replace(/^curated:/,"")]={publisher:it.provider,
+    ...(it.license?{license:normalizeLicense(it.licenseUri||it.license).label||it.license,licenseFamily:normalizeLicense(it.licenseUri||it.license).family,licenseFrom:it.licenseFrom||"",...(it.licenseShare?{licenseShare:it.licenseShare}:{})}:{}),
+    ...(it.temporal?{period:it.temporal}:{})};
+  fs.writeFileSync(path.join(pub,"curated-facts.json"),JSON.stringify(facts));
   const bytes=fs.readdirSync(path.join(pub,"mcp"),{recursive:true}).reduce((n,f)=>{const p=path.join(pub,"mcp",f);return n+(fs.statSync(p).isFile()?fs.statSync(p).size:0)},0);
   console.log("[mcp-index] "+built.docs.length+" records ("+curated.length+" curated), "+stats.docChunks+" doc chunks, "+stats.tokenShards+" token shards, "+stats.idShards+" id shards, "+(bytes/1048576).toFixed(1)+" MiB");
 }
