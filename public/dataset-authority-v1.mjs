@@ -110,6 +110,8 @@ export const AUTHORITIES=[
   {
     need:"agricultural parcels",
     when:[["landbouw","agricultural","agriculture","agricole","crop","crops","teelt","landbouwgebruikspercelen","parcellaire"]],
+    // "Nitraat in oppervlaktewater in landbouwgebied" asks for water quality, not field boundaries.
+    unless:["nitraat","nitrate","nitrates","nitrat","oppervlaktewater","waterkwaliteit","waterlopen","qualite","concentratie","concentration","pollution"],
     ids:["curated:agri-flanders-2026-s1","curated:agri-wallonia-all-years"],
     why:"The regional paying agencies publish the parcels farmers declare each year: the Flemish agriculture department and the Walloon public service.",
     caveat:"Declarations are made per region; Brussels has almost no agricultural parcels."
