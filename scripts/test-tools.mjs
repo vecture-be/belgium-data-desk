@@ -75,3 +75,28 @@ console.log(JSON.stringify({ok:true,tools:LIVE_TOOLS.length,replays:report}));
   assert.equal(out.highest_class,undefined);assert.equal(out.complete,false);
 }
 console.log(JSON.stringify({ok:true,partial_answers:"flood_risk"}));
+
+// Outside Flanders but inside the broad Lambert box: no map query may turn absent coverage into class A.
+{
+  const flood=LIVE_TOOLS.find(t=>t.name==="flood_risk");
+  for(const [latitude,longitude] of [[50.8466,4.3528],[50.715,4.4]]){
+    const calls=[];
+    const fetchImpl=async url=>{
+      calls.push(url);
+      assert.match(url,/VRBG2025\/wfs/,"out-of-region points must be rejected before flood-map requests");
+      return new Response(JSON.stringify({type:"FeatureCollection",features:[]}));
+    };
+    const out=await flood.run(makeDovClient({fetchImpl,hosts:flood.hosts}),{latitude,longitude},{assets});
+    assert.match(out.error,/outside the Flemish Region/);
+    assert.equal(calls.length,1);
+    assert.equal(out.highest_class,undefined);
+  }
+  const fetchImpl=async url=>{
+    if(url.includes("/VRBG2025/wfs"))return new Response(JSON.stringify({type:"FeatureCollection",features:[{properties:{NISCODE:"24062"}}]}));
+    if(url.includes("/MapServer/identify"))return new Response(JSON.stringify({results:[]}));
+    throw new Error("Unexpected flood-risk URL "+url);
+  };
+  const inside=await flood.run(makeDovClient({fetchImpl,hosts:flood.hosts}),{latitude:50.879379,longitude:4.700655},{assets});
+  assert.equal(inside.highest_class,"A","verified Flemish coordinates retain valid no-flood classification");
+}
+console.log(JSON.stringify({ok:true,jurisdiction:"flood_risk"}));
