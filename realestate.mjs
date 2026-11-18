@@ -52,9 +52,12 @@ export async function realEstatePrices(client,args={},{assets}={}){
       ...(r.left_out?["Left out: "+r.left_out+"."]:[])],...r,definitions:DEF,provenance:prov});
   }
   const names=(Array.isArray(args.places)?args.places:args.places?[args.places]:["Belgium"]).slice(0,6);
-  const out=[],facts=[];
+  const out=[],facts=[],seen=new Set();
   for(const n of names){
     const r=resolvePlace(P,n);if(r.error){out.push({place:String(n),error:r.error});continue}
+    const identity=r.type+":"+r.key;
+    if(seen.has(identity))continue; // aliases and pre-merger names refer to one statistical unit
+    seen.add(identity);
     const a=await areaFor(P,assets,r),name=label(P,r);
     if(!a){out.push({place:name,error:"no real-estate figures for this place"});continue}
     const by=Object.fromEntries(types.map(t=>[t,figures(a,t,year)]).filter(([,f])=>f));

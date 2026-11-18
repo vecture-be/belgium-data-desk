@@ -322,6 +322,10 @@ function fact(v){
   return(text.length>595?text.slice(0,590).replace(/[;,]?\s+\S*$/,"")+" …":text)+".";
 }
 
+// A river filter is a waterway identity, not a text search over nearby station names.
+// "Dender" must not include Dendermonde on the Zeeschelde or "Oude Dender".
+export function gaugesForRiver(gauges,river){const name=fold(river);return gauges.filter(g=>fold(g.river)===name)}
+
 export async function riverLevels(client,args,{assets}={}){
   const radius=Math.min(RIVER_LIMITS.radiusKm.max,Math.max(1,num(args?.radius_km)??RIVER_LIMITS.radiusKm.default));
   const limit=Math.min(RIVER_LIMITS.stations.max,Math.max(1,Math.round(num(args?.max_stations)??RIVER_LIMITS.stations.default)));
@@ -340,7 +344,7 @@ export async function riverLevels(client,args,{assets}={}){
   const notFound=msg=>failed.length?{error:msg.replace(/\.$/,"")+" among the gauges that answered, but "+downWhy+", so try again in a minute.",services_not_answering:failed}:{error:msg};
   let pool=all.filter(s=>s.value!=null&&s.time&&ageH(s.time)<=FRESH_H);
   const retired=all.length-pool.length;
-  if(river){const r=fold(river);pool=pool.filter(s=>fold(s.river).includes(r)||fold(s.name).includes(r));if(!pool.length)return failed.length?notFound("No gauge reporting now has '"+river+"' in its river or station name."):{error:"No gauge reporting now has '"+river+"' in its river or station name. Try another spelling (Dutch or French), or an address."}}
+  if(river){pool=gaugesForRiver(pool,river);if(!pool.length)return failed.length?notFound("No gauge reporting now has river '"+river+"'."):{error:"No gauge reporting now has river '"+river+"'. Use the published river name (e.g. 'Zeeschelde' rather than 'Schelde') or a station search."}}
   let picked,mode;
   if(station){
     const q=fold(station),exact=pool.filter(s=>fold(s.station_no)===q);

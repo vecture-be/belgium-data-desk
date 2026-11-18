@@ -2,8 +2,24 @@
 // against recorded-shape fixtures. scripts/live-dov.mjs runs the same questions against the real services.
 import assert from "node:assert/strict";
 import { columnFromBands, getSubsurfaceRecord, isbt, makeDovClient, operatorName, parseRecordId, sbtClass, subsurfaceAtLocation, summariseLevels, wgs84ToLambert72, xmlLayers } from "../dov.mjs";
-import { searchSubsurface } from "../dov-search.mjs";
+import { searchSubsurface, isDate, fullDate } from "../dov-search.mjs";
 import { handleMcp } from "../mcp-server.mjs";
+
+// Bad calendar dates must not reach DOV, and month-end expansion is leap-year aware.
+for(const d of ["2026-02-31","2026-13-01","2025-02-29","2024-04-31","2026-00-01","2026-11-00"])
+  assert.equal(isDate(d),false,d);
+for(const d of ["2024-02-29","2024-02","2026-11","2026"])
+  assert.equal(isDate(d),true,d);
+assert.equal(fullDate("2024-02",true),"2024-02-29");
+assert.equal(fullDate("2025-02",true),"2025-02-28");
+assert.equal(fullDate("2026-04",true),"2026-04-30");
+for(const [a,re] of [
+  [{record_type:"boreholes",date_from:"2026-02-31"},/date_from must be/],
+  [{record_type:"boreholes",date_from:"2026-13-01"},/date_from must be/],
+  [{record_type:"boreholes",date_from:"2026-11-01",date_to:"2026-01-01"},/date_from must be on or before/],
+  [{record_type:"boreholes",min_depth_m:-500},/non-negative/],
+  [{record_type:"boreholes",min_depth_m:30,max_depth_m:10},/min_depth_m must/]
+])assert.match((await searchSubsurface(null,a)).error,re,JSON.stringify(a));
 
 // Lambert 72 against the Flemish geolocation service (which returns both systems for an address): centimetre agreement.
 assert.deepEqual(wgs84ToLambert72(50.879379482656915,4.7006545962260091),[173358.14,174387.29]);   // Grote Markt 1, Leuven

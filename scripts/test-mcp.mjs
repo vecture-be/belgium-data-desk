@@ -132,6 +132,9 @@ assert.equal(authoritiesFor(["population","municipality"])[0].need,"population c
 assert.equal(authoritiesFor(["btw","nummer"])[0].need,"enterprise register (enterprise numbers)");
 assert.equal(authoritiesFor(["annual","accounts","companies"])[0].need,"company annual accounts","'unless' keeps KBO out of annual-account queries");
 assert.equal(authoritiesFor(["bike","counts"])[0].need,"bicycle counts");
+assert.equal(authoritiesFor(["nitraat","oppervlaktewater","landbouwgebied"]).length,0,"a nitrate-water-quality query must not pin agricultural parcels");
+assert.equal(authoritiesFor(["nitrates","eaux","surface","agricole"]).length,0,"the same source-selection guard applies in French");
+assert.equal(authoritiesFor(["landbouwgebruikspercelen"])[0].need,"agricultural parcels","parcel searches still pin the agricultural register");
 assert.equal(authoritiesFor(["bike"]).length,0,"two-part needs need both parts");
 assert.equal(authoritiesFor(["energy"]).length,0,"one word cannot satisfy both groups of a two-part need");
 for(const a of AUTHORITIES){assert.ok(a.ids.length&&a.why&&a.need&&a.when.length,a.need);for(const id of a.ids)assert.match(id,/^curated:/,a.need)}
@@ -178,6 +181,21 @@ for(const a of AUTHORITIES){assert.ok(a.ids.length&&a.why&&a.need&&a.when.length
   assert.match(p.units,/Inwoners/);assert.match(p.units,/not declared rather than guessing/);
   assert.equal(p.rows.length,2);assert.equal(p.rows[1].Gemeente,"Antwerpen");assert.equal(p.rows_read,3);
   assert.equal(seen[0].url,"https://statbel.example/gem.csv");assert.equal(seen[0].range,"bytes=0-65535","reads only the first 64 KiB");
+  // A spatial CSV may have a GeoJSON polygon longer than the normal 64 KiB preview.
+  // Retry only that case; an oversized first record must never look like zero data.
+  const wideCsv="Key;Geometry\n1;"+"a".repeat(80000)+"\n2;ok\n",ranges=[];
+  const wp=makePreviewFile({},{index,fetchImpl:async(url,init)=>{
+    ranges.push(init.headers.range);
+    return new Response(wideCsv,{status:200,headers:{"content-type":"text/csv"}});
+  }});
+  const wide=(await mcpCall(venv,{previewFile:wp})("preview_dataset",{id:"national:pv",rows:2})).structuredContent;
+  assert.equal(wide.rows.length,2,"wide first row is recovered");
+  assert.equal(wide.rows[0].Key,"1");assert.equal(wide.rows[1].Key,"2");
+  assert.deepEqual(ranges,["bytes=0-65535","bytes=0-262143"],"wide file gets one bounded retry");
+  const giantCsv="Key;Geometry\n1;"+"a".repeat(350000)+"\n";
+  const giant=(await mcpCall(venv,{previewFile:makePreviewFile({},{index,fetchImpl:async()=>new Response(giantCsv,{status:200,headers:{"content-type":"text/csv"}})})})("preview_dataset",{id:"national:pv",rows:2})).structuredContent;
+  assert.match(giant.error,/first data record exceeds the bounded preview size/i);
+  assert.ok(giant.analysis?.download,"oversized records offer a whole-file route");
   // a web page instead of CSV, an unknown id, an id outside the relay index: actionable errors, no crash
   const ph=await mcpCall(venv,{previewFile:makePreviewFile({},{index,fetchImpl:async()=>new Response("<!doctype html><p>moved",{headers:{"content-type":"text/html"}})})})("preview_dataset",{id:"national:pv"});
   assert.equal(ph.isError,true);assert.match(ph.structuredContent.error,/web page instead of a CSV/);
