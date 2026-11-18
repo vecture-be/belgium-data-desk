@@ -21,4 +21,8 @@
 .card-measured{margin-top:12px;padding-top:10px;border-top:1px solid var(--l,#c8c4b6)}
 .card-measured h4{margin:0 0 6px;font-size:.9rem}
 .card-measured .card-facts{margin:0;padding-left:18px}
+.card-disagree{margin-top:12px;padding:10px 12px;border-left:3px solid #b45309;background:color-mix(in srgb,#b45309 8%,transparent)}
+.card-disagree h4{margin:0 0 6px;font-size:.9rem}
+.card-disagree .card-facts{margin:0;padding-left:18px}
+.card-disagree .dk-note{margin:6px 0 0;font-size:.82rem;opacity:.8}
 .card-measured .card-facts li{margin:3px 0}

@@ -144,3 +144,25 @@ import { groupPortalCopies, portalSlug } from "./metadata-clean.mjs";
  const two=[{provider:"A",officialUrl:"https://a.example/explore/dataset/communes-belges-2024/"},{provider:"B",officialUrl:"https://b.example/explore/dataset/communes-belges-2024/"}];
  groupPortalCopies(two);assert.ok(two.every(x=>!x.seriesId),"two publishers with one slug are not copies")}
 console.log("portal copies tests passed");
+// the publisher's metadata vs the file: disagreements, trust summary, licences of copies
+import { buildCard } from "./dataset-card.mjs";
+import { profileColumns } from "./dataset-card.mjs";
+import { trustSummary } from "../mcp-server.mjs";
+import { copyLicences } from "./build-mcp-index.mjs";
+{const csv="periode;commune;valeur\n"+[2021,2022,2023].flatMap(y=>["Namur","Liège"].map((c,i)=>y+";"+c+";"+(i+1))).join("\n")+"\n";
+ const p=profileColumns(csv,{bytesRead:csv.length,totalBytes:csv.length});
+ const c=buildCard({id:"w",title:"Indicateur 2019",updatedAt:"2026-11-17"},p,{now:"2026-11-17T00:00:00Z",file:{}});
+ const kinds=c.disagreements.map(d=>d.kind);
+ assert.ok(kinds.includes("catalogue_date_newer_than_data"),"catalogue 2026, data to 2023");
+ assert.ok(kinds.includes("title_year_not_in_file"),"title 2019, file 2021-2023");
+ const c2=buildCard({id:"w2",title:"Indicateur",updatedAt:"2024-01-10",declaredPeriod:{s:"2010-01-01",e:"2015-12-31"}},p,{now:"2026-11-17T00:00:00Z",file:{}});
+ assert.deepEqual(c2.disagreements.map(d=>d.kind),["declared_period_not_in_file"]);
+ const partial=profileColumns(csv,{bytesRead:csv.length,totalBytes:csv.length*10});
+ assert.equal(buildCard({id:"w3",title:"Indicateur 2019",updatedAt:"2026-11-17"},partial,{now:"2026-11-17T00:00:00Z",file:{}}).disagreements.length,0,"a partial read never claims a disagreement");
+ const t=trustSummary({l:"CC BY",u:"2026-11-17"},{pr:{ok:1,n:1,at:"2026-11-15",mm:0}},{profiled_at:"2026-11-17",file:{rows:6,rows_exact:true},columns:[1,2,3],coverage:{time:{from:"2021",to:"2023",column:"periode"}},disagreements:c.disagreements,freshness:{}},{from:"2021",to:"2023",column:"periode"});
+ assert.ok(t.checked_by_this_service.some(s=>/Whole file read/.test(s)));assert.ok(t.stated_by_publisher_only.some(s=>/^Licence: CC BY/.test(s)));assert.equal(t.disagreements.length,2);
+ assert.match(trustSummary({},{},null,null).checked_by_this_service[0],/^Nothing/)}
+{const xs=[{id:"a",seriesId:"copy:1",license:"CC BY"},{id:"b",seriesId:"copy:1",license:""},{id:"c",seriesId:"copy:2",license:"CC0"},{id:"d",seriesId:"copy:2",license:"CC BY-NC"}];
+ copyLicences(xs);assert.equal(xs[1].license,"CC BY");assert.equal(xs[1].licenseFrom,"a");
+ assert.ok(xs[2].licenceConflict&&xs[3].licenceConflict,"open vs non-commercial copies are both flagged");assert.equal(xs[3].license,"CC BY-NC","a conflict is shown, not resolved")}
+console.log("trust tests passed");

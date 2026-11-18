@@ -317,15 +317,29 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
     {rows:profile.rows,rows_exact:profile.rows_exact,columns:profile.column_count});
   if(time)add((time.from===time.to?"The data is for "+time.from:"The data runs from "+time.from+" to "+time.to)+" (column '"+time.column+"')"+(profile.rows_exact?".":" in the rows read; later rows may extend it."),time);
   if(fresh.cadence_not_met)add("It is declared to be updated "+fresh.declared+", but its latest data is for "+time.to+" (column '"+time.column+"'), "+fmtInt(fresh.latest_data_age_days)+" days ago. Either the series stopped or the declared frequency is wrong.",
-    {declared:fresh.declared,latest_data_point:time.to,column:time.column,latest_data_age_days:fresh.latest_data_age_days});
+    {disagreement:"declared_cadence_not_met",declared:fresh.declared,latest_data_point:time.to,column:time.column,latest_data_age_days:fresh.latest_data_age_days});
   if(fresh.status==="overdue"&&fresh.at_least)add("It is declared to be updated "+fresh.declared+", but the file has been byte-for-byte the same since at least "+fresh.last_change+", "+fmtInt(fresh.overdue_days)+" days longer than that cadence allows.",
-    {declared:fresh.declared,unchanged_since:fresh.last_change,overdue_days:fresh.overdue_days,at_least:true});
+    {disagreement:"declared_cadence_overdue",declared:fresh.declared,unchanged_since:fresh.last_change,overdue_days:fresh.overdue_days,at_least:true});
   else if(fresh.status==="overdue")add("It is declared to be updated "+fresh.declared+", but last changed on "+fresh.last_change+", "+fmtInt(fresh.overdue_days)+" days later than that cadence allows.",
-    {declared:fresh.declared,last_change:fresh.last_change,overdue_days:fresh.overdue_days});
+    {disagreement:"declared_cadence_overdue",declared:fresh.declared,last_change:fresh.last_change,overdue_days:fresh.overdue_days});
   else if(fresh.status==="current")add("It is declared to be updated "+fresh.declared+" and last changed on "+fresh.last_change+", within that cadence.",{declared:fresh.declared,last_change:fresh.last_change});
   // what the bytes say about the dates publishers state (whole-file checks only)
   if(fresh.metadata_date_not_reflected_in_file)add("The catalogue says it was updated on "+fresh.metadata_updated+", but the file is byte-for-byte the same as on "+fresh.content_unchanged_since+", before that date (the update may have touched only the description).",
-    {metadata_updated:fresh.metadata_updated,content_unchanged_since:fresh.content_unchanged_since});
+    {disagreement:"catalogue_date_not_in_file",metadata_updated:fresh.metadata_updated,content_unchanged_since:fresh.content_unchanged_since});
+  // Where the publisher's own metadata and the file disagree (whole-file reads only: a partial read can miss later rows).
+  // We cannot correct the publisher; we can say plainly which statement the file supports.
+  if(profile.rows_exact&&time){
+    const yr=v=>{const m=String(v||"").match(/^(\d{4})/);return m?Number(m[1]):null},from=yr(time.from),to=yr(time.to);
+    const upd=yr(record.updatedAt);
+    if(upd&&to&&upd-to>=2&&fresh.status!=="current")add("The catalogue record was updated on "+String(record.updatedAt).slice(0,10)+", but the newest date in the file ('"+time.column+"') is "+time.to+". A recent catalogue date here does not mean recent data.",
+      {disagreement:"catalogue_date_newer_than_data",catalogue_updated:String(record.updatedAt).slice(0,10),newest_data:time.to,column:time.column});
+    const dp=record.declaredPeriod,ds=yr(dp?.s||dp?.start),de=yr(dp?.e||dp?.end)||(ds?new Date(now).getUTCFullYear():null);
+    if(ds&&from&&to&&(to<ds-1||from>de+1))add("The record declares the period "+(dp.s||dp.start)+" to "+(dp.e||dp.end||"now")+", but the dates in the file ('"+time.column+"') run from "+time.from+" to "+time.to+".",
+      {disagreement:"declared_period_not_in_file",declared:{from:dp.s||dp.start,to:dp.e||dp.end||null},file:{from:time.from,to:time.to},column:time.column});
+    const ty=[...new Set((String(record.title||"").match(/\b(?:19|20)\d{2}\b/g)||[]).map(Number))];
+    if(!ds&&ty.length===1&&from&&to&&(ty[0]<from-1||ty[0]>to+1))add("The title names "+ty[0]+", but the dates in the file ('"+time.column+"') run from "+time.from+" to "+time.to+".",
+      {disagreement:"title_year_not_in_file",title_year:ty[0],file:{from:time.from,to:time.to},column:time.column});
+  }
   if(fresh.content_change_seen&&file.content?.changedAfter&&!file.change)add("The file's content changed between "+day(file.content.changedAfter)+" and "+fresh.content_change_seen+".",{after:day(file.content.changedAfter),on_or_before:fresh.content_change_seen});
   if(file.change)add(changeSentence(file.change),file.change);
   if(file.content?.rowOrderUnstable)add("Downloading it twice gives the same rows in a different order, so its bytes change while its data does not; caches and simple diffs see a new file every time.",{row_order_unstable:true});
@@ -374,5 +388,7 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
     file:{url:file.url||null,format:file.format||null,read:profile.rows_exact?"whole file":"first bytes",bytes_read:file.bytesRead??null,total_bytes:file.totalBytes??null,rows:profile.rows,rows_exact:profile.rows_exact,...(file.sha256?{sha256:file.sha256}:{}),...(file.headerCheck?{headers:file.headerCheck}:{})},
     ...(file.change?{last_change_seen:file.change}:{}),
     freshness:fresh,coverage:{time,keys,...(profile.grain?{grain:profile.grain}:{})},quality:{sparse_columns:sparse,constant_columns:constant,...(profile.duplicate_rows!=null?{duplicate_rows:profile.duplicate_rows}:{}),...(file.content?.rowOrderUnstable?{row_order_unstable:true}:{})},schema,
-    columns:cols.map(({key,...c})=>c).slice(0,40),facts};
+    columns:cols.map(({key,...c})=>c).slice(0,40),facts,
+    // the publisher's statements the file contradicts, in one list (also among the facts)
+    disagreements:facts.filter(f=>f.evidence?.disagreement).map(f=>({kind:f.evidence.disagreement,text:f.text}))};
 }

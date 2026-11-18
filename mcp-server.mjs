@@ -156,6 +156,7 @@ const SCOPE_OF_KIND={"map-service":"maps",publication:"publications",research:"r
 const isOpen=doc=>doc.lf==="open"||doc.lf==="open-sharealike";
 const NOT_DECLARED="not declared by the publisher";
 const summary=d=>({id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,formats:d.f,licence:d.l||NOT_DECLARED,licence_family:d.lf||"unknown",access_tier:d.tier||null,updated:d.u||null,
+  ...(d.ld?{latest_data:d.ld}:{}),...(d.dg?{disagreements:d.dg,disagreements_note:"The publisher's metadata and the file disagree on "+d.dg+(d.dg>1?" points":" point")+"; get_dataset lists them."}:{}),
   ...(d.y?{covers_years:d.y,...(d.ym?{covers_years_from:"read from the file"}:{})}:{}),...(d.lg?{languages:d.lg}:{}),...(d.ar?{access_rights:d.ar}:{}),
   hand_reviewed:!!d.c,landing_page:d.w||null,snippet:d.s||""});
 /** Search filters on the period a record covers and its language. Records that declare neither are left out when the filter is set. */
@@ -339,7 +340,7 @@ export async function getDataset(reader,args){
   const profile=card?.file?{rows:card.file.rows,rows_exact:!!card.file.rows_exact,...(card.file.rows_exact?{}:{rows_note:"Rows in the first "+Math.round((card.file.bytes_read||0)/1024)+" KiB read by the weekly check; the whole file has more."}),
     ...(card.coverage?.time?{period:{from:card.coverage.time.from,to:card.coverage.time.to,column:card.coverage.time.column}}:{}),profiled_at:card.profiled_at}:null;
   return{id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,hand_reviewed:!!d.c,
-    licence:{label:d.l||NOT_DECLARED,family:d.lf||"unknown",...(x.lt?{terms_text:x.lt}:{}),...(x.lsrc?{source:/^publisher:/.test(x.lsrc)?"The licence "+x.lsrc.slice(10)+" states on "+(x.lshare||90)+" % of its catalogue records; this hand-reviewed record has none of its own.":"The publisher's licence, from the harvested record "+x.lsrc+" of the same dataset."}:{}),...(!d.l&&source?{check:source}:{})},
+    licence:{label:d.l||NOT_DECLARED,family:d.lf||"unknown",...(x.lcf?{conflict:"Copies of this dataset in other catalogues state different licences: "+x.lcf.join("; ")+"."}:{}),...(x.lt?{terms_text:x.lt}:{}),...(x.lsrc?{source:/^publisher:/.test(x.lsrc)?"The licence "+x.lsrc.slice(10)+" states on "+(x.lshare||90)+" % of its catalogue records; this hand-reviewed record has none of its own.":"The publisher's licence, from the harvested record "+x.lsrc+" of the same dataset."}:{}),...(!d.l&&source?{check:source}:{})},
     updated:d.u||null,...cycle,
     ...(gaps.length?{not_declared_by_publisher:{fields:gaps,source_page:source,note:"These are gaps in the publisher's own catalogue record, not faults in this tool. The source page may give them."}}:{}),
     ...(profile?{data_profile:profile}:{}),
@@ -352,7 +353,8 @@ export async function getDataset(reader,args){
     link_check:x.pr?{checked_on:x.pr.at,files_checked:x.pr.n,files_ok:x.pr.ok,format_mismatches:x.pr.mm}:null,field_notes:fieldNotes,
     // LDES endpoints: "stream" = answered with LDES/TREE vocabulary when checked; not a statement about history completeness
     ...(x.sc?{stream_check:x.sc.map(s=>({endpoint:s.url,checked_on:s.at,result:s.result,...(s.status?{http_status:s.status}:{}),...(s.error?{error:s.error}:{})}))}:{}),
-    files:(x.files||[]).map(f=>({format:f.f,url:f.u,size_bytes:f.s||null})),...(card?{card}:{}),note:TRUST_NOTE};
+    files:(x.files||[]).map(f=>({format:f.f,url:f.u,size_bytes:f.s||null})),...(card?{card}:{}),
+    trust:trustSummary(d,x,card,measuredPeriod),note:TRUST_NOTE};
 }
 
 const cut=s=>{const t=String(s??"");return t.length>MAX_CELL_CHARS?t.slice(0,MAX_CELL_CHARS-1)+"…":t};
@@ -417,10 +419,36 @@ export async function catalogueOverview(reader){
 }
 
 /** The dataset card (scripts/dataset-card.mjs) for a record, trimmed for an MCP answer: facts with evidence first. */
+/**
+ * What a reader can rely on: what this service checked itself, what only the publisher states, and where the two disagree.
+ * Publishers are often incomplete or inconsistent; this does not fix them, it keeps their statements apart from what was verified.
+ */
+export function trustSummary(d,x,card,measuredPeriod){
+  const checked=[],stated=[],disagreements=[];
+  if(x.pr)checked.push("Links: "+x.pr.ok+" of "+x.pr.n+" answered when checked on "+x.pr.at+(x.pr.mm?"; "+x.pr.mm+" did not contain the declared format":"; the bytes matched the declared format")+".");
+  if(card?.file){
+    const f=card.file;checked.push((f.rows_exact?"Whole file read on ":"First "+Math.round((f.bytes_read||0)/1024)+" KiB read on ")+card.profiled_at+": "+(f.rows_exact?"":"at least ")+Number(f.rows).toLocaleString("en-GB")+" rows"+(card.columns?.length?", "+card.columns.length+" columns":"")+".");
+    if(measuredPeriod)checked.push("Dates in the file run from "+measuredPeriod.from+" to "+measuredPeriod.to+" (column '"+measuredPeriod.column+"').");
+    const fr=card.freshness||{};if(fr.last_change&&fr.last_change_basis&&!/catalogue/i.test(fr.last_change_basis))checked.push("Content last seen changing on "+fr.last_change+" ("+fr.last_change_basis+").");
+    for(const k of (card.coverage?.keys||[]).slice(0,3))checked.push("Column '"+k.column+"' holds "+String(k.kind).replace(/_/g," ")+" values.");
+  }
+  if(x.cm)checked.push("Column names read from the file (the publisher declares none).");
+  if(d.l)stated.push("Licence: "+d.l+(x.lsrc?" (from another record of the same dataset)":"")+".");
+  if(d.u)stated.push("Catalogue record updated "+d.u+(card?.file?.rows_exact?"":"; not checked against the file")+".");
+  if(x.fq)stated.push("Update frequency: "+x.fq.toLowerCase().replace(/_/g," ")+".");
+  if(x.tc&&!measuredPeriod)stated.push("Period: "+(x.tc.s||"?")+" to "+(x.tc.e||"now")+" (not checked against a file).");
+  if(x.g)stated.push("Geography: "+x.g+".");
+  for(const g of card?.disagreements||[])disagreements.push(g.text);
+  if(x.lcf)disagreements.push("Copies of this dataset in other catalogues state different licences: "+x.lcf.join("; ")+". Check the publisher's page before reuse.");
+  return{checked_by_this_service:checked.length?checked:["Nothing: no file of this record could be read or link-checked (the publisher's host may block automated checks, or it has no file)."],
+    stated_by_publisher_only:stated,...(disagreements.length?{disagreements}:{}),
+    note:"Checked facts come from this service's own downloads; stated facts are the publisher's and were not verified. Where they disagree, trust the file over the catalogue."};
+}
+
 async function cardFor(reader,id){
   const c=(await reader.json("/cards/"+idShard(id)+".json"))?.[id];
   if(!c)return null;
-  return{profiled_at:c.profiled_at,facts:c.facts,freshness:c.freshness,...(c.last_change_seen?{last_change_seen:c.last_change_seen}:{}),coverage:c.coverage,quality:c.quality,schema:c.schema,
+  return{profiled_at:c.profiled_at,facts:c.facts,...(c.disagreements?.length?{disagreements:c.disagreements}:{}),freshness:c.freshness,...(c.last_change_seen?{last_change_seen:c.last_change_seen}:{}),coverage:c.coverage,quality:c.quality,schema:c.schema,
     file:c.file,columns:(c.columns||[]).slice(0,25),
     note:(c.file?.rows_exact
       ?"Computed by code from the whole file ("+Math.round((c.file?.bytes_read||0)/1024)+" KiB) and the catalogue record; change dates are checked against the file's content week over week"
