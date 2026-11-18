@@ -134,7 +134,7 @@ assert.equal(periodYears(null),null);
 const docs=[{id:"a"},{id:"b",y:[2001,2002]},{id:"c"},{id:"e"}];
 const cards=new Map([["a",{file:{rows_exact:true},coverage:{time:{from:"2019-01",to:"2023-12",column:"month"}}}],["b",{file:{rows_exact:true},coverage:{time:{from:"2010",to:"2011"}}}],["c",{coverage:{time:null}}],["e",{file:{rows_exact:false},coverage:{time:{from:"2026-01",to:"2026-02"}}}]]);
 assert.equal(backfillDocs(docs,cards),1);
-assert.deepEqual(docs[0],{id:"a",y:[2019,2023],ym:1});
+assert.deepEqual(docs[0],{id:"a",ld:"2023-12",y:[2019,2023],ym:1},"also the newest date in the file");
 assert.deepEqual(docs[1].y,[2001,2002],"a declared period is never overwritten");
 assert.ok(coversYear({y:[2019,2023]},2020));assert.ok(!coversYear({y:[2019,2023]},2024));assert.ok(!coversYear({},2020));assert.ok(coversYear({},null));
 assert.ok(inLanguage({lg:["nl","fr"]},"fr"));assert.ok(!inLanguage({},"fr"));

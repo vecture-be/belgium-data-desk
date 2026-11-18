@@ -24,8 +24,11 @@ const n=v=>Number(v).toLocaleString("en-GB");
 // facts the grid above already states: row count, period, join keys, grain
 const inGrid=e=>(e.rows!=null&&e.columns!=null)||(e.from&&e.to&&e.column&&e.min==null)||(e.kind&&KEY_KINDS.has(e.kind))||e.rows_tested!=null;
 export function renderCard(c){
-  const facts=(c.facts||[]).filter(x=>!inGrid(x.evidence||{})).map(x=>'<li>'+esc(x.text)+'</li>').join("");
-  return facts?'<div class="card-measured"><h4>Measured in the file</h4><ul class="card-facts">'+facts+'</ul></div>':"";
+  // where the publisher's own metadata and the file disagree: first, on their own, so they are not read past
+  const dis=(c.disagreements||[]).map(x=>'<li>'+esc(x.text)+'</li>').join("");
+  const facts=(c.facts||[]).filter(x=>!inGrid(x.evidence||{})&&!x.evidence?.disagreement).map(x=>'<li>'+esc(x.text)+'</li>').join("");
+  return (dis?'<div class="card-disagree"><h4>The publisher\'s metadata and the file disagree</h4><ul class="card-facts">'+dis+'</ul><p class="dk-note">We cannot correct the publisher; where they disagree, the file is what you get.</p></div>':"")+
+    (facts?'<div class="card-measured"><h4>Measured in the file</h4><ul class="card-facts">'+facts+'</ul></div>':"");
 }
 /** Replaces the catalogue's guesses in the "About this data" grid with what the weekly check measured in the file. */
 function fillGrid(section,c){

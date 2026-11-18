@@ -113,7 +113,7 @@ export function toDocs(it,relay){
   });
   const detail={fq:cleanFrequency(it.frequency),g:cityGeography(it.provider,it.geoCoverage),url:httpsLink(it.officialUrl||""),ce:it.contactEmail||"",cu:it.contactUrl||"",d:cutText(desc,600),
     ...(termsText?{lt:cutText(lic.raw,400)}:{}),
-    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.schemaOrigin==="observed-file-header"&&(it.fields||[]).length?{cm:1}:{}),...(it.licenseFrom?{lsrc:it.licenseFrom}:{}),...(it.licenseShare?{lshare:it.licenseShare}:{}),
+    cols:(it.fields||[]).slice(0,30).map(f=>f.name||f.label).filter(Boolean),...(it.schemaOrigin==="observed-file-header"&&(it.fields||[]).length?{cm:1}:{}),...(it.licenseFrom?{lsrc:it.licenseFrom}:{}),...(it.licenceConflict?{lcf:it.licenceConflict}:{}),...(it.licenseShare?{lshare:it.licenseShare}:{}),
     ...(tc?{tc:{s:tc.start||null,e:tc.end||null,...(tc.plannedEnd?{pe:tc.plannedEnd}:{})}}:{}),...(it.languages?.length?{lang:it.languages}:{}),
     ...(it.accessRights?{ar:it.accessRights}:{}),...(it.provenance?{prov:cutText(htmlToText(it.provenance),400)}:{}),...(it.crs?.length?{crs:it.crs}:{}),
     ...(it.spatialResolutionM?{res:it.spatialResolutionM}:{}),...(it.hvdCategories?.length?{hvd:it.hvdCategories}:{}),...(it.standards?.length?{std:it.standards.slice(0,4)}:{}),
@@ -226,6 +226,25 @@ export function writeIndex(outDir,{docs,details,postings,ids},meta){
   return{docChunks:Math.ceil(docs.length/DOC_CHUNK),tokenShards:shards.size,idShards:idShards.size};
 }
 
+/**
+ * Copies of one dataset (seriesId copy:…) in different catalogues: a copy that states no licence takes the one another copy states
+ * (marked licenseFrom), and copies that state different licence families are all marked with the conflict, so nobody reuses the data
+ * on the strength of the more permissive one without checking.
+ */
+export function copyLicences(items){
+  const groups=new Map();for(const x of items)if(String(x.seriesId||"").startsWith("copy:"))(groups.get(x.seriesId)||groups.set(x.seriesId,[]).get(x.seriesId)).push(x);
+  let filled=0,conflicts=0;
+  for(const xs of groups.values()){
+    const fam=x=>normalizeLicense(x.licenseUri||x.license).family,licensed=xs.filter(x=>(x.license||x.licenseUri)&&fam(x)!=="unknown");
+    if(!licensed.length)continue;
+    const families=new Set(licensed.map(fam));
+    if(families.size>1){const list=licensed.map(x=>(normalizeLicense(x.licenseUri||x.license).label||x.license)+" ("+x.id+")");for(const x of xs)x.licenceConflict=list;conflicts++;continue}
+    const src=licensed[0];
+    for(const x of xs)if(!(x.license||x.licenseUri)||fam(x)==="unknown"){x.license=src.license||"";x.licenseUri=src.licenseUri||"";x.licenseFamily=src.licenseFamily||fam(src);x.licenseFrom=src.id;filled++}
+  }
+  return{filled,conflicts};
+}
+
 /** The hand-reviewed atlas assets as catalogue items (also read by scripts/probe-links.mjs). */
 export async function loadCuratedItems(){
   const [{ASSETS},{EXTRA_ATLAS_ASSETS},{COMPLETENESS_ASSETS},{COMPLETENESS_ASSETS_V2},{COMPLETENESS_ASSETS_V3},{COMPLETENESS_ASSETS_V4},{SOURCES},{EXTRA_SOURCES}]=await Promise.all([
@@ -258,6 +277,7 @@ async function main(){
   for(const it of items)if(it.curated)it.provider=catalogueNameFor(it.provider,catalogueNames)||it.provider;
   // one portal dataset listed by several catalogues (and hand-reviewed) shows once in search, with "more in collection"
   groupPortalCopies(items);
+  copyLicences(items);
   const {RELAY_INDEX}=await import("../relay-index.mjs");
   const built=buildIndex(items,{relay:RELAY_INDEX});
   const counts=scopeCounts(items),topics={};

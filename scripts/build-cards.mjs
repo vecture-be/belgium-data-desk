@@ -36,7 +36,7 @@ export function loadRecords(){
   const chunks=sub=>fs.readdirSync(path.join(dir,sub)).filter(f=>/^\d+\.json$/.test(f)).sort((a,b)=>parseInt(a)-parseInt(b));
   for(const f of chunks("d"))docs.push(...JSON.parse(fs.readFileSync(path.join(dir,"d",f),"utf8")));
   for(const f of chunks("x"))details.push(...JSON.parse(fs.readFileSync(path.join(dir,"x",f),"utf8")));
-  docs.forEach((d,i)=>{const x=details[i]||{};items.push({id:d.id,title:d.t||"",publisher:d.p||"",topic:d.tp||"",authoritative:!!d.c,updatedAt:d.u||null,frequency:x.fq||"",distributions:(x.files||[]).map(f=>({url:f.u,format:f.f}))})});
+  docs.forEach((d,i)=>{const x=details[i]||{};items.push({id:d.id,title:d.t||"",publisher:d.p||"",topic:d.tp||"",authoritative:!!d.c,updatedAt:d.u||null,frequency:x.fq||"",declaredPeriod:x.tc||null,distributions:(x.files||[]).map(f=>({url:f.u,format:f.f}))})});
   return items;
 }
 const distUrl=d=>Array.isArray(d)?d[4]:d?.url;
@@ -72,9 +72,13 @@ export function headerSummary(cards){
 export function backfillDocs(docs,cards){
   let n=0;
   for(const d of docs){
+    const c=d&&cards.get(d.id);if(!c)continue;
+    // search results carry what we verified: how many publisher statements the file contradicts, and the newest date in it
+    if(c.disagreements?.length)d.dg=c.disagreements.length;else delete d.dg;
+    if(c.file?.rows_exact&&c.coverage?.time?.to)d.ld=String(c.coverage.time.to).slice(0,10);
     // only from a whole-file read: the first 256 KiB of a file sorted newest-first gives the wrong period
     // (Elia "historical data as of 22/05/2024" read as 2026)
-    const c=d&&cards.get(d.id),t=c?.coverage?.time;if(!t||d.y||!c.file?.rows_exact)continue;
+    const t=c.coverage?.time;if(!t||d.y||!c.file?.rows_exact)continue;
     const a=Number(String(t.from||"").slice(0,4)),b=Number(String(t.to||"").slice(0,4));
     if(!(a>1800&&b>=a&&b<2101))continue;
     d.y=[a,b];d.ym=1;n++;
@@ -85,7 +89,7 @@ function backfillIndex(cards){
   const dir=path.join(pub,"mcp","d");let n=0;const all=[];
   for(const f of fs.readdirSync(dir).filter(f=>/^\d+\.json$/.test(f)).sort((a,b)=>parseInt(a)-parseInt(b))){
     const file=path.join(dir,f),docs=JSON.parse(fs.readFileSync(file,"utf8")),k=backfillDocs(docs,cards);
-    if(k){fs.writeFileSync(file,JSON.stringify(docs));n+=k}
+    fs.writeFileSync(file,JSON.stringify(docs));n+=k;
     all.push(...docs);
   }
   // the search filter facets follow the documents
@@ -120,7 +124,9 @@ function main(){
     with_change_seen:count(c=>c.last_change_seen),
     with_time_coverage:count(c=>c.coverage.time),join_keys:keyKinds,schema_changed:count(c=>c.schema.changed_since),
     cadence_not_met:count(c=>c.freshness.cadence_not_met),
-    period_read_from_file:backfillIndex(cards)};
+    period_read_from_file:backfillIndex(cards),
+    // how often the publisher's metadata and the file disagree, by kind
+    disagreements:all.reduce((m,c)=>{for(const d of c.disagreements||[])m[d.kind]=(m[d.kind]||0)+1;return m},{}),with_disagreements:count(c=>c.disagreements?.length)};
   // publisher scorecards from every full-check result, readable or not (scripts/health.mjs)
   if(fs.existsSync(fullFile)){
     const checks=fs.readFileSync(fullFile,"utf8").split("\n").flatMap(l=>{try{return[JSON.parse(l)]}catch{return[]}});
