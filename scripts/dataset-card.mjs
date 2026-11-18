@@ -101,7 +101,7 @@ const pct=x=>Math.round(x*1000)/10;
  *  not_degrees                  a latitude/longitude column holding metres (Lambert) or degrees without their decimal point
  *  missing_value_code           -999, -9999 or 99999-style codes that would distort a sum or an average */
 const LAT_NAME=/^(lat|latitude|breedtegraad|y_?wgs\w*|geo_?lat)$/i,LON_NAME=/^(lon|lng|long|longitude|lengtegraad|x_?wgs\w*|geo_?lon)$/i;
-export const DECIMAL_READING_SINCE="2026-11-18T08:00:00Z";
+export const DECIMAL_READING_SINCE="2026-11-18T07:15:00Z";
 const CODES=new Set([-9999,-999,-99,99999,999999,9999999]);
 export function suspectValues(cols){
   const out=[];
