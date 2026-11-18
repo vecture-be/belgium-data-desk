@@ -374,15 +374,15 @@ export async function previewDataset(reader,args,previewFile){
   if(!files.length)return{...base,error:"No previewable CSV/TSV file for this dataset (formats listed: "+((d.f||[]).join(", ")||"none")+"). Open the landing page or the web app link to inspect it.",web_url:reader.origin+"/?dataset="+encodeURIComponent(d.id)};
   if(!previewFile)return{...base,error:"File preview is not available on this server."};
   const file=files[0];
-  const got=await previewFile(file.r,PREVIEW_BYTES);
+  let got=await previewFile(file.r,PREVIEW_BYTES);
   if(got.error)return{...base,file:{format:file.f,url:file.u},error:"The publisher's file could not be read: "+got.error};
-  const bytes=got.bytes;
-  const {encoding,skip}=encodingFor(bytes);
+  let bytes=got.bytes;
+  let {encoding,skip}=encodingFor(bytes);
   let text=new TextDecoder(encoding).decode(bytes.subarray(skip));
-  const truncated=got.truncated;
+  let truncated=got.truncated;
   if(truncated){const nl=text.lastIndexOf("\n");if(nl>0)text=text.slice(0,nl)}   // drop the partial last line
   if(/^\s*</.test(text)||/html/i.test(got.contentType||""))return{...base,file:{format:file.f,url:file.u},error:"The publisher answered with a web page instead of a CSV file; the download link may have moved. Check the landing page."};
-  const delimiter=detectDelimiter(text,{url:file.u,format:file.f});
+  let delimiter=detectDelimiter(text,{url:file.u,format:file.f});
   // Latest date per column over every row read (ISO or dd/mm/yyyy, never later than today): files are often refreshed without the
   // catalogue record changing, and a date in the data later than the record's date shows it.
   const latest=new Map(),today=new Date().toISOString().slice(0,10);
@@ -390,7 +390,25 @@ export async function previewDataset(reader,args,previewFile){
     const m=/^(\d{4})-(\d{2})-(\d{2})(?:[T ]|$)/.exec(v)||((m2)=>m2&&[m2[0],m2[3],m2[2],m2[1]])(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s|$)/.exec(v));
     if(!m||+m[1]<1900||+m[2]<1||+m[2]>12||+m[3]<1||+m[3]>31)continue;const iso=m[1]+"-"+m[2]+"-"+m[3];if(iso>today)continue;
     if(!latest.has(headers[i])||latest.get(headers[i])<iso)latest.set(headers[i],iso)}};
-  const parsed=parseDelimitedText(text,{delimiter,sampleRows:rows,inferRows:1000,onRow});
+  let parsed=parseDelimitedText(text,{delimiter,sampleRows:rows,inferRows:1000,onRow});
+  // Very wide GeoJSON columns can make the first CSV record longer than 64 KiB.
+  // Retry only when we read a header but no complete record. Never report zero sample
+  // rows as if the underlying dataset were empty.
+  if(truncated&&!parsed.rowCount&&parsed.headers.length){
+    const more=await previewFile(file.r,PREVIEW_BYTES*4);
+    if(!more.error&&more.bytes.length>got.bytes.length){
+      got=more;bytes=got.bytes;({encoding,skip}=encodingFor(bytes));
+      text=new TextDecoder(encoding).decode(bytes.subarray(skip));truncated=got.truncated;
+      if(truncated){const end=text.lastIndexOf("\n");if(end>0)text=text.slice(0,end)}
+      delimiter=detectDelimiter(text,{url:file.u,format:file.f});
+      parsed=parseDelimitedText(text,{delimiter,sampleRows:rows,inferRows:1000,onRow});
+    }
+  }
+  if(truncated&&!parsed.rowCount)return{...base,file:{format:file.f,url:file.u},
+    error:"The first data record exceeds the bounded preview size; no complete row could be read. This does not mean the dataset is empty.",
+    columns:parsed.headers.slice(0,MAX_PREVIEW_COLUMNS).map((name,i)=>({name,type:parsed.types[i]||"string"})),
+    analysis:analysisFor(x,reader.origin,d.id,{delimiter}),
+    note:"The catalogue's whole-file row count is separate evidence. Use the publisher file or browser SQL for data rows."};
   if(!parsed.headers.length)return{...base,file:{format:file.f,url:file.u},error:"The file is empty or could not be parsed as delimited text."};
   const cols=parsed.headers.slice(0,MAX_PREVIEW_COLUMNS);
   const sample=parsed.samples.map(r=>Object.fromEntries(cols.map(h=>[h,cut(r[h])])));
