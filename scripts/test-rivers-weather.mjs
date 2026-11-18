@@ -178,7 +178,7 @@ const river=(args,opts)=>atTime(NOW,()=>{const client=makeDovClient({fetchImpl:k
   assert.match((await river({station:"Nergenshuizen"})).error,/^No gauge matches 'Nergenshuizen'\. Give the station name/);
 }
 { // a river filter with no match, and no arguments
-  assert.match((await river({river:"Maas"})).error,/No gauge reporting now has 'Maas'/);
+  assert.match((await river({river:"Maas"})).error,/No gauge reporting now has river 'Maas'/);
   assert.match((await river({})).error,/Give an address/);
 }
 { // a place far from every Flemish gauge: an explanation, not a gauge 80 km away
