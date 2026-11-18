@@ -180,6 +180,22 @@ async function resolveLocation(client,args,{area="flanders"}={}){
   return{loc};
 }
 
+// DOV contains a few historical records outside Flanders, but the location
+// tools serve Flemish map and groundwater decisions. Check the actual region
+// polygon before drawing a site-specific conclusion from those layers.
+export async function verifyDovCoverage(client,loc){
+  if(loc.input==="address")return null; // the address resolver only accepts the Flemish register
+  const q=new URLSearchParams({service:"WFS",version:"2.0.0",request:"GetFeature",typeNames:"VRBG2025:Refgem",
+    outputFormat:"application/json",srsName:"EPSG:31370",count:"1",propertyName:"NAAM,NISCODE",
+    cql_filter:`INTERSECTS(SHAPE,POINT(${loc.x} ${loc.y}))`});
+  const r=await getJson(client,GEO_ORIGIN+"/VRBG2025/wfs?"+q,{maxBytes:64*1024,ttl:30*DAY});
+  if(r.error||r.json?.error||!Array.isArray(r.json?.features))
+    return{error:"The Flemish municipality boundary could not be checked; DOV location data was not assessed."};
+  if(!r.json.features.some(f=>f.properties?.NISCODE))
+    return{error:"The location is outside the Flemish Region, which these DOV location tools cover."};
+  return null;
+}
+
 // ---------- subsurface_at_location ----------
 const POINT_LAYERS=[
   {key:"soil",layer:"bodemkaart:bodemtypes",geom:"geom",dataset:"Bodemkaart (digitale bodemkaart van Vlaanderen)",
@@ -279,6 +295,7 @@ async function modelledColumn(client,x,y,used,maxDepth){
 export async function subsurfaceAtLocation(client,args){
   const where=await resolveLocation(client,args);if(where.error)return{error:where.error,...(where.location?{location:where.location}:{})};
   const {loc}=where,{x,y}=loc;
+  const coverage=await verifyDovCoverage(client,loc);if(coverage)return{...coverage,location:{latitude:loc.latitude,longitude:loc.longitude}};
   const radius=Math.min(RADIUS.max,Math.max(RADIUS.min,Math.round(num(args?.radius_m)??RADIUS.default)));
   const pt=`POINT(${x} ${y})`;
   const used=new Set();
@@ -762,4 +779,4 @@ export function recordFacts(r){
 }
 
 // Internals shared with dov-search.mjs (one module per tool family; the request guards stay in this file).
-export const _dov={wfsQuery,getJson,resolveLocation,codeList,clean,num,round,cut,permkeyOf,provenance,byDistance,present,NEARBY,PERMIT_PROPS,permitView,SOIL_LOC_PROPS,soilLocView,fmtM3,DAY,HOUR,MAX_POINTS};
+export const _dov={wfsQuery,getJson,resolveLocation,verifyDovCoverage,codeList,clean,num,round,cut,permkeyOf,provenance,byDistance,present,NEARBY,PERMIT_PROPS,permitView,SOIL_LOC_PROPS,soilLocView,fmtM3,DAY,HOUR,MAX_POINTS};
