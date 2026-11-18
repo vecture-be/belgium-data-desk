@@ -17,7 +17,23 @@ const MAX_DISTINCT=2000,MAX_TOP=5,MAX_KEY_SAMPLE=400,MAX_COLUMNS=60,MAX_ROW_HASH
 
 // ---------- values ----------
 const clean=v=>String(v??"").trim();
-function toNumber(s){
+// "3.775" or "98,125" (one separator, exactly three digits after it) is either a decimal or a thousands group. Alone it cannot
+// be told apart: toNumber reads it as a thousands group unless ambiguous==="decimal"; the column profile decides per column from its
+// other values (numberStyle) so a longitude column of 3.775 / 3.7751 reads 3.775, and a count column of 1.234 / 12.345.678 reads 1234.
+const AMBIGUOUS=/^[+-]?\d{1,3}[.,]\d{3}$/;
+/** What a numeric string says about its column's separators: "decimal" (3.7751, 98,5), "thousands" (1.234.567, 1,234.5, 1 234),
+ *  "plain" (an integer without separators), "plain1000" (one of 1000 or more, so separators are not thousands groups),
+ *  "ambiguous" (see AMBIGUOUS). */
+export function numberStyle(s){
+  if(/\d \d{3}(?!\d)/.test(s))return"thousands";
+  const t=s.replace(/\s/g,"");
+  if(AMBIGUOUS.test(t))return"ambiguous";
+  if(/^[+-]?\d+$/.test(t))return Math.abs(Number(t))>=1000?"plain1000":"plain";
+  if(/^[+-]?\d{1,3}(?:[.,]\d{3}){2,}$/.test(t)||/^[+-]?\d{1,3}(?:\.\d{3})+,\d+$/.test(t)||/^[+-]?\d{1,3}(?:,\d{3})+\.\d+$/.test(t))return"thousands";
+  return"decimal";
+}
+function toNumber(s,{ambiguous="thousands"}={}){
+  if(ambiguous==="decimal"&&AMBIGUOUS.test(s.replace(/\s/g,"")))return Number(s.replace(/\s/g,"").replace(",","."));
   if(!/^[+-]?(?:\d+|\d{1,3}(?:[ .]\d{3})+|\d{1,3}(?:,\d{3})+)?(?:[.,]\d+)?$/.test(s)||!/\d/.test(s))return null;
   let t=s.replace(/\s/g,"");
   if(/^[+-]?\d{1,3}(?:\.\d{3})+(?:,\d+)?$/.test(t))t=t.replace(/\./g,"").replace(",",".");   // 1.234,5
@@ -72,13 +88,40 @@ function detectKey(name,values){
   // "lat, lon" in one column (OpenDataSoft geo_point_2d and similar exports)
   const point=v=>{const m=v.match(/^\[?\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\]?$/);return m&&+m[1]>49.4&&+m[1]<51.6&&+m[2]>2.4&&+m[2]<6.5};
   if(share(point)>=0.9)return{kind:"wgs84_point"};
-  const nums=values.map(toNumber);
-  if(/^(lat|latitude|breedte|breedtegraad|y_?wgs)/.test(n)&&nums.every(x=>x!=null&&x>49.4&&x<51.6))return{kind:"latitude"};
-  if(/^(lon|lng|long|longitude|lengte|lengtegraad|x_?wgs)/.test(n)&&nums.every(x=>x!=null&&x>2.4&&x<6.5))return{kind:"longitude"};
+  const nums=values.map(v=>toNumber(v)),degrees=values.map(v=>toNumber(v,{ambiguous:"decimal"}));
+  if(/^(lat|latitude|breedte|breedtegraad|y_?wgs)/.test(n)&&degrees.every(x=>x!=null&&x>49.4&&x<51.6))return{kind:"latitude"};
+  if(/^(lon|lng|long|longitude|lengte|lengtegraad|x_?wgs)/.test(n)&&degrees.every(x=>x!=null&&x>2.4&&x<6.5))return{kind:"longitude"};
   if(/lambert|l72|31370|^x$|^y$|^x_|^y_|_x$|_y$/.test(n)&&nums.every(x=>x!=null&&x>10000&&x<310000))return{kind:"lambert72"};
   return null;
 }
 const pct=x=>Math.round(x*1000)/10;
+
+/** Values a column's own range shows to be wrong or coded, from min/max only (no row is named; the file is the evidence):
+ *  coordinates_outside_belgium  a latitude/longitude column that leaves Belgium (wrong rows, swapped axes, or a wider coverage)
+ *  not_degrees                  a latitude/longitude column holding metres (Lambert) or degrees without their decimal point
+ *  missing_value_code           -999, -9999 or 99999-style codes that would distort a sum or an average */
+const LAT_NAME=/^(lat|latitude|breedtegraad|y_?wgs\w*|geo_?lat)$/i,LON_NAME=/^(lon|lng|long|longitude|lengtegraad|x_?wgs\w*|geo_?lon)$/i;
+const CODES=new Set([-9999,-999,-99,99999,999999,9999999]);
+export function suspectValues(cols){
+  const out=[];
+  for(const c of cols){
+    if((c.type!=="number"&&c.type!=="integer")||c.min==null)continue;
+    const lat=LAT_NAME.test(c.name),lon=!lat&&LON_NAME.test(c.name);
+    if(lat||lon){
+      const [lo,hi]=lat?[49.4,51.6]:[2.4,6.5],deg=lat?90:180;
+      if(Math.abs(c.min)>deg||Math.abs(c.max)>deg)out.push({column:c.name,kind:"not_degrees",min:c.min,max:c.max,
+        text:"Column '"+c.name+"' reaches "+num(Math.abs(c.max)>deg?c.max:c.min)+", which is not a "+(lat?"latitude":"longitude")+" in degrees: some rows hold metres or lost their decimal point."});
+      else if(c.min<lo||c.max>hi)out.push({column:c.name,kind:"coordinates_outside_belgium",min:c.min,max:c.max,
+        text:"Column '"+c.name+"' ranges from "+num(c.min)+" to "+num(c.max)+", beyond Belgium's "+lo+"–"+hi+": some coordinates are wrong or swapped, or the file covers more than Belgium."});
+    }
+    for(const v of [c.min,c.max])if(CODES.has(v)&&c.min!==c.max){
+      out.push({column:c.name,kind:"missing_value_code",value:v,min:c.min,max:c.max,
+        text:"Column '"+c.name+"' contains "+num(v)+", probably a code for a missing value: leave those rows out before summing or averaging."});
+      break;
+    }
+  }
+  return out;
+}
 
 // ---------- column profile ----------
 export function profileColumns(text,{url="",format="",bytesRead=null,totalBytes=null}={}){
@@ -94,7 +137,7 @@ export function profileColumns(text,{url="",format="",bytesRead=null,totalBytes=
 export function createColumnProfiler(delimiter){
   const cols=[],seen=new Set(),grain=createGrainTracker();let duplicates=0,dupCapped=false,sumHi=0,sumLo=0,hdr="";
   const a=createDelimitedAccumulator(delimiter,{sampleRows:0,inferRows:250,onRow(values,headers){
-    if(!cols.length){headers.slice(0,MAX_COLUMNS).forEach(h=>cols.push({name:h,filled:0,distinct:new Map(),capped:false,min:null,max:null,dmin:null,dmax:null,observedMin:null,observedMax:null,pmin:null,pmax:null,periods:0,nums:0,ints:0,dates:0,keySample:[]}));hdr=headers.join("\u0001")}
+    if(!cols.length){headers.slice(0,MAX_COLUMNS).forEach(h=>cols.push({name:h,filled:0,distinct:new Map(),capped:false,min:null,max:null,dmin:null,dmax:null,observedMin:null,observedMax:null,pmin:null,pmax:null,periods:0,nums:0,ints:0,dates:0,keySample:[],style:{decimal:0,thousands:0,plain:0,plain1000:0,ambiguous:0,zeros:0},amb:{dmin:null,dmax:null,tmin:null,tmax:null}}));hdr=headers.join("\u0001")}
     grain.row(values);
     // a 53-bit hash per row. Duplicate rows: a Set of these (numbers stay small); past MAX_ROW_HASHES the count stops growing and
     // is reported as a lower bound. False matches are ~1 in 10^4 files at a million rows.
@@ -122,7 +165,17 @@ export function createColumnProfiler(delimiter){
         c.periods++;
         if(!c.pmin||period.from<c.pmin)c.pmin=period.from;
         if(!c.pmax||period.to>c.pmax)c.pmax=period.to;
-      }else if(n!=null){c.nums++;if(Number.isInteger(n))c.ints++;if(c.min==null||n<c.min)c.min=n;if(c.max==null||n>c.max)c.max=n}
+      }else if(n!=null){
+        c.nums++;const st=numberStyle(v);c.style[st]++;
+        if(st==="ambiguous"){
+          // keep both readings; summarise picks one for the whole column. "1.000" (three zeros) is a thousand: nobody writes
+          // three decimals of zeros.
+          if(/0{3}$/.test(v))c.style.zeros++;
+          const dec=toNumber(v,{ambiguous:"decimal"}),A=c.amb;
+          if(A.dmin==null||dec<A.dmin)A.dmin=dec;if(A.dmax==null||dec>A.dmax)A.dmax=dec;
+          if(A.tmin==null||n<A.tmin)A.tmin=n;if(A.tmax==null||n>A.tmax)A.tmax=n;
+        }else{if(Number.isInteger(n))c.ints++;if(c.min==null||n<c.min)c.min=n;if(c.max==null||n>c.max)c.max=n}
+      }
     }
   }});
   const self={push:t=>a.push(t),rowHashes:null,finish({exact=true,keepRowHashes=false}={}){
@@ -189,8 +242,24 @@ export function createGrainTracker(){
     }
   };
 }
+/** How a column's ambiguous numbers (AMBIGUOUS) read: as decimals when the column writes other decimals or integers of 1000 and
+ *  more without grouping; as thousands groups when it groups other numbers, holds only plain integers besides them, or writes
+ *  "1.000" (zeros). With no other evidence they read as decimals (3.775 is more often a measurement than 3775 with a dot). */
+export function ambiguousReading(style){
+  const dec=style.decimal+style.plain1000,thou=style.thousands+(style.zeros||0)+(style.decimal?0:style.plain);
+  return thou>dec?"thousands":"decimal";
+}
+function resolveAmbiguous(c){
+  if(!c.style?.ambiguous)return;
+  const reading=ambiguousReading(c.style),A=c.amb;
+  const lo=reading==="decimal"?A.dmin:A.tmin,hi=reading==="decimal"?A.dmax:A.tmax;
+  if(c.min==null||lo<c.min)c.min=lo;if(c.max==null||hi>c.max)c.max=hi;
+  if(reading==="thousands")c.ints+=c.style.ambiguous;
+  c.numberReading=reading;
+}
 function summarise(cols,parsed,whole,extra,delimiter){
   const rows=parsed.rowCount;
+  for(const c of cols)resolveAmbiguous(c);
   const columns=cols.map((c,i)=>{
     const type=c.filled&&c.dates/c.filled>=0.9?"date":c.filled&&c.periods/c.filled>=0.9?"period":c.filled&&c.nums/c.filled>=0.9?(c.ints===c.nums?"integer":"number"):parsed.types[i]==="boolean"?"boolean":"text";
     const out={name:c.name,type,filled_pct:rows?pct(c.filled/rows):0,distinct:c.capped?MAX_DISTINCT+"+":c.distinct.size};
@@ -375,6 +444,8 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
     else add("No combination of its label columns identifies each row: by "+names+", "+fmtInt(repeats)+(repeats===1?" row still shares its":" rows still share their")+" labels with another row (tested on "+scope+").",g);
   }
   if(constant.length)add("Column"+(constant.length>1?"s ":" ")+constant.slice(0,3).map(c=>"'"+c+"'").join(", ")+" "+(constant.length>1?"have":"has")+" a single value "+(profile.rows_exact?"throughout.":"in all rows read."),{columns:constant});
+  const suspect=suspectValues(cols);
+  for(const s of suspect.slice(0,3))add(s.text,{column:s.column,suspect:s.kind,min:s.min,max:s.max});
 
   let schema={fingerprint:profile.fingerprint};
   if(previous?.schema?.fingerprint&&previous.schema.fingerprint!==profile.fingerprint){
@@ -387,7 +458,7 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
   return{v:CARD_VERSION,id:record.id,...(record.title?{title:record.title,publisher:record.publisher||null,topic:record.topic||null}:{}),...(record.authoritative?{hand_reviewed:true}:{}),profiled_at:now.slice(0,10),
     file:{url:file.url||null,format:file.format||null,read:profile.rows_exact?"whole file":"first bytes",bytes_read:file.bytesRead??null,total_bytes:file.totalBytes??null,rows:profile.rows,rows_exact:profile.rows_exact,...(file.sha256?{sha256:file.sha256}:{}),...(file.headerCheck?{headers:file.headerCheck}:{})},
     ...(file.change?{last_change_seen:file.change}:{}),
-    freshness:fresh,coverage:{time,keys,...(profile.grain?{grain:profile.grain}:{})},quality:{sparse_columns:sparse,constant_columns:constant,...(profile.duplicate_rows!=null?{duplicate_rows:profile.duplicate_rows}:{}),...(file.content?.rowOrderUnstable?{row_order_unstable:true}:{})},schema,
+    freshness:fresh,coverage:{time,keys,...(profile.grain?{grain:profile.grain}:{})},quality:{sparse_columns:sparse,constant_columns:constant,...(profile.duplicate_rows!=null?{duplicate_rows:profile.duplicate_rows}:{}),...(file.content?.rowOrderUnstable?{row_order_unstable:true}:{}),...(suspect.length?{suspect_values:suspect.map(({text,...s})=>s)}:{})},schema,
     columns:cols.map(({key,...c})=>c).slice(0,40),facts,
     // the publisher's statements the file contradicts, in one list (also among the facts)
     disagreements:facts.filter(f=>f.evidence?.disagreement).map(f=>({kind:f.evidence.disagreement,text:f.text}))};

@@ -226,7 +226,10 @@ function trendOf(series,now){
 function view(s,dist,hist,st,lt,crue,fcx){
   const h=hist?.[s.ts_id],tr=trendOf(h,Date.now());
   // tidal gauges (Zeeschelde, Durme, Rupel...): the level swings metres twice a day, so "rising" or "falling" says only where the tide is
-  const tidal=!!tr&&((/\btij\b|getij|maree|marée/i.test(s.name+" "+(s.river||""))||tr.reversals>=3))&&tr.range>0.3;
+  // The shape alone (three turns a day) also fits a brook after a few showers, so it counts only where a tide can reach: Belgian
+  // high water stays below about 7 m TAW (Gent, Zeeschelde), so a gauge whose water stands above 10 m TAW is never tidal.
+  const absNow=tr?levels(s,tr.latest[1]).abs:null,lowLying=absNow!=null&&absNow<10;
+  const tidal=!!tr&&((/\btij\b|getij|maree|marée/i.test(s.name+" "+(s.river||""))||(tr.reversals>=3&&lowLying)))&&tr.range>0.3;
   if(tidal&&tr)tr.trend=(tr.change_1h??0)>0?"tide rising":"tide falling";
   const value=tr?tr.latest[1]:s.value,time=tr?new Date(tr.latest[0]).toISOString():s.time;
   const L=levels(s,value),toAbs=v=>{const x=levels(s,v);return x.abs??x.rel};
