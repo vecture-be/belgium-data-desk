@@ -107,6 +107,8 @@ const fakeFetch=async(url,init)=>{
   if(u.hostname==="geo.api.vlaanderen.be"){
     const q=u.searchParams.get("q");
     if(q==="Leuven")return new Response(JSON.stringify({LocationResult:[{Municipality:"Leuven",LocationType:"basisregisters_gemeente",Location:{X_Lambert72:173726,Y_Lambert72:174699}}]}),{status:200});
+    if(q==="Waterloo")return new Response(JSON.stringify({LocationResult:[{Municipality:"Sint-Truiden"}]}),{status:200});
+    if(q==="Namur")return new Response(JSON.stringify({LocationResult:[{Municipality:"Elsene"}]}),{status:200});
     return new Response(JSON.stringify({LocationResult:/Leuven/.test(q)?[{Municipality:"Leuven",Housenumber:"1",FormattedAddress:"Grote Markt 1, 3000 Leuven",LocationType:"basisregisters_huisnummer",Location:{Lat_WGS84:50.879379,Lon_WGS84:4.700655,X_Lambert72:173358.14,Y_Lambert72:174387.29}}]:[]}),{status:200});
   }
   if(u.pathname==="/geoserver/wfs"){
@@ -253,7 +255,10 @@ const s2=await S({record_type:"groundwater_wells",address:"Grote Markt 1, 3000 L
 assert.equal(s2.sort,"nearest");assert.equal(s2.results[0].id,"filter/1978-006372");assert.equal(s2.results[0].distance_m,42);assert.equal(s2.filters.aquifer,"A0620");
 for(const [bad,re] of [[{record_type:"rocks"},/record_type must be/],[{record_type:"boreholes",date_from:"2020') OR (1=1"},/date_from must be/],[{record_type:"boreholes",purpose:"mining"},/purpose must be/],
   [{record_type:"cpts",aquifer:"A0620"},/aquifer applies/],[{record_type:"boreholes",sort:"nearest"},/needs an address/],[{record_type:"boreholes",municipality:"Leuven",address:"x"},/either a municipality/],
-  [{record_type:"boreholes",municipality:"Atlantis"},/not found/],[{record_type:"groundwater_permits",sort:"deepest_first"},/sort for groundwater_permits/]])
+  [{record_type:"boreholes",municipality:"Atlantis"},/not found/],
+  [{record_type:"boreholes",municipality:"Waterloo"},/could not be verified/],
+  [{record_type:"boreholes",municipality:"Namur"},/could not be verified/],
+  [{record_type:"groundwater_permits",sort:"deepest_first"},/sort for groundwater_permits/]])
   assert.match((await S(bad)).error,re,JSON.stringify(bad));
 
 console.log(JSON.stringify({ok:true,dov:"coordinates/ids/xml/levels/location/records/permits/soil/search/guards/mcp"}));

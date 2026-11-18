@@ -31,7 +31,7 @@ const TECHNICAL=/WIJKSPO|GOEDEREN|BUNDEL|FAISCEAU|GARAGE|MARCHANDISE|WERKPLAATS|
 // names people use that differ from Infrabel's (Dutch exonyms of Walloon towns, English and French names of Flemish ones)
 const ALIAS={luik:"liege",bergen:"mons",namen:"namur",doornik:"tournai",hoei:"huy",nijvel:"nivelles",waver:"wavre",aarlen:"arlon",moeskroen:"mouscron",
   edingen:"enghien",aat:"ath",zinnik:"soignies",borgworm:"waremme",geldenaken:"jodoigne",louvain:"leuven",malines:"mechelen",anvers:"antwerpen",antwerp:"antwerpen",
-  gand:"gent",ghent:"gent",bruges:"brugge",courtrai:"kortrijk",ostende:"oostende",ostend:"oostende",alost:"aalst",termonde:"dendermonde",hal:"halle",
+  gand:"gent","gand-saint-pierre":"gent-sint-pieters",ghent:"gent",bruges:"brugge",courtrai:"kortrijk",ostende:"oostende",ostend:"oostende",alost:"aalst",termonde:"dendermonde",hal:"halle",
   vilvorde:"vilvoorde",tirlemont:"tienen","saint-trond":"sint-truiden",tongres:"tongeren",renaix:"ronse",ypres:"ieper",grammont:"geraardsbergen",
   "brussels-south":"brussel-zuid","brussels-midi":"brussel-zuid","bruxelles-midi":"brussel-zuid","brussels south":"brussel-zuid","brussels central":"brussel-centraal",
   "brussels north":"brussel-noord","brussels airport":"brussels airport - zaventem",zaventem:"brussels airport - zaventem"};

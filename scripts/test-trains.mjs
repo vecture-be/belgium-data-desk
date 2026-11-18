@@ -13,6 +13,7 @@ const stops=[S("LEUVEN","LOUVAIN","LEUVEN",11000),S("LOUVAIN-LA-NEUVE",null,null
   S("ANTWERPEN-BERCHEM","ANVERS-BERCHEM",null,9000),S("MONS",null,null,5000),S("GENT-SINT-PIETERS",null,null,12000),S("GENT-DAMPOORT",null,null,5000)];
 const nameOf=q=>matchStation(stops,q).stop?.nl;
 assert.equal(nameOf("Louvain"),"LEUVEN");
+assert.equal(nameOf("Gand-Saint-Pierre"),"GENT-SINT-PIETERS");
 // as in Infrabel's real table: Leuven's French name is LEUVEN, so "Louvain" only reaches it through the exonym list,
 // and must not first be taken as the start of LOUVAIN-LA-NEUVE (caught by the golden fact after the first deploy)
 const real=[S("LEUVEN","LEUVEN","LEUVEN",11701),S("LOUVAIN-LA-NEUVE",null,null,1319)];

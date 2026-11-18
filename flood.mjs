@@ -2,7 +2,7 @@
 // and from the sea) are the maps behind the flood information that must be given when a property in Flanders is sold or let, and
 // behind the water test for permits. Each map classes a location A-D; the class is read here with one ArcGIS 'identify' per map.
 // Licence: Flemish free-reuse model licence; source VMM (Vlaamse Milieumaatschappij), via waterinfo.be.
-import { _dov } from "./dov.mjs";
+import { _dov, GEO_ORIGIN } from "./dov.mjs";
 import { placeContext } from "./place.mjs";
 const {getJson,resolveLocation,clean,DAY}=_dov;
 
@@ -28,11 +28,33 @@ async function identify(client,service,x,y,timeoutMs=MAP_TIMEOUT_MS){
   return{code:codes.length?Math.max(...codes):0};
 }
 
+// The Lambert bounding box is only a quick reject: Brussels and parts of Wallonia are inside it.
+// For coordinates, require a match in the actual 2025 Flemish municipality polygons.
+async function verifyFlemishCoverage(client,loc){
+  if(loc.input==="address")return{covered:true}; // resolved by the Flemish address register
+  const q=new URLSearchParams({service:"WFS",version:"2.0.0",request:"GetFeature",typeNames:"VRBG2025:Refgem",
+    outputFormat:"application/json",srsName:"EPSG:31370",count:"1",propertyName:"NAAM,NISCODE",
+    cql_filter:`INTERSECTS(SHAPE,POINT(${loc.x} ${loc.y}))`});
+  const r=await getJson(client,GEO_ORIGIN+"/VRBG2025/wfs?"+q,{maxBytes:64*1024,ttl:30*DAY});
+  if(r.error||r.json?.error||!Array.isArray(r.json?.features))
+    return{error:"The Flemish municipality boundary could not be checked; flood risk was not assessed."};
+  if(!r.json.features.some(f=>f.properties?.NISCODE))
+    return{error:"The location is outside the Flemish Region, which these maps cover."};
+  return{covered:true};
+}
+
 export async function floodRisk(client,args,{assets}={}){
   const w=await resolveLocation(client,args);if(w.error)return{error:w.error.replace("which is the area DOV covers","which these maps cover"),...(w.location?{location:w.location}:{})};
   const loc=w.loc;
+  const coverage=await verifyFlemishCoverage(client,loc);
+  if(coverage.error)return{error:coverage.error,location:{latitude:loc.latitude,longitude:loc.longitude}};
+  const place=await placeContext(client,assets,loc).catch(()=>null);
+  // An address may have resolved imprecisely; do not interpret missing coverage as class A.
+  if((loc.input==="address"&&!place)||(place&&place.region!=="Vlaams Gewest"))
+    return{error:!place?"Could not verify the address municipality; flood risk was not assessed.":"The location is outside the Flemish Region, which these maps cover.",
+      location:{latitude:loc.latitude,longitude:loc.longitude},...(place?{place}:{})};
   const ask=s=>identify(client,s,Math.round(loc.x),Math.round(loc.y));
-  const [res,place]=await Promise.all([Promise.all(MAPS.map(([,s])=>ask(s))),placeContext(client,assets,loc).catch(()=>null)]);
+  const res=await Promise.all(MAPS.map(([,s])=>ask(s)));
   // A map that timed out or answered 5xx is asked once more (the services are slow under load, rarely down), within the request budget.
   let retried=0;
   await Promise.all(res.map(async(r,i)=>{if(r.error&&r.transient){retried++;const again=await ask(MAPS[i][1]);res[i]=again.error?{...again,retried:true}:again}}));
