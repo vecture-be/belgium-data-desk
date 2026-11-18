@@ -191,7 +191,7 @@ assert.equal(seen.length,0,"rejected inputs make no upstream request");
 seen.length=0;
 const brussels={latitude:50.8466,longitude:4.3528};
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),brussels)).error,/outside the Flemish Region/);
-assert.match((await S({record_type:"boreholes",...brussels,radius_m:200})).error,/outside the Flemish Region/);
+assert.match((await searchSubsurface(makeDovClient({fetchImpl:fakeFetch}),{record_type:"boreholes",...brussels,radius_m:200})).error,/outside the Flemish Region/);
 assert.ok(seen.every(x=>!x.url.pathname.startsWith("/geoserver/")),"out-of-region points never reach DOV data layers");
 seen.length=0;
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{address:"Nergensstraat 9, 9999 Nergens"})).error,/Address not found/);
