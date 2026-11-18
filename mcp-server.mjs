@@ -102,7 +102,7 @@ const TOOLS=[
   },
   {
     name:"preview_dataset",title:"Preview the rows of a dataset file",
-    description:"Read the first rows of a dataset's CSV/TSV file directly from the publisher and return the column names, inferred column types, the delimiter and encoding, and up to 20 sample rows as published. Works for datasets whose get_dataset record shows preview_available: true. Reads at most the first 64 KiB of the file, so it shows structure and example values, not totals over the whole file; for those, its analysis block gives the download links, a DuckDB query in the file's own dialect and the domains to allow in a sandbox. Example: {\"id\":\"national:d04b704a-1672-4567-bf0d-9a9452618812\",\"rows\":5}.",
+    description:"Read the first rows of a dataset's CSV/TSV file directly from the publisher and return the column names, inferred column types, the delimiter and encoding, and up to 20 sample rows as published. Works for datasets whose get_dataset record shows preview_available: true. Normally reads the first 64 KiB (up to 256 KiB only when the first CSV record is very wide), so it shows structure and example values, not totals over the whole file; for those, its analysis block gives the download links, a DuckDB query in the file's own dialect and the domains to allow in a sandbox. Example: {\"id\":\"national:d04b704a-1672-4567-bf0d-9a9452618812\",\"rows\":5}.",
     inputSchema:{type:"object",properties:{
       id:{type:"string",description:"Dataset id as returned by search_datasets or get_dataset."},
       rows:{type:"integer",minimum:1,maximum:MAX_PREVIEW_ROWS,description:"Number of sample rows, default 10."}
@@ -426,7 +426,7 @@ export async function previewDataset(reader,args,previewFile){
     columns:cols.map((h,i)=>({name:h,type:parsed.types[i]||"string"})),...(parsed.headers.length>cols.length?{columns_omitted:parsed.headers.length-cols.length}:{}),
     rows:sample,rows_read:parsed.rowCount,whole_file_read:!truncated,
     ...(truncated?{analysis:analysisFor(x,reader.origin,d.id,{delimiter,decimal:commaDecimals?"comma":"point"})}:{}),
-    note:(truncated?"Only the first "+Math.round(PREVIEW_BYTES/1024)+" KiB were read: rows_read counts rows in that part, not in the whole file. ":"")+"Values are shown as published; types are inferred from the rows read."};
+    note:(truncated?"Only the first "+Math.round(bytes.byteLength/1024)+" KiB were read: rows_read counts rows in that part, not in the whole file. ":"")+"Values are shown as published; types are inferred from the rows read."};
   // Keep the answer proportionate: drop sample rows until it fits the text budget.
   while(out.rows.length>1&&JSON.stringify(out).length>MAX_PREVIEW_TEXT)out.rows.pop();
   return out;
