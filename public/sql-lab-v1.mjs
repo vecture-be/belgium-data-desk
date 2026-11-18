@@ -1,4 +1,6 @@
 import { relayIdForUrl } from "./dataset-relay-id-v1.mjs";
+import { idShard } from "./dataset-card-panel-v3.mjs";
+import { repairSelectSql } from "./data-repair-v1.mjs";
 const $=(s,r=document)=>r.querySelector(s);
 const esc=(v="")=>String(v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const qid=v=>'"'+String(v).replace(/"/g,'""')+'"';
@@ -214,7 +216,9 @@ async function registerRemote(opts={}){
     renderTables();refreshSelectors();
     if(!opts.keepInputs){$("#sqlRemoteUrl").value="";$("#sqlRemoteName").value=""}
     document.dispatchEvent(new CustomEvent("bdd:sql-access-result",{detail:{url,ok:true,transport}}));
-    message("Loaded "+label+" as SQL table "+table+(transport==="relay"?" through the approved catalogue relay.":" directly from the publisher.") ,"good");
+    const repaired=await addRepairedView(table,opts.datasetId,url,label).catch(()=>null);
+    message("Loaded "+label+" as SQL table "+table+(transport==="relay"?" through the approved catalogue relay.":" directly from the publisher.")+
+      (repaired?" Also "+repaired+": the same rows with values the publisher wrote in a wrong form read the way they were meant (see its coordinate_repair column).":""),"good");
     return table;
   }catch(e){
     try{await conn.query("DROP VIEW IF EXISTS "+qid(table))}catch{}
@@ -223,13 +227,28 @@ async function registerRemote(opts={}){
     throw new Error((e?.message||e)+(e?.code?"":", direct browser loading failed and no complete safe relay fallback was available."));
   }finally{setEngineStatus("DuckDB ready · restricted","ready")}
 }
+/** When the dataset's card (weekly whole-file check) lists repairs for this very file, a view <table>_repaired applies them
+ *  (public/data-repair-v1.mjs): -999-style codes become NULL, swapped / metre / point-less coordinates get lat_wgs84 and lon_wgs84.
+ *  The published table stays as it is next to it. Returns the view's name, or null. */
+async function addRepairedView(table,datasetId,url,label){
+  if(!datasetId)return null;
+  const card=(await fetch("/cards/"+idShard(datasetId)+".json").then(r=>r.ok?r.json():{}).catch(()=>({})))[datasetId];
+  if(!card?.repairs||card.file?.url!==url)return null;
+  const sql=repairSelectSql(card,qid(table));if(!sql)return null;
+  const name=uniqueTable(table+"_repaired");
+  await queryWithTimeout("CREATE OR REPLACE VIEW "+qid(name)+" AS "+sql);
+  const base=tables.get(table),schema=await describeTable(name);
+  tables.set(name,{...base,name,label:label+" (repaired readings)",kind:"repaired",repairedOf:table,vfs:null,schema,rowCount:null});
+  renderTables();refreshSelectors();
+  return name;
+}
 function renderTables(){
   const el=$("#sqlTables");if(!el)return;
   if(!tables.size){el.innerHTML='<div class="sql-empty">No tables loaded yet.</div>';return}
   const left=$("#sqlJoinLeft")?.value||"",right=$("#sqlJoinRight")?.value||"";
   el.innerHTML=[...tables.values()].map(t=>{
     const cols=t.schema.slice(0,8).map(c=>'<span title="'+esc(c.type)+'">'+esc(c.name)+'</span>').join(""),roles=(t.name===left?'<span class="sql-role left">LEFT</span>':"")+(t.name===right?'<span class="sql-role right">RIGHT</span>':"");
-    return'<article class="sql-table-card"><div class="sql-table-card-head"><div><div class="sql-table-title"><b>'+esc(t.label||t.name)+'</b><span class="sql-loaded">SQL LOADED</span>'+(t.kind==="relay"?'<span class="sql-role">CATALOGUE RELAY</span>':"")+roles+'</div><small>SQL table <code>'+esc(t.name)+'</code>'+(t.publisher?' · '+esc(t.publisher):"")+'</small><small>'+esc(t.source)+'</small></div><code>'+esc(t.format.toUpperCase())+(t.size?" · "+formatBytes(t.size):"")+(t.rowCount!=null?" · "+Number(t.rowCount).toLocaleString()+" rows":"")+'</code></div><div class="sql-schema-mini">'+cols+(t.schema.length>8?'<span>+'+(t.schema.length-8)+' fields</span>':"")+'</div><div class="sql-table-actions"><button data-sql-left="'+esc(t.name)+'">Use as left</button><button data-sql-right="'+esc(t.name)+'">Use as right</button><button data-sql-preview="'+esc(t.name)+'">Preview</button><button data-sql-count="'+esc(t.name)+'">Count rows</button><button data-sql-remove="'+esc(t.name)+'">Remove</button></div></article>';
+    return'<article class="sql-table-card"><div class="sql-table-card-head"><div><div class="sql-table-title"><b>'+esc(t.label||t.name)+'</b><span class="sql-loaded">SQL LOADED</span>'+(t.kind==="relay"?'<span class="sql-role">CATALOGUE RELAY</span>':t.kind==="repaired"?'<span class="sql-role">REPAIRED READINGS</span>':"")+roles+'</div><small>SQL table <code>'+esc(t.name)+'</code>'+(t.publisher?' · '+esc(t.publisher):"")+'</small><small>'+esc(t.source)+'</small></div><code>'+esc(t.format.toUpperCase())+(t.size?" · "+formatBytes(t.size):"")+(t.rowCount!=null?" · "+Number(t.rowCount).toLocaleString()+" rows":"")+'</code></div><div class="sql-schema-mini">'+cols+(t.schema.length>8?'<span>+'+(t.schema.length-8)+' fields</span>':"")+'</div><div class="sql-table-actions"><button data-sql-left="'+esc(t.name)+'">Use as left</button><button data-sql-right="'+esc(t.name)+'">Use as right</button><button data-sql-preview="'+esc(t.name)+'">Preview</button><button data-sql-count="'+esc(t.name)+'">Count rows</button><button data-sql-remove="'+esc(t.name)+'">Remove</button></div></article>';
   }).join("");
 }
 function options(current=""){
@@ -360,6 +379,7 @@ async function countTable(name){
 }
 async function removeTable(name){
   const t=tables.get(name);if(!t)return;await ensureEngine();
+  for(const [k,v] of [...tables])if(v.repairedOf===name)await removeTable(k);   // its _repaired view reads from it
   try{await conn.query("DROP VIEW IF EXISTS "+qid(name))}catch{}
   try{if(t.vfs)await db.dropFile(t.vfs)}catch{}
   tables.delete(name);renderTables();refreshSelectors();message("Removed "+name+".","good");

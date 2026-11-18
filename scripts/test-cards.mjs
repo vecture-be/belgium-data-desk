@@ -133,16 +133,25 @@ console.log(JSON.stringify({ok:true,regressions:"blank future periods and report
   assert.equal(col("id;x\n1;1 234\n2;5.678\n","x").max,5678,"space-grouped numbers mark the column as grouped");
   assert.equal(col("id;latitude;longitude\n1;51.075;3.775\n2;51.0123;3.7751\n","latitude").key?.kind,"latitude","three-decimal degrees are coordinates");
 }
-// suspect values: coordinates outside Belgium or not in degrees, missing-value codes
+// repairs: values written wrongly are read the way they were meant, and the card says what was changed
 {
   const card=buildCard({id:"x"},profileColumns("id;lat;long;floors;lengte\n1;4.21;50.52;-999;11240\n2;4.27;50.57;3;5\n3;4.25;50.55;2;7\n"));
-  const kinds=card.quality.suspect_values.map(s=>s.column+":"+s.kind);
-  assert.deepEqual(kinds,["lat:coordinates_outside_belgium","long:coordinates_outside_belgium","floors:missing_value_code"],"swapped axes and -999 are flagged; 'lengte' is a length, not a longitude");
+  assert.deepEqual(card.repairs.coordinates.how,{swapped:3},"Seneffe-style swapped axes are read swapped back");
+  assert.deepEqual(card.repairs.missing_codes,[{column:"floors",codes:[-999],rows:1}]);
+  assert.deepEqual([card.columns.find(c=>c.name==="floors").min,card.columns.find(c=>c.name==="floors").max],[2,3],"ranges leave the code out");
+  assert.equal(card.quality.suspect_values,undefined,"the repairs replace the min/max flags; 'lengte' is a length, not a longitude");
+  assert.ok(card.facts.some(f=>/100 % of the 3 rows can be mapped, 0 % as published and 100 % latitude and longitude swapped back/.test(f.text)));
+  assert.ok(card.facts.some(f=>/'floors' uses -999 for a missing value in 1 row/.test(f.text)));
   const lambert=buildCard({id:"y"},profileColumns("id;latitude;longitude\n1;150234.5;170123.2\n2;151000.1;171000.9\n"));
-  assert.equal(lambert.quality.suspect_values[0].kind,"not_degrees");
-  const lambertOld=buildCard({id:"y"},profileColumns("id;latitude;longitude\n1;150234.5;170123.2\n2;151000.1;171000.9\n"),{now:"2026-11-17T09:00:00Z"});
-  assert.equal(lambertOld.quality.suspect_values,undefined,"profiles from before the decimal fix may hold 3775 for 3.775: no 'not in degrees' claim");
-  assert.ok(card.facts.some(f=>/probably a code for a missing value/.test(f.text)));
-  assert.equal(buildCard({id:"z"},profileColumns("id;lat;lon\n1;50.85;4.35\n2;51.2;4.4\n")).quality.suspect_values,undefined);
+  assert.equal(lambert.repairs.coordinates.how.lambert72,2,"Lambert 72 metres in degree columns are converted");
+  assert.equal(buildCard({id:"z"},profileColumns("id;lat;lon\n1;50.85;4.35\n2;51.2;4.4\n")).repairs,undefined,"nothing to repair, nothing said");
+  assert.equal(buildCard({id:"c"},profileColumns("id;code;v\n1;99999;1\n2;45;2\n")).repairs,undefined,"a code column keeps 99999");
+  assert.deepEqual(buildCard({id:"e"},profileColumns("id;price\n1;-999\n2;-500\n3;254\n")).columns[1].min,-999,"-999 near the rest of the column is a value");
+  // old profiles (no row-level repairs) keep the min/max flags, minus 'not in degrees' before the decimal fix
+  const old={...profileColumns("id;latitude;longitude\n1;150234.5;170123.2\n2;151000.1;171000.9\n")};delete old.repairs;
+  assert.equal(buildCard({id:"y"},old).quality.suspect_values[0].kind,"not_degrees");
+  assert.equal(buildCard({id:"y"},old,{now:"2026-11-17T09:00:00Z"}).quality.suspect_values,undefined,"profiles from before the decimal fix may hold 3775 for 3.775");
 }
 console.log(JSON.stringify({ok:true,numbers:"ambiguous separators per column; suspect values"}));
+// postcodes a numeric export wrote as 9000.0 are still postcodes (Ghent school finder)
+assert.equal(profileColumns("id;postcode\n1;9000.0\n2;9050.0\n3;9031.0\n").columns[1].key?.kind,"postcode");

@@ -11,6 +11,7 @@
 import { createHash } from "node:crypto";
 import { createDelimitedAccumulator, detectDelimiter } from "./tabular-profile.mjs";
 import { MERGERS_2025 } from "../public/nis-mergers-2025-v1.mjs";
+import { coordinateColumns, coordinateTally, describeRepairs, isCodeCandidate, isMissingCode } from "../public/data-repair-v1.mjs";
 
 export const CARD_VERSION="1";
 const MAX_DISTINCT=2000,MAX_TOP=5,MAX_KEY_SAMPLE=400,MAX_COLUMNS=60,MAX_ROW_HASHES=2_000_000;
@@ -83,7 +84,9 @@ function detectKey(name,values){
       if(cur+old>=0.9)return{kind:"nis_code",match_pct:pct(cur),...(old>0?{pre_2025_codes_pct:pct(old),pre_2025_codes:codes.filter(v=>MERGERS_2025[v]!==undefined).length}:{}),values_checked:codes.length};
     }
   }
-  if(/post|zip|code_?postal|cp$|^pc$/.test(n)&&share(v=>/^\d{4}$/.test(v)&&+v>=1000&&+v<=9999)>=0.9)return{kind:"postcode",match_pct:pct(share(v=>/^\d{4}$/.test(v)))};
+  // numeric exports write postcodes as 9000.0
+  const pcs=values.map(v=>v.replace(/\.0+$/,"")),pshare=f=>pcs.filter(f).length/pcs.length;
+  if(/post|zip|code_?postal|cp$|^pc$/.test(n)&&pshare(v=>/^\d{4}$/.test(v)&&+v>=1000&&+v<=9999)>=0.9)return{kind:"postcode",match_pct:pct(pshare(v=>/^\d{4}$/.test(v)))};
   if(share(v=>validEnterpriseNumber(v))>=0.9)return{kind:"enterprise_number",match_pct:pct(share(validEnterpriseNumber))};
   // "lat, lon" in one column (OpenDataSoft geo_point_2d and similar exports)
   const point=v=>{const m=v.match(/^\[?\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\]?$/);return m&&+m[1]>49.4&&+m[1]<51.6&&+m[2]>2.4&&+m[2]<6.5};
@@ -136,10 +139,12 @@ export function profileColumns(text,{url="",format="",bytesRead=null,totalBytes=
 /** Streaming column profile for a whole file (scripts/full-check.mjs): push(text) with consecutive decoded pieces, then
  *  finish({exact:true}). Same output as profileColumns, plus duplicate_rows (rows identical to an earlier row). */
 export function createColumnProfiler(delimiter){
-  const cols=[],seen=new Set(),grain=createGrainTracker();let duplicates=0,dupCapped=false,sumHi=0,sumLo=0,hdr="";
+  const cols=[],seen=new Set(),grain=createGrainTracker();let duplicates=0,dupCapped=false,sumHi=0,sumLo=0,hdr="",coord=null;
   const a=createDelimitedAccumulator(delimiter,{sampleRows:0,inferRows:250,onRow(values,headers){
-    if(!cols.length){headers.slice(0,MAX_COLUMNS).forEach(h=>cols.push({name:h,filled:0,distinct:new Map(),capped:false,min:null,max:null,dmin:null,dmax:null,observedMin:null,observedMax:null,pmin:null,pmax:null,periods:0,nums:0,ints:0,dates:0,keySample:[],style:{decimal:0,thousands:0,plain:0,plain1000:0,ambiguous:0,zeros:0},amb:{dmin:null,dmax:null,tmin:null,tmax:null}}));hdr=headers.join("\u0001")}
+    if(!cols.length){headers.slice(0,MAX_COLUMNS).forEach(h=>cols.push({name:h,filled:0,distinct:new Map(),capped:false,min:null,max:null,dmin:null,dmax:null,observedMin:null,observedMax:null,pmin:null,pmax:null,periods:0,nums:0,ints:0,dates:0,keySample:[],style:{decimal:0,thousands:0,plain:0,plain1000:0,ambiguous:0,zeros:0},amb:{dmin:null,dmax:null,tmin:null,tmax:null}}));hdr=headers.join("\u0001");
+      const cc=coordinateColumns(headers);if(cc)coord={...cc,tally:coordinateTally()}}
     grain.row(values);
+    if(coord)coord.tally.add(values[coord.lat],values[coord.lon]);
     // a 53-bit hash per row. Duplicate rows: a Set of these (numbers stay small); past MAX_ROW_HASHES the count stops growing and
     // is reported as a lower bound. False matches are ~1 in 10^4 files at a million rows.
     const b=createHash("sha1").update(values.join("\u0001")).digest(),h=b.readUInt32BE(0)*2**21+(b.readUInt32BE(4)>>>11);
@@ -175,7 +180,8 @@ export function createColumnProfiler(delimiter){
           const dec=toNumber(v,{ambiguous:"decimal"}),A=c.amb;
           if(A.dmin==null||dec<A.dmin)A.dmin=dec;if(A.dmax==null||dec>A.dmax)A.dmax=dec;
           if(A.tmin==null||n<A.tmin)A.tmin=n;if(A.tmax==null||n>A.tmax)A.tmax=n;
-        }else{if(Number.isInteger(n))c.ints++;if(c.min==null||n<c.min)c.min=n;if(c.max==null||n>c.max)c.max=n}
+        }else if(isCodeCandidate(n)){(c.codes??={})[n]=(c.codes[n]||0)+1;if(Number.isInteger(n))c.ints++}   // judged in summarise
+        else{if(Number.isInteger(n))c.ints++;if(c.min==null||n<c.min)c.min=n;if(c.max==null||n>c.max)c.max=n}
       }
     }
   }});
@@ -185,7 +191,7 @@ export function createColumnProfiler(delimiter){
     if(keepRowHashes&&exact&&!dupCapped)self.rowHashes=Float64Array.from(seen).sort();
     seen.clear();
     const rowSet=exact?createHash("sha1").update(hdr+"\u0002"+sumHi+"."+sumLo+"."+parsed.rowCount).digest("hex").slice(0,20):null;
-    const out=summarise(cols,parsed,exact,exact?{duplicate_rows:duplicates,...(dupCapped?{duplicate_rows_lower_bound:true}:{}),row_set:rowSet}:{},delimiter);
+    const out=summarise(cols,parsed,exact,coord?{coordinates:{lat_column:coord.latName,lon_column:coord.lonName,...coord.tally.result()}}:null,exact?{duplicate_rows:duplicates,...(dupCapped?{duplicate_rows_lower_bound:true}:{}),row_set:rowSet}:{},delimiter);
     const g=grain.finish(out.columns);if(g)out.grain=g;
     return out;
   }};
@@ -258,9 +264,22 @@ function resolveAmbiguous(c){
   if(reading==="thousands")c.ints+=c.style.ambiguous;
   c.numberReading=reading;
 }
-function summarise(cols,parsed,whole,extra,delimiter){
+function summarise(cols,parsed,whole,repairsIn,extra,delimiter){
   const rows=parsed.rowCount;
   for(const c of cols)resolveAmbiguous(c);
+  // -999 / 99999-style values: "no value" when the rest of the column stays far from them, else ordinary values again
+  const missing=[];
+  for(const c of cols){
+    if(!c.codes)continue;
+    const found=[];let n=0;
+    for(const [k,cnt] of Object.entries(c.codes)){
+      const v=Number(k);
+      if(isMissingCode(v,c.min,c.max,c.name)){found.push(v);n+=cnt}
+      else{if(c.min==null||v<c.min)c.min=v;if(c.max==null||v>c.max)c.max=v}
+    }
+    if(found.length)missing.push({column:c.name,codes:found.sort((a,b)=>a-b),rows:n});
+  }
+  const repairs={...(repairsIn?.coordinates&&repairsIn.coordinates.rows?{coordinates:repairsIn.coordinates}:{}),...(missing.length?{missing_codes:missing}:{})};
   const columns=cols.map((c,i)=>{
     const type=c.filled&&c.dates/c.filled>=0.9?"date":c.filled&&c.periods/c.filled>=0.9?"period":c.filled&&c.nums/c.filled>=0.9?(c.ints===c.nums?"integer":"number"):parsed.types[i]==="boolean"?"boolean":"text";
     const out={name:c.name,type,filled_pct:rows?pct(c.filled/rows):0,distinct:c.capped?MAX_DISTINCT+"+":c.distinct.size};
@@ -273,7 +292,7 @@ function summarise(cols,parsed,whole,extra,delimiter){
     return out;
   });
   const fingerprint=createHash("sha256").update(cols.map(c=>c.name.toLowerCase()).join("\u0001")).digest("hex").slice(0,12);
-  return{rows,rows_exact:whole,delimiter,columns,column_count:parsed.headers.length,fingerprint,...extra};
+  return{rows,rows_exact:whole,delimiter,columns,column_count:parsed.headers.length,fingerprint,...(Object.keys(repairs).length?{repairs}:{}),...extra};
 }
 
 // ---------- freshness ----------
@@ -447,8 +466,14 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
   if(constant.length)add("Column"+(constant.length>1?"s ":" ")+constant.slice(0,3).map(c=>"'"+c+"'").join(", ")+" "+(constant.length>1?"have":"has")+" a single value "+(profile.rows_exact?"throughout.":"in all rows read."),{columns:constant});
   // Profiles made before the per-column decimal reading (#81) read 3.775 as 3775, which looks exactly like a lost decimal point:
   // "not in degrees" is only said of profiles made after it; the other flags do not depend on that reading.
-  const suspect=suspectValues(cols).filter(s=>s.kind!=="not_degrees"||now>=DECIMAL_READING_SINCE);
+  // A profile that read the coordinates row by row (profile.repairs) says exactly what was repaired; the min/max flags are only
+  // the fallback for profiles made before that.
+  const repairs=profile.repairs||null,rc=repairs?.coordinates;
+  const suspect=suspectValues(cols).filter(s=>(s.kind!=="not_degrees"||now>=DECIMAL_READING_SINCE)&&!(rc&&s.kind!=="missing_value_code"));
   for(const s of suspect.slice(0,3))add(s.text,{column:s.column,suspect:s.kind,min:s.min,max:s.max});
+  const notable=rc&&(rc.repaired>0||(rc.how?.outside||0)+(rc.how?.missing||0)>0);
+  const repairFacts=describeRepairs({...(notable?{coordinates:rc}:{}),missing_codes:repairs?.missing_codes});
+  for(const t of repairFacts)add(t,{repair:true});
 
   let schema={fingerprint:profile.fingerprint};
   if(previous?.schema?.fingerprint&&previous.schema.fingerprint!==profile.fingerprint){
@@ -462,6 +487,8 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
     file:{url:file.url||null,format:file.format||null,read:profile.rows_exact?"whole file":"first bytes",bytes_read:file.bytesRead??null,total_bytes:file.totalBytes??null,rows:profile.rows,rows_exact:profile.rows_exact,...(file.sha256?{sha256:file.sha256}:{}),...(file.headerCheck?{headers:file.headerCheck}:{})},
     ...(file.change?{last_change_seen:file.change}:{}),
     freshness:fresh,coverage:{time,keys,...(profile.grain?{grain:profile.grain}:{})},quality:{sparse_columns:sparse,constant_columns:constant,...(profile.duplicate_rows!=null?{duplicate_rows:profile.duplicate_rows}:{}),...(file.content?.rowOrderUnstable?{row_order_unstable:true}:{}),...(suspect.length?{suspect_values:suspect.map(({text,...s})=>s)}:{})},schema,
+    // how the desk reads values the publisher wrote wrongly (public/data-repair-v1.mjs); the file itself is never changed
+    ...(repairs&&(notable||repairs.missing_codes)?{repairs:{...(notable?{coordinates:rc}:{}),...(repairs.missing_codes?{missing_codes:repairs.missing_codes}:{}),summary:repairFacts}}:{}),
     columns:cols.map(({key,...c})=>c).slice(0,40),facts,
     // the publisher's statements the file contradicts, in one list (also among the facts)
     disagreements:facts.filter(f=>f.evidence?.disagreement).map(f=>({kind:f.evidence.disagreement,text:f.text}))};

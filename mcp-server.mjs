@@ -10,6 +10,7 @@ import { LIVE_TOOLS, ROUTING, liveTool } from "./tools/index.mjs";
 import { toMcpTool } from "./lib/tool-contract.mjs";
 import { ISSUE_IDS, LANGS, contactPublisher } from "./contact.mjs";
 import { feedbackConfig, reportDataIssue } from "./feedback.mjs";
+import { repairSelectSql } from "./public/data-repair-v1.mjs";
 
 export const MCP_VERSION="0.5.1";
 const SUPPORTED_PROTOCOLS=["2025-06-18","2025-03-26","2024-11-05"];
@@ -298,7 +299,7 @@ export function updateCycle(code){
 
 /** How to analyse the whole file: preview and card read only its start. Download links (the publisher's, and the relay for sandboxes
  *  that allow few domains), the in-browser SQL page, and the exact domains a network allowlist needs. */
-function analysisFor(x,origin,id,dialect=null){
+function analysisFor(x,origin,id,dialect=null,card=null){
   const files=x.files||[];
   // the whole file: a relayed CSV/TSV, else a CSV/TSV link, else the first link (an API page with a row limit is a last resort)
   const f=files.find(y=>y.r)||files.find(y=>/csv|tsv/i.test(y.f||"")&&!/[?&]limit=/.test(y.u))||files.find(y=>!/[?&]limit=/.test(y.u))||files[0];if(!f)return null;
@@ -310,7 +311,12 @@ function analysisFor(x,origin,id,dialect=null){
     download:f.u,...(relayUrl?{download_via_relay:relayUrl,relay_note:"The same file through "+host(origin)+" (CSV/TSV up to 8 MiB), for sandboxes that cannot reach the publisher's server."}:{}),
     web_sql:origin+"/?dataset="+encodeURIComponent(id),
     hosts_to_allow:hosts,sandbox_note:"In a sandbox with a network allowlist the download fails unless "+(hosts.length>1?"one of these domains is":"this domain is")+" allowed: "+hosts.join(", ")+". Say so to the user rather than reporting the file as broken.",
-    ...(/csv|tsv/i.test(relayFile?.f||f.f)?{duckdb:"SELECT COUNT(*) FROM read_csv('"+src+"'"+(delim?", delim='"+(delim==="\t"?"\\t":delim)+"'":"")+(dec?", decimal_separator=','":"")+", header=true);"}:{})};
+    ...(/csv|tsv/i.test(relayFile?.f||f.f)?(()=>{
+      const rel="read_csv('"+src+"'"+(delim?", delim='"+(delim==="\t"?"\\t":delim)+"'":"")+(dec?", decimal_separator=','":"")+", header=true)";
+      // the card's repairs as a query: -999-style codes become NULL, coordinates written wrongly get lat_wgs84/lon_wgs84
+      const clean=card?.repairs&&card.file?.url===f.u?repairSelectSql(card,rel):null;
+      return{duckdb:"SELECT COUNT(*) FROM "+rel+";",...(clean?{duckdb_repaired:clean+";",duckdb_repaired_note:"The same file with the repairs listed under card.repairs applied; the published columns stay as they are and coordinate_repair says per row what was done."}:{})};
+    })():{})};
 }
 
 export async function getDataset(reader,args){
@@ -346,7 +352,7 @@ export async function getDataset(reader,args){
     ...(profile?{data_profile:profile}:{}),
     ...about,...(x.pinf?{publisher_inferred:"The catalogue record names no publisher; this one is inferred from the record's "+({kbo:"owner enterprise number",mail:"contact address",domain:"contact e-mail domain",host:"website or file host",slug:"dataset id on the publisher's own portal"}[x.pinf]||x.pinf)+"."}:{}),
     geography:x.g||null,landing_page:x.url||null,contact:{...(x.cn?{name:x.cn}:{}),email:x.ce||null,url:x.cu||null},description:x.d||"",columns:cols,access_tier:d.tier||null,
-    ...(analysisFor(x,reader.origin,d.id)?{analysis:analysisFor(x,reader.origin,d.id)}:{}),
+    ...(analysisFor(x,reader.origin,d.id,null,card)?{analysis:analysisFor(x,reader.origin,d.id,null,card)}:{}),
     ...(auth?{authoritative_source:{need:auth.need,why:auth.why,...(auth.caveat?{caveat:auth.caveat}:{})}}:{}),
     preview_available:canPreview,
     web_url:reader.origin+"/?dataset="+encodeURIComponent(d.id),
@@ -443,13 +449,15 @@ export function trustSummary(d,x,card,measuredPeriod){
   if(x.lcf)disagreements.push("Copies of this dataset in other catalogues state different licences: "+x.lcf.join("; ")+". Check the publisher's page before reuse.");
   return{checked_by_this_service:checked.length?checked:["Nothing: no file of this record could be read or link-checked (the publisher's host may block automated checks, or it has no file)."],
     stated_by_publisher_only:stated,...(disagreements.length?{disagreements}:{}),
-    note:"Checked facts come from this service's own downloads; stated facts are the publisher's and were not verified. Where they disagree, trust the file over the catalogue."};
+    ...(card?.repairs?.summary?.length?{read_differently_than_published:card.repairs.summary}:{}),
+    note:"Checked facts come from this service's own downloads; stated facts are the publisher's and were not verified. Where they disagree, trust the file over the catalogue."+
+      (card?.repairs?" Values the publisher wrote in a wrong form (swapped or metre coordinates, -999 for 'unknown') are read the way they were meant, as listed; the file itself is unchanged.":"")};
 }
 
 async function cardFor(reader,id){
   const c=(await reader.json("/cards/"+idShard(id)+".json"))?.[id];
   if(!c)return null;
-  return{profiled_at:c.profiled_at,facts:c.facts,...(c.disagreements?.length?{disagreements:c.disagreements}:{}),freshness:c.freshness,...(c.last_change_seen?{last_change_seen:c.last_change_seen}:{}),coverage:c.coverage,quality:c.quality,schema:c.schema,
+  return{profiled_at:c.profiled_at,facts:c.facts,...(c.disagreements?.length?{disagreements:c.disagreements}:{}),...(c.repairs?{repairs:c.repairs}:{}),freshness:c.freshness,...(c.last_change_seen?{last_change_seen:c.last_change_seen}:{}),coverage:c.coverage,quality:c.quality,schema:c.schema,
     file:c.file,columns:(c.columns||[]).slice(0,25),
     note:(c.file?.rows_exact
       ?"Computed by code from the whole file ("+Math.round((c.file?.bytes_read||0)/1024)+" KiB) and the catalogue record; change dates are checked against the file's content week over week"

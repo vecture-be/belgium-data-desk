@@ -26,8 +26,11 @@ const inGrid=e=>(e.rows!=null&&e.columns!=null)||(e.from&&e.to&&e.column&&e.min=
 export function renderCard(c){
   // where the publisher's own metadata and the file disagree: first, on their own, so they are not read past
   const dis=(c.disagreements||[]).map(x=>'<li>'+esc(x.text)+'</li>').join("");
-  const facts=(c.facts||[]).filter(x=>!inGrid(x.evidence||{})&&!x.evidence?.disagreement).map(x=>'<li>'+esc(x.text)+'</li>').join("");
+  const facts=(c.facts||[]).filter(x=>!inGrid(x.evidence||{})&&!x.evidence?.disagreement&&!x.evidence?.repair).map(x=>'<li>'+esc(x.text)+'</li>').join("");
+  // values written in a wrong form that the desk reads the way they were meant (public/data-repair-v1.mjs)
+  const rep=(c.repairs?.summary||[]).map(t=>'<li>'+esc(t)+'</li>').join("");
   return (dis?'<div class="card-disagree"><h4>The publisher\'s metadata and the file disagree</h4><ul class="card-facts">'+dis+'</ul><p class="dk-note">We cannot correct the publisher; where they disagree, the file is what you get.</p></div>':"")+
+    (rep?'<div class="card-repaired"><h4>How the desk reads this file</h4><ul class="card-facts">'+rep+'</ul><p class="dk-note">The publisher\'s file is unchanged. Load it in the SQL Lab to get a <code>_repaired</code> view with these readings applied and a <code>coordinate_repair</code> column per row.</p></div>':"")+
     (facts?'<div class="card-measured"><h4>Measured in the file</h4><ul class="card-facts">'+facts+'</ul></div>':"");
 }
 /** Replaces the catalogue's guesses in the "About this data" grid with what the weekly check measured in the file. */
