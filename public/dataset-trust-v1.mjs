@@ -34,7 +34,7 @@ export function trustChecks(item,{health={},now=Date.now()}={}){
   const probed=dists.filter(d=>health[d.url]),okLinks=probed.filter(d=>health[d.url].ok),mism=probed.filter(d=>health[d.url].formatMatch===false);
   const checks=[];
   checks.push({id:"source",label:"Official source",status:item.officialUrl&&/^https?:/.test(item.officialUrl)?"pass":"warn",detail:item.officialUrl?"Landing page published by "+(item.provider||"the publisher")+".":"No landing page in the record."});
-  checks.push({id:"licence",label:"Licence",status:lic.family==="open"||lic.family==="open-sharealike"?"pass":lic.family==="unknown"?"fail":"warn",detail:lic.label?lic.label+". "+LICENSE_FAMILY_NOTE[lic.family]:LICENSE_FAMILY_NOTE.unknown});
+  checks.push({id:"licence",label:"Licence",status:lic.family==="open"||lic.family==="open-sharealike"?"pass":lic.family==="unknown"?"fail":"warn",detail:lic.label?lic.label+". "+(["cc0","odc-pddl","no-conditions"].includes(lic.id)?"Public domain: reuse allowed, no attribution required.":LICENSE_FAMILY_NOTE[lic.family]):LICENSE_FAMILY_NOTE.unknown});
   checks.push({id:"freshness",label:"Freshness",status:{current:"pass",static:"pass",dated:"unknown",unknown:"unknown",old:"warn",stale:"warn"}[fr.state],detail:fr.note});
   // The catalogue ships a compact per-record probe summary (scripts/apply-link-health.mjs); per-URL health is only available offline.
   if(!probed.length&&pr&&pr.n){

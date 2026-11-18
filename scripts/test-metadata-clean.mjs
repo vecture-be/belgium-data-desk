@@ -166,3 +166,8 @@ import { copyLicences } from "./build-mcp-index.mjs";
  copyLicences(xs);assert.equal(xs[1].license,"CC BY");assert.equal(xs[1].licenseFrom,"a");
  assert.ok(xs[2].licenceConflict&&xs[3].licenceConflict,"open vs non-commercial copies are both flagged");assert.equal(xs[3].license,"CC BY-NC","a conflict is shown, not resolved")}
 console.log("trust tests passed");
+// trust polish: a description comparing regions is not about one of them; public domain needs no attribution
+{const b=inferDatasetBrief({title:"Taux de chômage BIT de WalStat",description:"fiables au niveau des régions (Wallonie, Flandre, Bruxelles)"});assert.equal(b.geography,"Wallonia");
+ assert.equal(inferDatasetBrief({title:"X",description:"Wallonie, Flandre et Bruxelles"}).geography,"not clearly stated")}
+{const {trustChecks}=await import("../public/dataset-trust-v1.mjs");assert.match(trustChecks({license:"CC0 1.0"}).find(c=>c.id==="licence").detail,/no attribution required/)}
+console.log("trust polish tests passed");

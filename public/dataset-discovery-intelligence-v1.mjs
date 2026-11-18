@@ -89,10 +89,13 @@ function geographyFor(a){
   if(/statistical sector|statistische sector|secteur statistique/.test(h))return"statistical sector";
   if(/municipality|gemeente|commune|refnis|nis.?code/.test(h))return"municipality";
   if(/postcode|postal code|code postal/.test(h))return"postal code";
-  if(/flanders|vlaanderen|flandre/.test(h))return"Flanders";
-  if(/wallonia|wallonie|wallonie/.test(h))return"Wallonia";
-  if(/brussels|bruxelles|brussel/.test(h))return"Brussels";
-  if(/belgium|belgie|belgique/.test(h))return"Belgium";
+  // a region only when the record names exactly one (title first): a WalStat description that compares "Wallonie, Flandre,
+  // Bruxelles" is not about Flanders
+  const REG=[["Flanders",/flanders|vlaanderen|flandre|vlaams/],["Wallonia",/wallonia|wallonie|walstat|wallon/],["Brussels",/brussels|bruxelles|brussel/]];
+  const one=s=>{const hit=REG.filter(([,re])=>re.test(s));return hit.length===1?hit[0][0]:hit.length>1?"several":""};
+  const inTitle=one(norm(a?.title||"")),inText=inTitle&&inTitle!=="several"?inTitle:one(h);
+  if(inText&&inText!=="several")return inText;
+  if(!inText&&/belgium|belgie|belgique/.test(h))return"Belgium";
   if(/province/.test(h))return"province";
   if(a?.space&&!/see publisher|published spatial/i.test(a.space))return a.space;
   // a city's own portal publishes data about that city

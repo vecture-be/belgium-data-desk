@@ -773,7 +773,7 @@ function renderAboutData(a){
   const tested=a.depth==="modelled";
   const period=b.time&&b.time!=="not clearly stated"?b.time.replace(/–/g," to "):"";
   const cell=(k,label,value,note)=>'<div><dt>'+label+'</dt><dd data-about="'+k+'">'+value+(note?' <em>'+note+'</em>':"")+'</dd></div>';
-  const rows=checks.map(c=>'<li class="trust-check '+c.status+'"><span class="trust-mark" aria-label="'+c.status+'">'+CHECK_MARK[c.status]+'</span><div><b>'+esc(c.label)+'</b><span>'+esc(plainDash(c.detail))+'</span></div></li>').join("");
+  const rows=checks.map(c=>'<li class="trust-check '+c.status+'" data-check="'+c.id+'"><span class="trust-mark" aria-label="'+c.status+'">'+CHECK_MARK[c.status]+'</span><div><b>'+esc(c.label)+'</b><span>'+esc(plainDash(c.detail))+'</span></div></li>').join("");
   return '<section class="about-data" data-about-for="'+esc(a.id)+'"><div class="section-cap"><h3>About this data</h3><span data-about="when"></span></div>'+
     '<dl class="about-grid">'+
       cell("grain","One row",esc(guess),tested?"":"guess from the column names")+
@@ -786,7 +786,7 @@ function renderAboutData(a){
 const plainDash=v=>String(v??"").replace(/\s+[,–]\s+/g,". ").replace(/,/g,", ");
 function renderTrustPanel(a){
   const t=trustAssessment(a),checks=trustChecks(assetAsTrustItem(a)),sum=summarizeChecks(checks);
-  const rows=checks.map(c=>'<li class="trust-check '+c.status+'"><span class="trust-mark" aria-label="'+c.status+'">'+CHECK_MARK[c.status]+'</span><div><b>'+esc(c.label)+'</b><span>'+esc(c.detail)+'</span></div></li>').join("");
+  const rows=checks.map(c=>'<li class="trust-check '+c.status+'" data-check="'+c.id+'"><span class="trust-mark" aria-label="'+c.status+'">'+CHECK_MARK[c.status]+'</span><div><b>'+esc(c.label)+'</b><span>'+esc(c.detail)+'</span></div></li>').join("");
   return '<section class="trust-panel"><div class="section-cap"><h3>Trust checks</h3><span>'+sum.pass+' passed · '+sum.warn+' to review · '+sum.fail+' failed · '+sum.unknown+' not yet known</span></div>'+
     '<ul class="trust-checks">'+rows+'</ul>'+
     '</section>';
