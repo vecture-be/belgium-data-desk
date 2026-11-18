@@ -45,7 +45,8 @@ async function nearestStations(client,lat,lon){
     const now=Date.now(),vals={};
     for(const ts of t.json||[]){
       const k=PHEN.find(([re])=>re.test(ts.parameters?.phenomenon?.label||""))?.[1];if(!k||vals[k])continue;
-      const lv=ts.lastValue;if(!lv||typeof lv.value!=="number")continue;
+      // IRCEL's SOS writes -9999 (and other negatives) for "no value"; a concentration is never below zero
+      const lv=ts.lastValue;if(!lv||typeof lv.value!=="number"||!(lv.value>=0&&lv.value<5000))continue;
       const age=(now-lv.timestamp)/HOUR/1000;
       vals[k]=clean({value:round(lv.value,1),unit:ts.uom,measured:new Date(lv.timestamp).toISOString().slice(0,16)+"Z",stale:age>3?"last value is "+Math.round(age)+" h old":null});
     }

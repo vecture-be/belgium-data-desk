@@ -116,7 +116,7 @@ function main(){
   const keyKinds={};for(const c of all)for(const k of c.coverage.keys)keyKinds[k.kind]=(keyKinds[k.kind]||0)+1;
   const summary={built:new Date().toISOString().slice(0,10),cards:all.length,
     freshness:{current:count(c=>c.freshness.status==="current"),overdue:count(c=>c.freshness.status==="overdue"),unknown:count(c=>c.freshness.status==="unknown")},
-    whole_file:count(c=>c.file.rows_exact),with_duplicate_rows:count(c=>c.quality.duplicate_rows>0),
+    whole_file:count(c=>c.file.rows_exact),with_duplicate_rows:count(c=>c.quality.duplicate_rows>0),with_suspect_values:count(c=>c.quality.suspect_values?.length>0),
     // how far the change dates publishers state can be trusted, from whole-file checks
     change_headers:headerSummary(all.filter(c=>c.file.headers)),
     catalogue_date_not_in_file:count(c=>c.freshness.metadata_date_not_reflected_in_file),

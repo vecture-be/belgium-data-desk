@@ -120,3 +120,27 @@ console.log(JSON.stringify({ok:true,coverage:"reporting periods only"}));
   assert.equal(buildCard({id:"other"},profileColumns(notPeriod)).coverage.time,null,"nonconsecutive year-like codes are not assumed to be reporting years");
 }
 console.log(JSON.stringify({ok:true,regressions:"blank future periods and reporting-year ranges"}));
+
+// "3.775" / "98,125": one separator and three digits is a decimal or a thousands group; the column decides (found on live cards:
+// Ghent longitudes read as 3775, Infrabel punctuality as 98125 %)
+{
+  const col=(csv,name)=>profileColumns(csv).columns.find(c=>c.name===name);
+  const csv="id;lon;lat;pct;cnt;amt\n1;3.775;51.075;98,125;1.234;1.000\n2;3.7751234;51.0123;71,59;999;12.500\n3;3.70001;50.99;80,1;12.345.678;3.750\n";
+  assert.deepEqual([col(csv,"lon").min,col(csv,"lon").max],[3.70001,3.7751234],"a longitude column keeps 3.775 a decimal");
+  assert.equal(col(csv,"lat").max,51.075);assert.equal(col(csv,"pct").max,98.125);
+  assert.deepEqual([col(csv,"cnt").type,col(csv,"cnt").max],["integer",12345678],"grouped counts stay thousands");
+  assert.deepEqual([col(csv,"amt").type,col(csv,"amt").min,col(csv,"amt").max],["integer",1000,12500],"1.000 is a thousand");
+  assert.equal(col("id;x\n1;1 234\n2;5.678\n","x").max,5678,"space-grouped numbers mark the column as grouped");
+  assert.equal(col("id;latitude;longitude\n1;51.075;3.775\n2;51.0123;3.7751\n","latitude").key?.kind,"latitude","three-decimal degrees are coordinates");
+}
+// suspect values: coordinates outside Belgium or not in degrees, missing-value codes
+{
+  const card=buildCard({id:"x"},profileColumns("id;lat;long;floors;lengte\n1;4.21;50.52;-999;11240\n2;4.27;50.57;3;5\n3;4.25;50.55;2;7\n"));
+  const kinds=card.quality.suspect_values.map(s=>s.column+":"+s.kind);
+  assert.deepEqual(kinds,["lat:coordinates_outside_belgium","long:coordinates_outside_belgium","floors:missing_value_code"],"swapped axes and -999 are flagged; 'lengte' is a length, not a longitude");
+  const lambert=buildCard({id:"y"},profileColumns("id;latitude;longitude\n1;150234.5;170123.2\n2;151000.1;171000.9\n"));
+  assert.equal(lambert.quality.suspect_values[0].kind,"not_degrees");
+  assert.ok(card.facts.some(f=>/probably a code for a missing value/.test(f.text)));
+  assert.equal(buildCard({id:"z"},profileColumns("id;lat;lon\n1;50.85;4.35\n2;51.2;4.4\n")).quality.suspect_values,undefined);
+}
+console.log(JSON.stringify({ok:true,numbers:"ambiguous separators per column; suspect values"}));
