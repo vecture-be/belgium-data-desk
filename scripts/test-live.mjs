@@ -9,6 +9,7 @@ import { lambert72ToWgs84, makeDovClient, splitAddress, wgs84ToLambert72 } from 
 import { belgianStatistics, municipalitySummary, unzipFirst } from "../statbel.mjs";
 import { airQuality } from "../air.mjs";
 import { floodRisk } from "../flood.mjs";
+import { realEstatePrices } from "../realestate.mjs";
 
 const pub=path.join(path.dirname(fileURLToPath(import.meta.url)),"..","public");
 const assets={json:async p=>{try{return JSON.parse(fs.readFileSync(path.join(pub,p),"utf8"))}catch{return null}}};
@@ -61,6 +62,13 @@ assert.ok(natPop.results[0].value>=natPop.results[1].value);
 assert.match((await S({topic:"income"})).defaulted_to,/income per inhabitant/);
 const prof=await S({});assert.equal(prof.places[0].type,"country");assert.ok(!prof.defaulted_to);
 const sum=await municipalitySummary(assets,"Brussel");assert.equal(sum.nis_code,"21004","a geocoder's municipality name is the municipality");
+
+// Place aliases, a current NIS code and its pre-merger name must be one price observation.
+const estate=await realEstatePrices(null,{places:["Melle","Merelbeke-Melle","44088"],type:"h4",year:2025},{assets});
+assert.equal(estate.places.length,1,"do not count Merelbeke-Melle three times");
+assert.equal(estate.places[0].nis_code,"44088");
+assert.equal(estate.places[0].by_type["detached houses (4+ facades)"].sales,119);
+assert.equal((await realEstatePrices(null,{places:["Zottegem","41081","ZOTTEGEM"],type:"house",year:2025},{assets})).places.length,1);
 
 // prices: Statbel's CPI file (a zip), current base = the one with the published inflation rate for the latest month
 function zip(name,text){
