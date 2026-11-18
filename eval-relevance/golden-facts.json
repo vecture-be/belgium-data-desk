@@ -359,33 +359,26 @@
     "why": "Elia measured about 64 GWh of solar on 21 June 2026, peaking near 7.6 GW, the largest source in Belgian generation that day."
   },
   {
-    "question": "What was the largest source of electricity generated in Belgium on 1 March 2021?",
+    "question": "What does the desk say about electricity in Belgium on 1 March 2021 (consumption, and the generation mix Elia no longer keeps for that day)?",
     "tool": "electricity_grid",
     "args": {
       "date": "2021-03-01"
     },
     "expect": [
       {
-        "path": "generation_mix.by_fuel.0.fuel",
-        "equals": "nuclear"
-      },
-      {
-        "path": "generation_mix.by_fuel.0.share_pct",
-        "between": [
-          40,
-          60
-        ]
-      },
-      {
         "path": "load.gwh",
         "between": [
           220,
           270
         ]
+      },
+      {
+        "path": "generation_mix_unavailable.dataset_starts",
+        "matches": "^20\\d\\d-\\d\\d-\\d\\d$"
       }
     ],
     "source": "https://opendata.elia.be/explore/dataset/ods201/",
-    "why": "In 2021 Belgium still ran most of its nuclear fleet: about half of generation that day (142.6 of 286.5 GWh)."
+    "why": "Consumption that day was about 244 GWh. Elia now keeps only recent weeks in its generation-by-fuel dataset (ods201 started on 2026-08-22 when checked on 2026-11-18), so the tool must say the 2021 mix is unavailable rather than leave it out silently."
   },
   {
     "question": "How much electricity is Belgium using today?",

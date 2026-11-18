@@ -26,7 +26,7 @@ import { getJson, clean, round } from "./lib/tool-kit.mjs";
 const BASE="https://opendata.elia.be/api/explore/v2.1/catalog/datasets/";
 export const ELIA_HOSTS=Object.freeze(["opendata.elia.be"]);
 const TZ="Europe/Brussels",HOUR_MS=36e5,LIVE_TTL=300,PAST_TTL=6*3600;
-const FIRST={load:"2015-01-01",wind:"2015-01-01",flows:"2015-01-01",solar:"2020-10-01",mix:"2020-01-01",imbalance:"2024-05-22",co2:"2024-10-01"};
+const FIRST={load:"2015-01-01",wind:"2015-01-01",flows:"2015-01-01",solar:"2020-10-01",mix:"2015-01-01",imbalance:"2024-05-22",co2:"2024-10-01"};
 const SOLAR_SPLIT="2026-10-26";   // ods032 up to 25 Oct 2026, ods209 from 26 Oct 2026
 const HORIZON={load:7,wind:6,solar:10};   // forecast days ahead (ods001, ods086, ods210)
 const BORDER={France:"France",Netherlands:"the Netherlands",Germany:"Germany",Luxembourg:"Luxembourg","United Kingdom":"the United Kingdom",UnitedKingdom:"the United Kingdom"};
@@ -151,6 +151,15 @@ async function mixOf(client,from,to){
   const rows=r.rows.filter(x=>Number.isFinite(x.mw)&&x.mw>0),total=sumOf(rows,"mw");
   if(!total)return{none:true};
   return{total_gwh:gwh(total),by_fuel:rows.sort((a,b)=>b.mw-a.mw).map(x=>({fuel:FUEL_EN[x.fueltypepublication]||String(x.fueltypepublication).toLowerCase(),elia_fuel_type:x.fueltypepublication,gwh:gwh(x.mw),share_pct:round(100*x.mw/total,1)}))};
+}
+/**
+ * The first day Elia's generation-by-fuel dataset (ods201) holds now. Elia changes what it keeps: on 2026-11-18 it held only data from
+ * 2026-10-05, though it once went back to 2020. Asked rather than assumed, so a missing mix is explained with the real start date.
+ */
+async function mixStart(client){
+  const r=await ods(client,"ods201",{select:"min(datetime) as first"},{ttl:PAST_TTL,records:true});
+  const v=r.rows?.[0]?.first;
+  return v?String(v).slice(0,10):null;
 }
 async function co2Of(client,from,to){
   const r=await ods(client,"ods192",{select:"datetime,production,consumption",where:windowWhere(from,to),order_by:"datetime"},{ttl:PAST_TTL});
@@ -289,6 +298,12 @@ async function pastAnswer(client,day,today){
     (st.negative_quarter_hours?"; "+st.negative_quarter_hours+" of "+st.quarter_hours+" quarter-hours below zero":"; no quarter-hour below zero")+".")}
   else if(!has("imbalance"))facts.push("Elia's current imbalance-price series starts on 22 May 2024; older prices sit in a separate archive this tool does not read, so none for "+day+".");
   if(mix.by_fuel){out.generation_mix={...mix};facts.push(mixFact("that day",mix))}
+  else if(!mix.error){
+    // no mix for that day: say why, with the date Elia's dataset starts today, instead of leaving it out silently
+    const first=await mixStart(client);
+    out.generation_mix_unavailable={reason:"Elia's generation-by-fuel dataset (ods201) has no records for "+day+(first?"; it currently starts on "+first:"")+".",...(first?{dataset_starts:first}:{})};
+    facts.push("Generation by fuel: none for "+day+". Elia's dataset (ods201) "+(first?"currently starts on "+first+"; Elia keeps only recent data there.":"has no records for that day."));
+  }
   if(co2.hours){out.co2_intensity={...co2};facts.push(co2Fact("that day",co2))}else if(!has("co2"))facts.push("Elia's CO2 intensity series starts in October 2024.");
   if(failed.length)facts.push("Incomplete: Elia did not answer for "+failed.join(", ")+" just now; ask again in a minute for those.");
   facts.push(CAVEAT);
