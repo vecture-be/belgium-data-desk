@@ -7,7 +7,7 @@
 // DOV's own municipality labels are missing on many records and still use pre-merger names.
 import { _dov, GEO_ORIGIN } from "./dov.mjs";
 import { municipalitySummary } from "./statbel.mjs";
-const {wfsQuery,getJson,resolveLocation,codeList,clean,num,round,provenance,byDistance,present,NEARBY,PERMIT_PROPS,permitView,SOIL_LOC_PROPS,soilLocView,fmtM3,DAY,HOUR,MAX_POINTS}=_dov;
+const {wfsQuery,getJson,resolveLocation,verifyDovCoverage,codeList,clean,num,round,provenance,byDistance,present,NEARBY,PERMIT_PROPS,permitView,SOIL_LOC_PROPS,soilLocView,fmtM3,DAY,HOUR,MAX_POINTS}=_dov;
 
 export const SEARCH_LIMIT={default:10,max:25},SEARCH_RADIUS={default:1000,min:25,max:5000};
 const MAX_WKT=6000;
@@ -136,7 +136,8 @@ export async function searchSubsurface(client,args,{assets}={}){
   if(a.municipality){const m=await municipalityArea(client,a.municipality,assets);if(m.error)return{error:m.error};areaCql=m.cql;area=m.area}
   else if(hasPoint){
     const w=await resolveLocation(client,a);if(w.error)return{error:w.error};
-    pt=w.loc;radius=Math.min(SEARCH_RADIUS.max,Math.max(SEARCH_RADIUS.min,Math.round(num(a.radius_m)??SEARCH_RADIUS.default)));
+    pt=w.loc;const coverage=await verifyDovCoverage(client,pt);if(coverage)return{...coverage,location:{latitude:pt.latitude,longitude:pt.longitude}};
+    radius=Math.min(SEARCH_RADIUS.max,Math.max(SEARCH_RADIUS.min,Math.round(num(a.radius_m)??SEARCH_RADIUS.default)));
     areaCql=`DWITHIN(geom,POINT(${pt.x} ${pt.y}),${radius},meters)`;
     area=clean({location:clean({matched_address:pt.matched_address,latitude:pt.latitude,longitude:pt.longitude,x_lambert72:pt.x,y_lambert72:pt.y}),radius_m:radius});
   }else area={region:"Flemish Region (no area given)"};
