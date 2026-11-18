@@ -140,6 +140,8 @@ console.log(JSON.stringify({ok:true,regressions:"blank future periods and report
   assert.deepEqual(kinds,["lat:coordinates_outside_belgium","long:coordinates_outside_belgium","floors:missing_value_code"],"swapped axes and -999 are flagged; 'lengte' is a length, not a longitude");
   const lambert=buildCard({id:"y"},profileColumns("id;latitude;longitude\n1;150234.5;170123.2\n2;151000.1;171000.9\n"));
   assert.equal(lambert.quality.suspect_values[0].kind,"not_degrees");
+  const lambertOld=buildCard({id:"y"},profileColumns("id;latitude;longitude\n1;150234.5;170123.2\n2;151000.1;171000.9\n"),{now:"2026-11-17T09:00:00Z"});
+  assert.equal(lambertOld.quality.suspect_values,undefined,"profiles from before the decimal fix may hold 3775 for 3.775: no 'not in degrees' claim");
   assert.ok(card.facts.some(f=>/probably a code for a missing value/.test(f.text)));
   assert.equal(buildCard({id:"z"},profileColumns("id;lat;lon\n1;50.85;4.35\n2;51.2;4.4\n")).quality.suspect_values,undefined);
 }

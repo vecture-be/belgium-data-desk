@@ -101,6 +101,7 @@ const pct=x=>Math.round(x*1000)/10;
  *  not_degrees                  a latitude/longitude column holding metres (Lambert) or degrees without their decimal point
  *  missing_value_code           -999, -9999 or 99999-style codes that would distort a sum or an average */
 const LAT_NAME=/^(lat|latitude|breedtegraad|y_?wgs\w*|geo_?lat)$/i,LON_NAME=/^(lon|lng|long|longitude|lengtegraad|x_?wgs\w*|geo_?lon)$/i;
+export const DECIMAL_READING_SINCE="2026-11-18T08:00:00Z";
 const CODES=new Set([-9999,-999,-99,99999,999999,9999999]);
 export function suspectValues(cols){
   const out=[];
@@ -444,7 +445,9 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
     else add("No combination of its label columns identifies each row: by "+names+", "+fmtInt(repeats)+(repeats===1?" row still shares its":" rows still share their")+" labels with another row (tested on "+scope+").",g);
   }
   if(constant.length)add("Column"+(constant.length>1?"s ":" ")+constant.slice(0,3).map(c=>"'"+c+"'").join(", ")+" "+(constant.length>1?"have":"has")+" a single value "+(profile.rows_exact?"throughout.":"in all rows read."),{columns:constant});
-  const suspect=suspectValues(cols);
+  // Profiles made before the per-column decimal reading (#81) read 3.775 as 3775, which looks exactly like a lost decimal point:
+  // "not in degrees" is only said of profiles made after it; the other flags do not depend on that reading.
+  const suspect=suspectValues(cols).filter(s=>s.kind!=="not_degrees"||now>=DECIMAL_READING_SINCE);
   for(const s of suspect.slice(0,3))add(s.text,{column:s.column,suspect:s.kind,min:s.min,max:s.max});
 
   let schema={fingerprint:profile.fingerprint};
