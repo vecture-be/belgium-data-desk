@@ -6,6 +6,7 @@
 // matched with its official 2025 boundary (Digitaal Vlaanderen VRBG2025, generalised to 100 m), sent to DOV as the spatial filter:
 // DOV's own municipality labels are missing on many records and still use pre-merger names.
 import { _dov, GEO_ORIGIN } from "./dov.mjs";
+import { municipalitySummary } from "./statbel.mjs";
 const {wfsQuery,getJson,resolveLocation,codeList,clean,num,round,provenance,byDistance,present,NEARBY,PERMIT_PROPS,permitView,SOIL_LOC_PROPS,soilLocView,fmtM3,DAY,HOUR,MAX_POINTS}=_dov;
 
 export const SEARCH_LIMIT={default:10,max:25},SEARCH_RADIUS={default:1000,min:25,max:5000};
@@ -39,16 +40,27 @@ function ringsToWkt(geom){
   for(let step=1;step<=16;step*=2){const w=fmt(polys,step);if(w.length<=MAX_WKT)return w}
   return null;
 }
-async function municipalityArea(client,name){
+async function municipalityArea(client,name,assets){
   const q=String(name||"").trim().slice(0,80);if(!q)return{error:"municipality is empty."};
-  // the geolocation service resolves Dutch names, old (pre-merger) names and typos to the current municipality
+  // Resolve the user's municipality independently: the geocoder's top hit can be a street or business in another town.
+  // Statbel knows French names and 2025 mergers; both that identity and the returned boundary's NIS code must agree.
+  const expected=assets?await municipalitySummary(assets,q):null;
+  if(assets&&(!expected||expected.region!=="Vlaams Gewest"))
+    return{error:"Municipality '"+q+"' is not a municipality in Flanders."};
+  // The geolocation service resolves Dutch names and old (pre-merger) names to the current municipality
   const g=await getJson(client,GEO_ORIGIN+"/geolocation/v4/Location?"+new URLSearchParams({q,c:"1"}),{maxBytes:64*1024,ttl:7*DAY});
   const hit=g.json?.LocationResult?.[0];
   if(g.error||!hit?.Municipality)return{error:"Municipality '"+q+"' not found in Flanders."+(g.error?" ("+g.error+")":"")};
   const current=hit.Municipality;
+  // Offline/no-assets callers still fail closed on unrelated fuzzy geocoding matches.
+  const fold=s=>String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  if(!expected&&fold(current)!==fold(q)&&!fold(current).split("-").includes(fold(q)))
+    return{error:"Municipality '"+q+"' could not be verified (geocoder matched '"+current+"')."};
   const r=await getJson(client,GEO_ORIGIN+"/VRBG2025/wfs?"+new URLSearchParams({service:"WFS",version:"2.0.0",request:"GetFeature",typeNames:"VRBG2025:RefgemG100",outputFormat:"application/json",
     srsName:"EPSG:31370",count:"1",cql_filter:"NAAM='"+current.replace(/'/g,"''")+"'"}),{maxBytes:512*1024,ttl:30*DAY});
   const f=r.json?.features?.[0];
+  if(expected&&f&&String(f.properties?.NISCODE)!==String(expected.nis_code))
+    return{error:"Municipality '"+q+"' did not match the registered NIS code (geocoder returned '"+current+"')."};
   const wkt=f?ringsToWkt(f.geometry):null;
   if(!wkt)return{error:"The boundary of "+current+" could not be read"+(r.error?": "+r.error:"")+"."};
   return{cql:`INTERSECTS(geom,${wkt})`,area:clean({municipality:current,nis_code:f.properties?.NISCODE,asked:q!==current?q:null,boundary:"official 2025 boundary (VRBG2025), generalised to 100 m"})};
@@ -99,7 +111,7 @@ async function filtersFor(client,type,T,a,applied){
   return{cql:c};
 }
 
-export async function searchSubsurface(client,args){
+export async function searchSubsurface(client,args,{assets}={}){
   const a=args||{},type=a.record_type,T=TYPES[type];
   if(!T)return{error:"record_type must be one of: "+Object.keys(TYPES).join(", ")+"."};
   const limit=Math.min(SEARCH_LIMIT.max,Math.max(1,Math.round(num(a.limit)??SEARCH_LIMIT.default)));
@@ -108,7 +120,7 @@ export async function searchSubsurface(client,args){
   const applied={};
   const f=await filtersFor(client,type,T,a,applied);if(f.error)return{error:f.error};
   let areaCql=null,area,pt=null,radius=null;
-  if(a.municipality){const m=await municipalityArea(client,a.municipality);if(m.error)return{error:m.error};areaCql=m.cql;area=m.area}
+  if(a.municipality){const m=await municipalityArea(client,a.municipality,assets);if(m.error)return{error:m.error};areaCql=m.cql;area=m.area}
   else if(hasPoint){
     const w=await resolveLocation(client,a);if(w.error)return{error:w.error};
     pt=w.loc;radius=Math.min(SEARCH_RADIUS.max,Math.max(SEARCH_RADIUS.min,Math.round(num(a.radius_m)??SEARCH_RADIUS.default)));
