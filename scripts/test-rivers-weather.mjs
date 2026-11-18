@@ -2,7 +2,7 @@
 // answers shaped like the real KiWIS and KMI GeoServer responses (recorded fixtures cover the real shapes; these cover the edge cases).
 import assert from "node:assert/strict";
 import { makeDovClient } from "../dov.mjs";
-import { riverLevels, RIVER_HOSTS, forecastOf } from "../rivers.mjs";
+import { riverLevels, RIVER_HOSTS, forecastOf, gaugesForRiver } from "../rivers.mjs";
 import { weather, WEATHER_HOSTS, warningAreas, kmiWarnings, MA_DISCLAIMER } from "../weather.mjs";
 import { atTime } from "../lib/fixtures.mjs";
 import { checkAnswer } from "../lib/tool-contract.mjs";
@@ -13,6 +13,19 @@ const json=(o,status=200)=>new Response(JSON.stringify(o),{status,headers:{"cont
 const P=u=>Object.fromEntries(new URL(u).searchParams);
 
 // ---------------- river_levels ----------------
+// A named river is not a substring in a station name or a related waterway name.
+const waterwayFixture=[
+  {river:"Dender",name:"Geraardsbergen/Dender"},
+  {river:"Zeeschelde",name:"Dendermonde tij/Zeeschelde"},
+  {river:"Oude Dender",name:"Denderbelle/Pasbeek"},
+  {river:"Maasplassen",name:"Rotem/Maasplassen"},
+  {river:"Maas",name:"Sint-Pieter Noord/Maas"}
+];
+assert.deepEqual(gaugesForRiver(waterwayFixture,"Dender").map(x=>x.river),["Dender"]);
+assert.deepEqual(gaugesForRiver(waterwayFixture,"Maas").map(x=>x.river),["Maas"]);
+assert.equal(gaugesForRiver(waterwayFixture,"Dendermonde").length,0,"station names cannot select a different river");
+
+
 // VMM gauge A: reading 0.15 above a gauge zero of 24.03 m TAW, watch 26.15 / alarm 26.50 (TAW); exceedance statistics P10 high, P90 low.
 // VMM gauge B: reading 6.6 with zero 11.5 -> 18.1 m TAW, ABOVE its watch level 18.0.  VMM gauge C: last value in 2014 (retired).
 // VMM gauge D: thresholds 20 m away from its level (other reference): must not be compared.
