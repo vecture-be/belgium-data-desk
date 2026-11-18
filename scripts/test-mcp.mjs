@@ -132,6 +132,9 @@ assert.equal(authoritiesFor(["population","municipality"])[0].need,"population c
 assert.equal(authoritiesFor(["btw","nummer"])[0].need,"enterprise register (enterprise numbers)");
 assert.equal(authoritiesFor(["annual","accounts","companies"])[0].need,"company annual accounts","'unless' keeps KBO out of annual-account queries");
 assert.equal(authoritiesFor(["bike","counts"])[0].need,"bicycle counts");
+assert.equal(authoritiesFor(["nitraat","oppervlaktewater","landbouwgebied"]).length,0,"a nitrate-water-quality query must not pin agricultural parcels");
+assert.equal(authoritiesFor(["nitrates","eaux","surface","agricole"]).length,0,"the same source-selection guard applies in French");
+assert.equal(authoritiesFor(["landbouwgebruikspercelen"])[0].need,"agricultural parcels","parcel searches still pin the agricultural register");
 assert.equal(authoritiesFor(["bike"]).length,0,"two-part needs need both parts");
 assert.equal(authoritiesFor(["energy"]).length,0,"one word cannot satisfy both groups of a two-part need");
 for(const a of AUTHORITIES){assert.ok(a.ids.length&&a.why&&a.need&&a.when.length,a.need);for(const id of a.ids)assert.match(id,/^curated:/,a.need)}
