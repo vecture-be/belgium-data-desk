@@ -192,6 +192,11 @@ for(const a of AUTHORITIES){assert.ok(a.ids.length&&a.why&&a.need&&a.when.length
   assert.equal(wide.rows.length,2,"wide first row is recovered");
   assert.equal(wide.rows[0].Key,"1");assert.equal(wide.rows[1].Key,"2");
   assert.deepEqual(ranges,["bytes=0-65535","bytes=0-262143"],"wide file gets one bounded retry");
+  const partialWideCsv="Key;Geometry\n1;"+"a".repeat(80000)+"\n"+"2;ok\n".repeat(50000);
+  const partialWide=(await mcpCall(venv,{previewFile:makePreviewFile({},{index,fetchImpl:async()=>new Response(partialWideCsv,{status:200,headers:{"content-type":"text/csv"}})})})("preview_dataset",{id:"national:pv",rows:2})).structuredContent;
+  assert.equal(partialWide.rows.length,2);
+  assert.equal(partialWide.whole_file_read,false);
+  assert.match(partialWide.note,/first 256 KiB/,"the note reports the actual expanded preview budget");
   const giantCsv="Key;Geometry\n1;"+"a".repeat(350000)+"\n";
   const giant=(await mcpCall(venv,{previewFile:makePreviewFile({},{index,fetchImpl:async()=>new Response(giantCsv,{status:200,headers:{"content-type":"text/csv"}})})})("preview_dataset",{id:"national:pv",rows:2})).structuredContent;
   assert.match(giant.error,/first data record exceeds the bounded preview size/i);
