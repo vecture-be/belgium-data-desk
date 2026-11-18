@@ -45,6 +45,13 @@ function fillGrid(section,c){
   if(c.file?.rows!=null)set("size",(c.file.rows_exact?"":"at least ")+n(c.file.rows)+" rows"+(c.columns?.length?", "+c.columns.length+" columns":""));
   const t=c.coverage?.time;if(t)set("period",esc(t.from===t.to?t.from:t.from+" to "+t.to)+' <em>column '+esc(t.column)+'</em>');
   const keys=c.coverage?.keys||[];if(keys.length)set("keys",esc([...new Set(keys.map(k=>KEY_LABEL[k.kind]||k.kind))].join(", "))+' <em>checked in the file</em>');
+  // the Freshness check reads the catalogue date; when the file shows older data, say so there too
+  const stale=(c.disagreements||[]).find(d=>d.kind==="catalogue_date_newer_than_data"||d.kind==="declared_cadence_not_met"||d.kind==="declared_cadence_overdue");
+  const li=section.querySelector('[data-check="freshness"]');
+  if(stale&&li){
+    li.className="trust-check warn";const mark=li.querySelector(".trust-mark");if(mark){mark.textContent="!";mark.setAttribute("aria-label","warn")}
+    const span=li.querySelector("div span");if(span)span.textContent=t?.to?"The newest date in the file is "+t.to+" (column '"+t.column+"'), whatever the catalogue date says.":stale.text;
+  }
 }
 /** Fills every [data-card-slot] in root with the card of its data-card-slot id. */
 export async function fillCardSlots(root=document){

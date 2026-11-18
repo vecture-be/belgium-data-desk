@@ -423,14 +423,15 @@ export async function catalogueOverview(reader){
  * What a reader can rely on: what this service checked itself, what only the publisher states, and where the two disagree.
  * Publishers are often incomplete or inconsistent; this does not fix them, it keeps their statements apart from what was verified.
  */
+const KEY_NAMES={nis_code:"NIS municipality codes",enterprise_number:"enterprise numbers (KBO/BCE)",postcode:"Belgian postcodes",wgs84_point:"WGS84 points inside Belgium",latitude:"latitudes",longitude:"longitudes",lambert72:"Lambert 72 coordinates"};
 export function trustSummary(d,x,card,measuredPeriod){
   const checked=[],stated=[],disagreements=[];
   if(x.pr)checked.push("Links: "+x.pr.ok+" of "+x.pr.n+" answered when checked on "+x.pr.at+(x.pr.mm?"; "+x.pr.mm+" did not contain the declared format":"; the bytes matched the declared format")+".");
   if(card?.file){
-    const f=card.file;checked.push((f.rows_exact?"Whole file read on ":"First "+Math.round((f.bytes_read||0)/1024)+" KiB read on ")+card.profiled_at+": "+(f.rows_exact?"":"at least ")+Number(f.rows).toLocaleString("en-GB")+" rows"+(card.columns?.length?", "+card.columns.length+" columns":"")+".");
+    const f=card.file;checked.push((f.rows_exact?"Whole file read on ":"First "+Math.round((f.bytes_read||0)/1024)+" KiB read on ")+card.profiled_at+": "+(f.rows_exact?"":"at least ")+Number(f.rows).toLocaleString("en-GB")+(f.rows===1?" row":" rows")+(card.columns?.length?", "+card.columns.length+" columns":"")+".");
     if(measuredPeriod)checked.push("Dates in the file run from "+measuredPeriod.from+" to "+measuredPeriod.to+" (column '"+measuredPeriod.column+"').");
     const fr=card.freshness||{};if(fr.last_change&&fr.last_change_basis&&!/catalogue/i.test(fr.last_change_basis))checked.push("Content last seen changing on "+fr.last_change+" ("+fr.last_change_basis+").");
-    for(const k of (card.coverage?.keys||[]).slice(0,3))checked.push("Column '"+k.column+"' holds "+String(k.kind).replace(/_/g," ")+" values.");
+    for(const k of (card.coverage?.keys||[]).slice(0,3))checked.push("Column '"+k.column+"' holds "+(KEY_NAMES[k.kind]||String(k.kind).replace(/_/g," ")+" values")+".");
   }
   if(x.cm)checked.push("Column names read from the file (the publisher declares none).");
   if(d.l)stated.push("Licence: "+d.l+(x.lsrc?" (from another record of the same dataset)":"")+".");
