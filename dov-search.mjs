@@ -27,8 +27,18 @@ export const TYPES={
     sorts:{most_described:"Aantal_observaties DESC",newest:"Datum DESC",oldest:"Datum ASC"},defaultSort:"most_described"}
 };
 const SORT_FIELD=s=>s.split(" ")[0];
-const isDate=s=>typeof s==="string"&&/^\d{4}(-\d{2}(-\d{2})?)?$/.test(s);
-const fullDate=(s,end)=>s.length===4?s+(end?"-12-31":"-01-01"):s.length===7?s+(end?"-31":"-01"):s;
+// Accept partial reporting dates, but never invent dates such as February 31.
+export function isDate(s){
+  if(typeof s!=="string"||!/^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.test(s))return false;
+  const [year,month="01",day="01"]=s.split("-").map(Number);
+  return year>=1000&&month>=1&&month<=12&&day>=1&&day<=new Date(Date.UTC(year,month,0)).getUTCDate();
+}
+export function fullDate(s,end=false){
+  const [year,month]=s.split("-").map(Number);
+  if(s.length===4)return s+(end?"-12-31":"-01-01");
+  if(s.length===7)return s+"-"+(end?String(new Date(Date.UTC(year,month,0)).getUTCDate()).padStart(2,"0"):"01");
+  return s;
+}
 
 // ---------- area: municipality boundary as WKT ----------
 function ringsToWkt(geom){
@@ -71,13 +81,16 @@ async function filtersFor(client,type,T,a,applied){
   const c=[];
   const minD=num(a.min_depth_m),maxD=num(a.max_depth_m);
   if((minD!==null||maxD!==null)&&!T.depth)return{error:"min_depth_m/max_depth_m do not apply to "+type+"."};
-  if(minD!==null){c.push(`${T.depth}>=${Math.max(0,minD)}`);applied.min_depth_m=minD}
-  if(maxD!==null){c.push(`${T.depth}<=${Math.max(0,maxD)}`);applied.max_depth_m=maxD}
+  if((minD!==null&&minD<0)||(maxD!==null&&maxD<0))return{error:"depth bounds must be non-negative metres."};
+  if(minD!==null&&maxD!==null&&minD>maxD)return{error:"min_depth_m must be at most max_depth_m."};
+  if(minD!==null){c.push(`${T.depth}>=${minD}`);applied.min_depth_m=minD}
+  if(maxD!==null){c.push(`${T.depth}<=${maxD}`);applied.max_depth_m=maxD}
   for(const [k,end] of [["date_from",false],["date_to",true]]){
     if(a[k]===undefined||a[k]===null||a[k]==="")continue;
     if(!isDate(a[k]))return{error:k+" must be YYYY, YYYY-MM or YYYY-MM-DD."};
     c.push(`${T.date}${end?"<=":">="}'${fullDate(a[k],end)}'`);applied[k]=a[k];
   }
+  if(a.date_from&&a.date_to&&isDate(a.date_from)&&isDate(a.date_to)&&fullDate(a.date_from,false)>fullDate(a.date_to,true))return{error:"date_from must be on or before date_to."};
   if(a.purpose!==undefined){
     if(type!=="boreholes")return{error:"purpose applies to boreholes only."};
     const d=PURPOSES[a.purpose];if(!d)return{error:"purpose must be one of: "+Object.keys(PURPOSES).join(", ")+"."};
