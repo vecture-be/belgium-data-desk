@@ -49,8 +49,8 @@ function fillGrid(section,c){
   const stale=(c.disagreements||[]).find(d=>d.kind==="catalogue_date_newer_than_data"||d.kind==="declared_cadence_not_met"||d.kind==="declared_cadence_overdue");
   const li=section.querySelector('[data-check="freshness"]');
   if(stale&&li){
-    li.className="trust-check warn";const mark=li.querySelector(".trust-mark");if(mark){mark.textContent="!";mark.setAttribute("aria-label","warn")}
-    const span=li.querySelector("div span");if(span)span.textContent=t?.to?"The newest date in the file is "+t.to+" (column '"+t.column+"'), whatever the catalogue date says.":stale.text;
+    li.className="trust-check warn";const mark=li.querySelector(":scope > .trust-mark");if(mark){mark.textContent="!";mark.setAttribute("aria-label","warn")}
+    const span=li.querySelector(":scope > div > span");if(span)span.textContent=t?.to?"The newest date in the file is "+t.to+" (column '"+t.column+"'), whatever the catalogue date says.":stale.text;
   }
 }
 /** Fills every [data-card-slot] in root with the card of its data-card-slot id. */
