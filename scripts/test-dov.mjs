@@ -116,6 +116,11 @@ const fakeFetch=async(url,init)=>{
   const u=new URL(url);seen.push({url:u,init});
   assert.equal(init.redirect,"manual");assert.equal(init.headers.accept,"*/*");assert.ok(init.signal);
   if(u.hostname==="geo.api.vlaanderen.be"&&u.pathname==="/VRBG2025/wfs"){
+    if(u.searchParams.get("typeNames")==="VRBG2025:Refgem"){
+      const q=u.searchParams.get("cql_filter");
+      const inside=/POINT\(173358(?:\.\d+)? 174387(?:\.\d+)?\)/.test(q);
+      return new Response(JSON.stringify({features:inside?[{properties:{NAAM:"Leuven",NISCODE:"24062"}}]:[]}),{status:200});
+    }
     assert.equal(u.searchParams.get("typeNames"),"VRBG2025:RefgemG100");
     if(u.searchParams.get("cql_filter")!=="NAAM='Leuven'")return new Response(JSON.stringify({features:[]}),{status:200});
     return new Response(JSON.stringify({features:[{properties:{NAAM:"Leuven",NISCODE:"24062"},geometry:{type:"Polygon",coordinates:[[[169120.4,168239.8],[178264.9,168239.8],[178264.9,181580.5],[169120.4,181580.5],[169120.4,168239.8]]]}}]}),{status:200});
@@ -176,12 +181,19 @@ assert.equal(dw,"DWITHIN(geom,POINT(173358.14 174387.29),250,meters)");
 seen.length=0;
 const r2=await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{latitude:50.879379482656915,longitude:4.7006545962260091,radius_m:99999});
 assert.equal(r2.radius_m,500);assert.equal(r2.location.y_lambert72,174387.29);
-assert.ok(seen.every(s=>s.url.hostname!=="geo.api.vlaanderen.be"),"coordinates need no geocoding");
+assert.ok(seen.some(s=>s.url.searchParams.get("typeNames")==="VRBG2025:Refgem"),"coordinates require real Flemish-boundary verification");
+assert.ok(seen.every(s=>!s.url.pathname.includes("/geolocation/")),"coordinates never need address geocoding");
 seen.length=0;
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{latitude:50.6326,longitude:5.5797})).error,/outside the Flemish Region/);   // Liège
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{latitude:48.85,longitude:2.35})).error,/outside Belgium/);
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{x_lambert72:"1 1)) OR (1=1",y_lambert72:5})).error,/Give an address/);
 assert.equal(seen.length,0,"rejected inputs make no upstream request");
+seen.length=0;
+const brussels={latitude:50.8466,longitude:4.3528};
+assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),brussels)).error,/outside the Flemish Region/);
+assert.match((await searchSubsurface(makeDovClient({fetchImpl:fakeFetch}),{record_type:"boreholes",...brussels,radius_m:200})).error,/outside the Flemish Region/);
+assert.ok(seen.every(x=>!x.url.pathname.startsWith("/geoserver/")),"out-of-region points never reach DOV data layers");
+seen.length=0;
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{address:"Nergensstraat 9, 9999 Nergens"})).error,/Address not found/);
 
 // ---------- get_subsurface_record ----------
@@ -221,7 +233,7 @@ assert.match((await slow.get("https://www.dov.vlaanderen.be/x")).error,/did not 
 const budget=makeDovClient({fetchImpl:fakeFetch});for(let i=0;i<20;i++)await budget.get("https://www.dov.vlaanderen.be/none");
 assert.match((await budget.get("https://www.dov.vlaanderen.be/none")).error,/budget/);
 const down=await subsurfaceAtLocation(makeDovClient({fetchImpl:async()=>new Response("",{status:503})}),{x_lambert72:173358,y_lambert72:174387});
-assert.match(down.error,/did not answer/);
+assert.match(down.error,/boundary could not be checked/,"a failed coverage check must fail closed");
 
 // ---------- through the MCP endpoint ----------
 const env={ASSETS:{fetch:async()=>new Response("{}",{status:404})}};
