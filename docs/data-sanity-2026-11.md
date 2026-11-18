@@ -43,3 +43,27 @@ Missing-value codes inside numbers: Brussels public car parks (`-999` floors, wi
 (`MNT_ALT_MIN/MAX -9999`), Elia ods064/ods069/ods157 bid prices (`-999`).
 
 Values worth a look: Liège canopy (`Nombre d'arbres plantés` −518), ODWB `commercesrues` (`Pourcentage de cellules vides` up to 200).
+
+## Second round: read wrong values the way they were meant
+
+Publishers will keep sending swapped axes and `-999`. Where the meant value is unambiguous the desk now reads it that way, says what
+it changed, and leaves the file untouched (`public/data-repair-v1.mjs`, used by the cards, `get_dataset` and the SQL Lab):
+
+| Written as | Read as | Example |
+|---|---|---|
+| latitude and longitude exchanged | swapped back | Seneffe playgrounds |
+| Lambert 72 metres in degree columns | converted to WGS84 (within 10 m) | SPW enterprise lists: 99.8 % of 3,312 rows |
+| Web Mercator metres | converted | Ghent school finder |
+| degrees without their decimal point, or with spreadsheet digit groups (`50.880.263`) | point restored | Chaudfontaine shops, Brussels cemeteries |
+| `-999`, `-9999`, `99999`… far from the rest of a column | no value | Brussels car parks, Namur road altitudes |
+| a position that lands outside Belgium in every reading | kept as published, not mapped | a few health providers in Andenne |
+
+"In Belgium" is tested against a simplified outline of the country (44 border towns inside, 26 foreign towns outside in the tests),
+not a rectangle, so a reading that lands in Lille or Terneuzen does not count as a repair.
+
+Where it shows: the card's "How the desk reads this file" box and `card.repairs`; `get_dataset` → `trust.read_differently_than_published`
+and `analysis.duckdb_repaired` (a DuckDB query with the repairs applied); the SQL Lab adds a `<table>_repaired` view with
+`lat_wgs84`, `lon_wgs84` and a per-row `coordinate_repair` column. The SQL gives the same reading as the card for every row
+(checked on DuckDB 1.1, 1.4 and 2.0, 3,000+ rows).
+
+Repairs are computed while profiling the whole file, so they appear for each file at its next full check (weekly, Saturday).
