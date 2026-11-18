@@ -15,6 +15,12 @@ const get=(o,p)=>p.split(".").reduce((v,k)=>v==null?v:v[/^\d+$/.test(k)?Number(k
 export function checkExpect(answer,expect){
   const problems=[];
   for(const e of expect){
+    // {any:[[...], [...]]}: one of several correct answers (a source that changes what it keeps); holds when one group holds
+    if(e.any){
+      const tried=e.any.map(g=>checkExpect(answer,g));
+      if(tried.every(p=>p.length))problems.push("none of the accepted answers holds: "+tried.map(p=>p.join("; ")).join(" | "));
+      continue;
+    }
     const v=get(answer,e.path);
     if("equals" in e&&v!==e.equals)problems.push(e.path+" is "+JSON.stringify(v)+", expected "+JSON.stringify(e.equals));
     if(e.between&&!(typeof v==="number"&&v>=e.between[0]&&v<=e.between[1]))problems.push(e.path+" is "+JSON.stringify(v)+", expected between "+e.between.join(" and "));
