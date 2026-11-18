@@ -233,7 +233,7 @@ assert.match((await slow.get("https://www.dov.vlaanderen.be/x")).error,/did not 
 const budget=makeDovClient({fetchImpl:fakeFetch});for(let i=0;i<20;i++)await budget.get("https://www.dov.vlaanderen.be/none");
 assert.match((await budget.get("https://www.dov.vlaanderen.be/none")).error,/budget/);
 const down=await subsurfaceAtLocation(makeDovClient({fetchImpl:async()=>new Response("",{status:503})}),{x_lambert72:173358,y_lambert72:174387});
-assert.match(down.error,/did not answer/);
+assert.match(down.error,/boundary could not be checked/,"a failed coverage check must fail closed");
 
 // ---------- through the MCP endpoint ----------
 const env={ASSETS:{fetch:async()=>new Response("{}",{status:404})}};
