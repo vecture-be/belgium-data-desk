@@ -220,6 +220,7 @@ assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{l
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{address:"Brussels",radius_m:25})).error,/outside the Flemish Region/);
 assert.match((await searchSubsurface(makeDovClient({fetchImpl:fakeFetch}),{record_type:"boreholes",address:"Brussel",radius_m:25})).error,/outside the Flemish Region/);
 assert.equal((await _dov.verifyDovCoverage(makeDovClient({fetchImpl:fakeFetch}),{input:"address",x:173358.14,y:174387.29})),null,"valid Flemish building remains allowed");
+seen.length=0; // the following malformed-coordinate cases must be rejected without any upstream calls
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{latitude:48.85,longitude:2.35})).error,/outside Belgium/);
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{x_lambert72:"1 1)) OR (1=1",y_lambert72:5})).error,/Give an address/);
 assert.equal(seen.length,0,"rejected inputs make no upstream request");
