@@ -222,8 +222,27 @@ export async function belgianStatistics(client,args,{assets}={}){
   const a={...(args||{})},topic=a.topic||"profile";
   if(!["profile","population","income","prices","labour"].includes(topic))return{error:"topic must be profile, population, income, prices or labour."};
   if(topic==="prices"){const p=await prices(client);return p.error?p:clean({key_facts:["Inflation "+p.inflation_pct+" % in "+p.latest_month+" (CPI "+p.cpi.value+", base "+p.cpi.base+"); health index "+p.health_index+", smoothed health index "+p.smoothed_health_index+"."],topic,...p,provenance:provenance(["prices"],{file:SOURCES.prices.file})})}
-  if(topic==="labour"){const l=await labour(client);if(l.error)return l;const be=l.by_area.find(x=>x.area==="Belgium");
-    return clean({key_facts:[(be?"Belgium: unemployment "+be.unemployment_rate_pct+" %, employment rate "+be.employment_rate_pct+" % in the "+l.latest_quarter+"; ":"")+l.by_area.filter(x=>x.area!=="Belgium").map(x=>x.area+" "+x.unemployment_rate_pct+" %").join(", ")+" unemployment."],topic,...l,provenance:provenance(["labour"])})}
+  if(topic==="labour"){
+    // Statbel's Labour Force Survey has no municipality/province observations. Never silently substitute a
+    // Flemish or Belgian rate when the user explicitly requested one municipality.
+    const areaMap={belgium:"Belgium",belgie:"Belgium",belgique:"Belgium",be:"Belgium",
+      flanders:"Flanders region",vlaanderen:"Flanders region","vlaams gewest":"Flanders region","flemish region":"Flanders region","region flamande":"Flanders region",flandre:"Flanders region",
+      wallonia:"Walloon region",wallonie:"Walloon region","waals gewest":"Walloon region","region wallonne":"Walloon region","walloon region":"Walloon region",
+      brussels:"Brussels-Capital region",brussel:"Brussels-Capital region",bruxelles:"Brussels-Capital region","brussels capital region":"Brussels-Capital region","brussels hoofdstedelijk gewest":"Brussels-Capital region"};
+    const requested=Array.isArray(a.places)?a.places:[];
+    const unknown=requested.filter(p=>!areaMap[fold(p)]);
+    if(unknown.length)return{error:"Statbel Labour Force Survey unemployment rates are available for Belgium and the three regions only, not for municipalities or provinces ("+unknown.map(String).join(", ")+"). For municipality-level data, use RVA/ONEM benefit counts, which are NOT ILO unemployment rates."};
+    if(a.rank_by)return{error:"Municipal labour rankings are not supported by this Statbel Labour Force Survey (national and regional rates only)."};
+    const l=await labour(client);if(l.error)return l;
+    const wanted=new Set(requested.map(p=>areaMap[fold(p)]));
+    const selected=requested.length?l.by_area.filter(x=>wanted.has(x.area)):l.by_area;
+    if(!selected.length)return{error:"Requested region is not present in Statbel's latest Labour Force Survey table."};
+    const be=selected.find(x=>x.area==="Belgium");
+    const facts=requested.length?selected.map(x=>x.area+": unemployment "+x.unemployment_rate_pct+" %, employment rate "+x.employment_rate_pct+" % in the "+l.latest_quarter+"."):
+      [(be?"Belgium: unemployment "+be.unemployment_rate_pct+" %, employment rate "+be.employment_rate_pct+" % in the "+l.latest_quarter+"; ":"")+selected.filter(x=>x.area!=="Belgium").map(x=>x.area+" "+x.unemployment_rate_pct+" %").join(", ")+" unemployment."];
+    return clean({key_facts:facts,topic,...l,by_area:selected,
+      unemployment_trend:requested.length?l.unemployment_trend.filter(x=>wanted.has(x.area)):l.unemployment_trend,
+      geography:"ILO Labour Force Survey rates are published at Belgium and region level, not municipality or province level.",provenance:provenance(["labour"])})}
   if(!assets)return{error:"Statistics tables are not available on this server."};
   const P=await places(assets);if(!P)return{error:"Statistics tables could not be read; try again shortly."};
   const year=a.year!=null?Math.round(num(a.year)):undefined,incomeYear=a.income_year!=null?Math.round(num(a.income_year)):undefined;
