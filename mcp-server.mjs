@@ -19,6 +19,14 @@ const MAX_LIMIT=20,MAX_QUERY_TOKENS=5,MAX_ASSET_READS=30,MAX_GROUP_WORDS=12,MAX_
 // Ranking weights, tuned against eval-relevance/queries.json (scripts/eval-mcp-relevance.mjs).
 const RELATED_WEIGHT=0.6,CURATED_BONUS=30,LOCAL_PENALTY=20,COVERAGE_WEIGHT=60,MAX_IDF=5,TITLE_FACTOR=30,BODY_FACTOR=10;
 const MAX_PREVIEW_ROWS=20,PREVIEW_BYTES=64*1024,MAX_PREVIEW_COLUMNS=40,MAX_CELL_CHARS=160,MAX_PREVIEW_TEXT=14000;
+// Turn a narrow, unambiguous English question into a topic lookup before indexing words.
+// In "How many people live in Gent?", "live" otherwise retrieves traffic live feeds.
+// Only this population intent is rewritten; other uses of "live" (e.g. live train data) remain untouched.
+export function normalizeSearchIntent(q){
+  const s=String(q??"");
+  const m=/^\s*(?:how many\s+(?:people|residents|inhabitants)\s+(?:live|are living|are there|are)\s+in|number of\s+(?:people|residents)\s+(?:living\s+)?in)\s+(.+?)[?.!]*\s*$/i.exec(s);
+  return m?"population "+m[1]:s;
+}
 // A search whose words ask for figures or conditions, not files, is pointed at the live tool that answers it. The words come from
 // each tool's `routing` in tools/; a query word may match only one tool (scripts/test-tools.mjs checks that).
 const LOCAL_PUBLISHER=/\b(city of|stad|ville de|gemeente|commune|province|provincie)\b/i;
@@ -182,7 +190,7 @@ function collapseCollections(scored){
 
 export async function searchDatasets(reader,args){
   const q=String(args?.query||"").slice(0,200),scope=["datasets","maps","publications","research","metadata","all"].includes(args?.scope)?args.scope:"datasets";
-  const limit=Math.min(MAX_LIMIT,Math.max(1,Number(args?.limit)||10)),tokens=tokenize(q,{cap:MAX_QUERY_TOKENS});
+  const limit=Math.min(MAX_LIMIT,Math.max(1,Number(args?.limit)||10)),intentQuery=normalizeSearchIntent(q),tokens=tokenize(intentQuery,{cap:MAX_QUERY_TOKENS});
   if(!tokens.length)return{error:"Query has no searchable words."};
   const manifest=await reader.json("/mcp/manifest.json");
   if(!manifest)return{error:"Index not available."};
@@ -226,7 +234,7 @@ export async function searchDatasets(reader,args){
   };
   // For a common need (population, enterprise register, air quality...) the hand-reviewed authoritative source goes first, with the reason.
   const keep=d=>d&&!(args?.topic&&d.tp!==args.topic)&&!(args?.open_licence_only&&!isOpen(d))&&coversYear(d,year)&&inLanguage(d,lang);
-  const authority=(scope==="datasets"||scope==="all")?authoritiesFor(tokenize(q,{cap:10}))[0]:null;
+  const authority=(scope==="datasets"||scope==="all")?authoritiesFor(tokenize(intentQuery,{cap:10}))[0]:null;
   const pinned=[];
   if(authority)for(const id of authority.ids){const idx=manifest.pins?.[id];if(idx===undefined)continue;const d=await docAt(idx);if(keep(d))pinned.push(d)}
   // "dienstregeling De Lijn": the pinned source the user names (in its title or publisher) goes first.
