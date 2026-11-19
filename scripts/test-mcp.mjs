@@ -4,12 +4,16 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildIndex, inheritCuratedLicences, writeIndex } from "./build-mcp-index.mjs";
-import { handleMcp, idShard, prefixKey, publicOrigin, tokenize, tokenShard, withPrecision } from "../mcp-server.mjs";
+import { handleMcp, idShard, prefixKey, publicOrigin, tokenize, tokenShard, withPrecision, normalizeSearchIntent } from "../mcp-server.mjs";
 import worker, { makePreviewFile } from "../worker.mjs";
 import { AUTHORITIES, authoritiesFor } from "../public/dataset-authority-v1.mjs";
 import { expandWord } from "../public/dataset-synonyms-v1.mjs";
 
 assert.deepEqual(tokenize("Bevolking per gemeente — population of the Région"),["bevolking","gemeente","population","region"]);
+assert.equal(normalizeSearchIntent("How many people live in Gent?"),"population Gent");
+assert.equal(normalizeSearchIntent("How many residents are there in Leuven?"),"population Leuven");
+assert.equal(normalizeSearchIntent("number of people living in Brugge"),"population Brugge");
+assert.equal(normalizeSearchIntent("Live train arrivals in Gent"),"Live train arrivals in Gent");
 assert.equal(prefixKey("bevolking"),"~bevolk");assert.equal(prefixKey("gas"),null);
 assert.equal(tokenShard("~bevolk"),"be");assert.equal(idShard("national:x").length,2);
 // a hand-reviewed record without a licence takes the licence of a record of the same publisher that links the same dataset
