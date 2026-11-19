@@ -94,6 +94,12 @@
    "status": 200,
    "contentType": "application/json;charset=UTF-8",
    "body": "H4sIAAAAAAAACmWVTW7cMAyF78K1Y4gUSYneBQVygDarFl1MEycYZGY8cDwogiB3L+wpCr10+elJj3+W/E7L23mkge7G3XKZxy/T4TA+LPvpRB09Xddeafjx/mkfdbR/pIGoo+dxOo7L/EbD6XI4dHSep/M4L/v13DvdT+fped497UcaxHuvKaWUk3GxUju6TcyJhpuIiI0EKDOQAGUgbUnBxcDFhAaRvmyZeHVXs3RNxcDS4ZhDcMedENytpQKpVPCs4FnBs4JnBc/qQAWoAkVDAq0WYSABykAKZEBtLgIDExiYwMAEBiYZPDN6FqC2PoFBCwxaDKLDbMUgukF0g+gG0a2NnhMDCVAGUqA2nsJUFC6AQj8V+qnQT4V+qsI5hXPQJTXUWk+D+gzqs4Q7Faitz5mBWhdfq9U+2boQKqWEKW8KVO5QuUPlBbIskGUFrX7SWpeAnQE749POtVapfbXtLausHkVKR7ec2lo5tbVy4tVFtS/rsVRcIofaJm1XsXhvNSI851IjuVyl1aOmPklE1FJCwmvdpAzBthZV731d8dAqKvxX2vL3Pvv25nHKxuZXScGjGRxz2xLmtiXMW0s4555LRIivzzmLXbXWEx4dlvbz5gxaRi0DbRf9/3gfHz87WqZld7j797Oiy+nlNP1e/2Cny/HXOH8dl8t8Gh9p4I6W/XH8tuyOZxpIkvgN8w2n+1QHtiFLH5K+U0cP8+v1h/bxBzQiip4jBwAA"
+  },
+  {
+   "url": "https://geo.api.vlaanderen.be/VRBG2025/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=VRBG2025%3ARefgem&outputFormat=application%2Fjson&srsName=EPSG%3A31370&count=1&propertyName=NAAM%2CNISCODE&cql_filter=INTERSECTS%28SHAPE%2CPOINT%28173358.14+174387.29%29%29",
+   "status": 200,
+   "contentType": "application/json; charset=utf-8",
+   "body": "H4sIAAAAAAAC/6tWKqksSFWyUnJLTSwpLUp1zs/JSU0uyczPU9JRSoOIFStZRVcrFRTlF6QWlWSCuNVKfo6OvkBdPqmlZakgpX6ewc7+Lq5AISMTAzMjpdra2FoAKsm+ulwAAAA="
   }
  ]
 }
