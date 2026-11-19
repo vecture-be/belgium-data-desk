@@ -211,7 +211,8 @@ async function resolveLocation(client,args,{area="flanders"}={}){
 // tools serve Flemish map and groundwater decisions. Check the actual region
 // polygon before drawing a site-specific conclusion from those layers.
 export async function verifyDovCoverage(client,loc){
-  if(loc.input==="address")return null; // the address resolver only accepts the Flemish register
+  // An address resolver can also match municipalities in Brussels (and namesake streets elsewhere).
+  // Validate the actual 2025 Flemish polygon for every address or coordinate before querying DOV.
   const q=new URLSearchParams({service:"WFS",version:"2.0.0",request:"GetFeature",typeNames:"VRBG2025:Refgem",
     outputFormat:"application/json",srsName:"EPSG:31370",count:"1",propertyName:"NAAM,NISCODE",
     cql_filter:`INTERSECTS(SHAPE,POINT(${loc.x} ${loc.y}))`});
