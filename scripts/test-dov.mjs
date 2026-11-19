@@ -38,8 +38,9 @@ for(const [addr,hit] of [
   const result=await _dov.resolveLocation(client,{address:addr},{area:"flanders"});
   assert.match(result.error,/resolver|place/i,"reject mismatched address "+addr);
 }
-for(const addr of ["Korenmarkt 10, 9000 Gent","Gent"]){
-  const hit=addr==="Gent"?geoHit(null,"Gent",null,"Gent"):geoHit("10","Gent","Korenmarkt","Korenmarkt 10, 9000 Gent");
+for(const addr of ["Korenmarkt 10, 9000 Gent","Gent","Bruxelles"]){
+  // Some official municipality results provide only FormattedAddress, not Municipality.
+  const hit=addr==="Gent"?geoHit(null,"Gent",null,"Gent"):addr==="Bruxelles"?geoHit(null,null,null,"Bruxelles"):geoHit("10","Gent","Korenmarkt","Korenmarkt 10, 9000 Gent");
   const client=makeDovClient({fetchImpl:async()=>geocodeResponse(hit),hosts:["geo.api.vlaanderen.be"],maxRequests:2});
   const result=await _dov.resolveLocation(client,{address:addr});
   assert.equal(result.error,undefined,"accept exact match "+addr);
