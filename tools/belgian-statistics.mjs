@@ -6,7 +6,7 @@ export default defineTool({
   title:"Official Belgian statistics: population, income, prices, labour market",
   description:"Answers with Statbel's official figures (not dataset links). Places: any of the 565 municipalities (2025 boundaries; Dutch, French or pre-merger names such as Melle work; NIS codes too), the provinces, the three regions or Belgium. topic 'profile' (default) gives population on 1 January (total, sex, age bands, non-Belgian nationality, change since 2019) and average net taxable income per inhabitant and per declaration (income years up to the latest published); a single municipality comes with its province, region and Belgium for comparison. rank_by ranks municipalities within a province, region or Belgium (e.g. highest income per inhabitant in Limburg, oldest population); with no places, topic 'population' or 'income' ranks the municipalities of Belgium by it. topic 'prices' gives the latest CPI, inflation and (smoothed) health index read live from Statbel; topic 'labour' gives the latest quarterly employment, unemployment and activity rates for Belgium and the regions (Labour Force Survey). Each answer starts with key_facts and states reference dates, definitions and the Statbel citation (CC BY 4.0).",
   inputSchema:{type:"object",properties:{
-    places:{type:"array",items:{type:"string"},maxItems:6,description:"Up to 6 places to compare, e.g. ['Leuven','Gent'], ['Limburg','Wallonia','Belgium'] or ['44088']. A bare 'Brussels' means the region; use 'City of Brussels' for the municipality."},
+    places:{type:"array",items:{type:"string"},maxItems:6,description:"Up to 6 places for population/income, e.g. ['Leuven','Gent'] or ['44088']. For topic 'labour', only Belgium and the three regions are available, not municipalities or provinces. A bare 'Brussels' means the region; use 'City of Brussels' for the municipality."},
     topic:{type:"string",enum:["profile","population","income","prices","labour"],description:"Default 'profile' (population and income)."},
     year:{type:"integer",description:"Population year (1 January), 2019 to the latest; default latest."},
     income_year:{type:"integer",description:"Income year, default the latest published."},
@@ -29,5 +29,5 @@ export default defineTool({
     {args:{topic:"labour"},note:"What is the unemployment rate in each region?"}
   ],
   routing:{words:/^(bevolking|inwoners|population|habitants|inhabitants|inkomen|income|revenus|inflatie|inflation|cpi|gezondheidsindex|consumptieprijs|werkloosheid|unemployment|chomage|tewerkstelling|employment)/,
-    hint:"For the figures themselves (population, income, inflation, unemployment) by municipality, province or region, belgian_statistics answers with Statbel's official numbers."}
+    hint:"For population and income by municipality, and inflation nationally, belgian_statistics answers from Statbel. Labour Force Survey unemployment rates cover Belgium and its three regions ONLY; for municipalities, find RVA/ONEM benefit counts (not equivalent to unemployment rates)."}
 });
