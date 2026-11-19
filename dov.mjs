@@ -139,11 +139,31 @@ export function splitAddress(s){
   const m=String(s).match(/^\s*(.+?)\s+(\d+[A-Za-z]?(?:[\/-]\w+)?)\s*,\s*(?:(\d{4})\s+)?([^,]+?)\s*$/);
   return m?{street:m[1],number:m[2],postcode:m[3]||null,municipality:m[4]}:null;
 }
+// An upstream top-ranked fuzzy result is NOT evidence that it is the requested place.
+// Validate the house number and postcode for an address, and reject unrelated street/municipality
+// matches for bare place names. An error is safer than a precise-looking result for a different parcel.
+const geoFold=s=>String(s??"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+const houseFold=s=>String(s??"").toLowerCase().replace(/[\s.]/g,"");
+const CITY_ALIASES={brussels:"Brussel",bruges:"Brugge",ghent:"Gent",louvain:"Leuven",antwerp:"Antwerpen",ostend:"Oostende"};
+export function geocodeMatchError(address,hit){
+  const p=splitAddress(address);
+  if(p){
+    if(houseFold(hit.Housenumber)!==houseFold(p.number))
+      return "The address resolver matched house number "+(hit.Housenumber??"(none)")+" instead of "+p.number+". No location-based answer was produced; verify the address or pass coordinates.";
+    if(p.postcode&&!String(hit.FormattedAddress||"").split(/[^0-9]+/).includes(p.postcode))
+      return "The address resolver did not confirm postcode "+p.postcode+". No location-based answer was produced; verify the address or pass coordinates.";
+  }else if(!/[0-9,]/.test(address)){
+    const q=geoFold(address),names=[hit.Municipality,hit.Thoroughfarename].map(geoFold);
+    if(!names.includes(q))return "The place '"+address+"' did not match the returned municipality or street ('"+(hit.FormattedAddress||"unknown")+"'). Supply a full address or coordinates.";
+  }
+  return null;
+}
 async function bestGeocode(client,address){
   const p=splitAddress(address);if(!p)return null;
   const q=new URLSearchParams({streetName:p.street,houseNumber:p.number});if(p.postcode)q.set("postCode",p.postcode);else q.set("municipalityName",p.municipality);
   const r=await getJson(client,BEST+"?"+q,{maxBytes:256*1024,ttl:7*DAY});
-  const it=r.json?.items?.find(i=>i.status==="current")||r.json?.items?.[0];
+  const exact=r.json?.items?.filter(i=>houseFold(i.houseNumber)===houseFold(p.number)&&(!p.postcode||String(i.hasPostalInfo?.postCode||"")===p.postcode))||[];
+  const it=exact.find(i=>i.status==="current")||exact[0];
   const pos=it?.addressPosition;if(!pos?.lambert72)return null;
   const m=it.hasMunicipality||{};
   return{x:round(pos.lambert72.x),y:round(pos.lambert72.y),latitude:round(pos.wgs84?.lat,6),longitude:round(pos.wgs84?.long,6),input:"address",
@@ -162,14 +182,21 @@ async function resolveLocation(client,args,{area="flanders"}={}){
   }else if(x!==null&&y!==null){
     const [la2,lo2]=lambert72ToWgs84(x,y);loc={x:round(x),y:round(y),latitude:round(la2,6),longitude:round(lo2,6),input:"coordinates (Lambert 72)"};
   }else if(address){
-    const r=await getJson(client,GEO_ORIGIN+"/geolocation/v4/Location?"+new URLSearchParams({q:address,c:"1"}),{maxBytes:64*1024,ttl:7*DAY});
+    const lookup=CITY_ALIASES[geoFold(address)]||address;
+    const r=await getJson(client,GEO_ORIGIN+"/geolocation/v4/Location?"+new URLSearchParams({q:lookup,c:"1"}),{maxBytes:64*1024,ttl:7*DAY});
     const hit=r.json?.LocationResult?.[0];
-    if(hit?.Location){
+    const matchError=hit?.Location?geocodeMatchError(lookup,hit):null;
+    if(hit?.Location&&!matchError){
       loc={x:round(num(hit.Location.X_Lambert72)),y:round(num(hit.Location.Y_Lambert72)),latitude:round(num(hit.Location.Lat_WGS84),6),longitude:round(num(hit.Location.Lon_WGS84),6),
         input:"address",matched_address:hit.FormattedAddress||null,match_type:hit.LocationType||null,municipality:hit.Municipality||null,geocoded:true};
       loc.precision=hit.Housenumber!=null?"building":hit.Thoroughfarename?"street":"municipality";
       if(hit.Housenumber==null)loc.note="The address matched a street or municipality, not a building: the point is approximate.";
-    }else if(area==="belgium"){
+    }else if(area==="belgium"&&splitAddress(address)){
+      // Exact structured BeST address lookup may recover a valid address that fuzzy geocoding missed.
+      loc=await bestGeocode(client,address);
+      if(!loc)return{error:matchError||"Address not found. Verify the street, house number and postcode or pass coordinates."};
+    }else if(matchError)return{error:matchError};
+    else if(area==="belgium"){
       loc=await bestGeocode(client,address);
       if(!loc)return{error:"Address not found. Write it as 'street number, postcode municipality' (e.g. 'Place Saint-Lambert 1, 4000 Liège') or pass latitude and longitude."};
     }else return{error:r.error?"The address could not be looked up: "+r.error+". Pass latitude and longitude instead."
