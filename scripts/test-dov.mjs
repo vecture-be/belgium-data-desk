@@ -147,7 +147,7 @@ const fakeFetch=async(url,init)=>{
   if(u.hostname==="geo.api.vlaanderen.be"&&u.pathname==="/VRBG2025/wfs"){
     if(u.searchParams.get("typeNames")==="VRBG2025:Refgem"){
       const q=u.searchParams.get("cql_filter");
-      const inside=/POINT\(173358(?:\.\d+)? 174387(?:\.\d+)?\)/.test(q);
+      const inside=/POINT\((?:173358(?:\.\d+)? 174387(?:\.\d+)?|173726(?:\.\d+)? 174699(?:\.\d+)?)\)/.test(q);
       return new Response(JSON.stringify({features:inside?[{properties:{NAAM:"Leuven",NISCODE:"24062"}}]:[]}),{status:200});
     }
     assert.equal(u.searchParams.get("typeNames"),"VRBG2025:RefgemG100");
@@ -157,6 +157,7 @@ const fakeFetch=async(url,init)=>{
   if(u.hostname==="geo.api.vlaanderen.be"){
     const q=u.searchParams.get("q");
     if(q==="Leuven")return new Response(JSON.stringify({LocationResult:[{Municipality:"Leuven",LocationType:"basisregisters_gemeente",Location:{X_Lambert72:173726,Y_Lambert72:174699}}]}),{status:200});
+    if(q==="Brussel")return new Response(JSON.stringify({LocationResult:[{Municipality:"Brussel",FormattedAddress:"Brussel",LocationType:"basisregisters_gemeente",Location:{Lat_WGS84:50.855128,Lon_WGS84:4.375421,X_Lambert72:148820,Y_Lambert72:171634}}]}),{status:200});
     if(q==="Waterloo")return new Response(JSON.stringify({LocationResult:[{Municipality:"Sint-Truiden"}]}),{status:200});
     if(q==="Namur")return new Response(JSON.stringify({LocationResult:[{Municipality:"Elsene"}]}),{status:200});
     return new Response(JSON.stringify({LocationResult:/Leuven/.test(q)?[{Municipality:"Leuven",Housenumber:"1",FormattedAddress:"Grote Markt 1, 3000 Leuven",LocationType:"basisregisters_huisnummer",Location:{Lat_WGS84:50.879379,Lon_WGS84:4.700655,X_Lambert72:173358.14,Y_Lambert72:174387.29}}]:[]}),{status:200});
@@ -214,6 +215,12 @@ assert.ok(seen.some(s=>s.url.searchParams.get("typeNames")==="VRBG2025:Refgem"),
 assert.ok(seen.every(s=>!s.url.pathname.includes("/geolocation/")),"coordinates never need address geocoding");
 seen.length=0;
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{latitude:50.6326,longitude:5.5797})).error,/outside the Flemish Region/);   // Liège
+// PR #96 protected coordinate input but accidentally skipped the regional boundary for address inputs.
+// 'Brussels' resolves to a genuine Belgian city in the shared geocoder, not a place in Flanders.
+assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{address:"Brussels",radius_m:25})).error,/outside the Flemish Region/);
+assert.match((await searchSubsurface(makeDovClient({fetchImpl:fakeFetch}),{record_type:"boreholes",address:"Brussel",radius_m:25})).error,/outside the Flemish Region/);
+assert.equal((await _dov.verifyDovCoverage(makeDovClient({fetchImpl:fakeFetch}),{input:"address",x:173358.14,y:174387.29})),null,"valid Flemish building remains allowed");
+seen.length=0; // the following malformed-coordinate cases must be rejected without any upstream calls
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{latitude:48.85,longitude:2.35})).error,/outside Belgium/);
 assert.match((await subsurfaceAtLocation(makeDovClient({fetchImpl:fakeFetch}),{x_lambert72:"1 1)) OR (1=1",y_lambert72:5})).error,/Give an address/);
 assert.equal(seen.length,0,"rejected inputs make no upstream request");
