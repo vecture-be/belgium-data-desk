@@ -96,6 +96,11 @@ const LAB={facts:[{Region:"Flanders region",Quarter:"1st quarter 2026",Gender:nu
 const lb=await belgianStatistics(makeDovClient({fetchImpl:fake([[u=>u.hostname==="bestat.statbel.fgov.be",JSON.stringify(LAB)]])}),{topic:"labour"},{assets});
 assert.equal(lb.latest_quarter,"2nd quarter 2026");assert.deepEqual(lb.by_area.map(a=>[a.area,a.unemployment_rate_pct]),[["Belgium",6.1],["Flanders region",4]]);
 assert.match(lb.key_facts[0],/^Belgium: unemployment 6.1 %/);
+const reg=await belgianStatistics(makeDovClient({fetchImpl:fake([[u=>u.hostname==="bestat.statbel.fgov.be",JSON.stringify(LAB)]])}),{topic:"labour",places:["Flanders"]},{assets});
+assert.deepEqual(reg.by_area.map(x=>x.area),["Flanders region"],"a regional labour request only returns that region");
+assert.match(reg.key_facts[0],/^Flanders region: unemployment 4 %/);
+assert.match((await S({topic:"labour",places:["Zottegem"]})).error,/not for municipalities or provinces/);
+assert.match((await S({topic:"labour",places:["Limburg"]})).error,/not for municipalities or provinces/);
 
 // ---------- air_quality ----------
 const geo=JSON.stringify({LocationResult:[{Municipality:"Leuven",Housenumber:"1",FormattedAddress:"Grote Markt 1, 3000 Leuven",Location:{Lat_WGS84:50.879379,Lon_WGS84:4.700655,X_Lambert72:173358.14,Y_Lambert72:174387.29}}]});
