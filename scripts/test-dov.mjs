@@ -1,7 +1,7 @@
 // Offline tests for the DOV subsurface tools (dov.mjs): coordinates, id parsing, XML layers, upstream guards and the two tool answers,
 // against recorded-shape fixtures. scripts/live-dov.mjs runs the same questions against the real services.
 import assert from "node:assert/strict";
-import { columnFromBands, getSubsurfaceRecord, isbt, makeDovClient, operatorName, parseRecordId, sbtClass, subsurfaceAtLocation, summariseLevels, wgs84ToLambert72, xmlLayers } from "../dov.mjs";
+import { _dov, columnFromBands, getSubsurfaceRecord, isbt, makeDovClient, operatorName, parseRecordId, sbtClass, subsurfaceAtLocation, summariseLevels, wgs84ToLambert72, xmlLayers } from "../dov.mjs";
 import { searchSubsurface, isDate, fullDate } from "../dov-search.mjs";
 import { handleMcp } from "../mcp-server.mjs";
 
@@ -23,6 +23,35 @@ for(const [a,re] of [
 
 // Lambert 72 against the Flemish geolocation service (which returns both systems for an address): centimetre agreement.
 assert.deepEqual(wgs84ToLambert72(50.879379482656915,4.7006545962260091),[173358.14,174387.29]);   // Grote Markt 1, Leuven
+
+// Shared location guard: no authoritative parcel/air/flood result for a fuzzy house number or a different city.
+const geoHit=(house,municipality,street,formatted)=>({Housenumber:house,Municipality:municipality,Thoroughfarename:street,FormattedAddress:formatted,
+  Location:{X_Lambert72:104675.59,Y_Lambert72:194021.93,Lat_WGS84:51.05458,Lon_WGS84:3.722312}});
+const geocodeResponse=h=>new Response(JSON.stringify({LocationResult:[h]}),{headers:{"content-type":"application/json"}});
+for(const [addr,hit] of [
+  ["Korenmarkt 1, 9000 Gent",geoHit("10","Gent","Korenmarkt","Korenmarkt 10, 9000 Gent")],
+  ["Liège",geoHit(null,"Anderlecht","Boulevard Prince de Liège","Boulevard Prince de Liège, Anderlecht")],
+  ["Namur",geoHit(null,"Elsene","Galerie Porte de Namur","Galerie Porte de Namur, Ixelles")],
+  ["Bruges",geoHit(null,"Molenbeek","Rue de Bruges","Rue de Bruges, Molenbeek")]
+]){
+  const client=makeDovClient({fetchImpl:async()=>geocodeResponse(hit),hosts:["geo.api.vlaanderen.be"],maxRequests:2});
+  const result=await _dov.resolveLocation(client,{address:addr},{area:"flanders"});
+  assert.match(result.error,/resolver|place/i,"reject mismatched address "+addr);
+}
+for(const addr of ["Korenmarkt 10, 9000 Gent","Gent"]){
+  const hit=addr==="Gent"?geoHit(null,"Gent",null,"Gent"):geoHit("10","Gent","Korenmarkt","Korenmarkt 10, 9000 Gent");
+  const client=makeDovClient({fetchImpl:async()=>geocodeResponse(hit),hosts:["geo.api.vlaanderen.be"],maxRequests:2});
+  const result=await _dov.resolveLocation(client,{address:addr});
+  assert.equal(result.error,undefined,"accept exact match "+addr);
+}
+{ // English aliases must resolve to their target city, not a street named after the city elsewhere.
+  const client=makeDovClient({fetchImpl:async url=>{
+    assert.equal(new URL(url).searchParams.get("q"),"Brussel");
+    return geocodeResponse(geoHit(null,"Brussel",null,"Brussel"));
+  },hosts:["geo.api.vlaanderen.be"],maxRequests:2});
+  const result=await _dov.resolveLocation(client,{address:"Brussels"},{area:"belgium"});
+  assert.equal(result.loc?.municipality,"Brussel");
+}
 
 // Record ids: only kind/permkey (or the DOV URI for it) pass, so nothing a caller sends reaches a URL or a CQL filter unchecked.
 assert.deepEqual(parseRecordId("boring/2021-183767"),{kind:"boring",key:"2021-183767"});
