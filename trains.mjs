@@ -102,7 +102,18 @@ function matchOne(stops,q,input){
 
 const pctOf=(reg,tel)=>tel?reg/tel*100:null;
 async function stationAnswer(client,args,loc){
-  const latest=await stopsLatest(client,args.month);if(latest.error)return{error:latest.error};
+  let latest=await stopsLatest(client,args.month);if(latest.error)return{error:latest.error};
+  // The per-stop table is empty for an unpublished month. Resolve that absence before station-name matching:
+  // otherwise a perfectly valid Leuven is falsely reported as an unknown station.
+  if(args.month&&!latest.stops.length){
+    const available=await stopsLatest(client);
+    if(available.error)return{error:available.error};
+    const last=monthName(available.month);
+    if(args.month>available.month)return{error:"Infrabel has not published station punctuality for "+monthName(args.month)+". Latest available month: "+last+"."};
+    if(args.station){const m=matchStation(available.stops,args.station);if(m.error)return{error:m.error};
+      return{error:"Infrabel has no station punctuality data for "+titleCase(m.stop.nl)+" in "+monthName(args.month)+". Latest available month: "+last+"."};}
+    return{error:"Infrabel has no station punctuality data for "+monthName(args.month)+". Latest available month: "+last+"."};
+  }
   let st,note;
   if(args.station){const m=matchStation(latest.stops,args.station);if(m.error)return{error:m.error};st=m.stop;note=m.note}
   else{const all=latest.stops.filter(s=>s.lat&&s.lon).map(s=>({s,d:hav(loc.latitude,loc.longitude,s.lat,s.lon)})).sort((a,b)=>a.d-b.d),near=all[0];
