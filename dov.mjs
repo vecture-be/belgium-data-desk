@@ -143,14 +143,14 @@ export function splitAddress(s){
 // Validate the house number and postcode for an address, and reject unrelated street/municipality
 // matches for bare place names. An error is safer than a precise-looking result for a different parcel.
 const geoFold=s=>String(s??"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
-const houseFold=s=>String(s??"").toLowerCase().replace(/[\\s.]/g,"");
+const houseFold=s=>String(s??"").toLowerCase().replace(/[\s.]/g,"");
 const CITY_ALIASES={brussels:"Brussel",bruges:"Brugge",ghent:"Gent",louvain:"Leuven",antwerp:"Antwerpen",ostend:"Oostende"};
 export function geocodeMatchError(address,hit){
   const p=splitAddress(address);
   if(p){
     if(houseFold(hit.Housenumber)!==houseFold(p.number))
       return "The address resolver matched house number "+(hit.Housenumber??"(none)")+" instead of "+p.number+". No location-based answer was produced; verify the address or pass coordinates.";
-    if(p.postcode&&!new RegExp("(?:^|\\\\D)"+p.postcode+"(?:\\\\D|$)").test(hit.FormattedAddress||""))
+    if(p.postcode&&!String(hit.FormattedAddress||"").split(/[^0-9]+/).includes(p.postcode))
       return "The address resolver did not confirm postcode "+p.postcode+". No location-based answer was produced; verify the address or pass coordinates.";
   }else if(!/[0-9,]/.test(address)){
     const q=geoFold(address),names=[hit.Municipality,hit.Thoroughfarename].map(geoFold);
