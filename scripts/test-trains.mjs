@@ -47,7 +47,9 @@ function infrabel({train="local"}={}){
     const u=new URL(url),ds=u.pathname.split("/datasets/")[1].split("/")[0],p=Object.fromEntries(u.searchParams),isExport=u.pathname.endsWith("/exports/json");
     if(ds==="maandelijkse-stiptheid-per-stopplaats"){
       if(p.select==="max(datum) as last")return recs([{last:"2026-10-01T00:00:00+00:00"}]);
-      if(isExport){assert.equal(p.where,"datum = date'2026-10-01'");
+      if(isExport){
+        if(p.where==="datum = date'2026-11-01'")return json([]); // the requested month has not been published
+        assert.equal(p.where,"datum = date'2026-10-01'");
         // 3 stops: an all-stops average must weight by trains (92.9 %), not average the percentages (88.3 %)
         return json([{ptcar_no:715,installatienaam_nederlands:"LEUVEN",installatienaam_frans:"LOUVAIN",installatienaam_engels:"LEUVEN",stiptheid:90,sumoftel:1000,sumofreg:900,geo_point_2d:{lat:50.881,lon:4.716}},
           {ptcar_no:1,installatienaam_nederlands:"GROOT",installatienaam_frans:"GROOT",installatienaam_engels:"GROOT",stiptheid:95,sumoftel:2000,sumofreg:1900,geo_point_2d:{lat:51,lon:4}},
@@ -95,6 +97,14 @@ function infrabel({train="local"}={}){
   };
 }
 const run=(args,opts)=>atTime(NOW,()=>trainPunctuality(makeDovClient({fetchImpl:infrabel(opts),hosts:[...TRAIN_HOSTS,"geo.api.vlaanderen.be","best.pr.fedservices.be"],maxRequests:12}),args));
+
+{ // An unpublished month must not turn a valid station into an unknown name.
+  const missing=await run({station:"Leuven",month:"2026-11"});
+  assert.match(missing.error,/not published.*November 2026.*October 2026/i);
+  assert.doesNotMatch(missing.error,/No passenger station/);
+  assert.match((await run({station:"Groot",month:"2026-11"})).error,/not published.*October 2026/i);
+}
+
 
 { // station: weighted all-stops average, rank only among stops with >= 500 trains, SNCB share beside an international disaster
   const out=await run({station:"Louvain"});
