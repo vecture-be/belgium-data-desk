@@ -153,7 +153,7 @@ export function geocodeMatchError(address,hit){
     if(p.postcode&&!String(hit.FormattedAddress||"").split(/[^0-9]+/).includes(p.postcode))
       return "The address resolver did not confirm postcode "+p.postcode+". No location-based answer was produced; verify the address or pass coordinates.";
   }else if(!/[0-9,]/.test(address)){
-    const q=geoFold(address),names=[hit.Municipality,hit.Thoroughfarename].map(geoFold);
+    const q=geoFold(address),names=[hit.Municipality,hit.Thoroughfarename,hit.FormattedAddress].map(geoFold);
     if(!names.includes(q))return "The place '"+address+"' did not match the returned municipality or street ('"+(hit.FormattedAddress||"unknown")+"'). Supply a full address or coordinates.";
   }
   return null;
