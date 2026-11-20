@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import {createHmac} from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -48,27 +49,33 @@ assert.equal(init.body.result.protocolVersion,"2025-03-26");assert.ok(init.body.
 const note=await worker.fetch(new Request("https://desk.example/mcp",{method:"POST",body:JSON.stringify({jsonrpc:"2.0",method:"notifications/initialized"})}),env);
 assert.equal(note.status,202);
 
-{ // Only holders of a configured, sufficiently long test secret may label traffic as self-test.
+{ // Only the holder of a configured test secret may sign short-lived self-test requests.
   const secret="unit-test-token-0123456789abcdef0123456789";
-  const req=value=>new Request("https://desk.example/mcp",{headers:{"x-bdd-test-token":value}});
-  assert.equal(mcpTrafficClass(req(secret),{MCP_TEST_TOKEN:secret}),"self_test");
-  assert.equal(mcpTrafficClass(req(secret),{}),"unclassified");
-  assert.equal(mcpTrafficClass(req(secret),{MCP_TEST_TOKEN:"short"}),"unclassified");
-  assert.equal(mcpTrafficClass(req("wrong"),{MCP_TEST_TOKEN:secret}),"unclassified");
+  const timestamp=String(Math.floor(Date.now()/1000));
+  const body=JSON.stringify({jsonrpc:"2.0",id:13,method:"tools/call",
+    params:{name:"search_datasets",arguments:{query:"bevolking"}}});
+  const request=(at=timestamp,signingKey=secret)=>new Request("https://desk.example/mcp",{
+    method:"POST",body,headers:{
+      "x-bdd-test-timestamp":at,
+      "x-bdd-test-signature":createHmac("sha256",signingKey).update(at+"\\n"+body).digest("hex")
+    }
+  });
+  assert.equal(await mcpTrafficClass(request(),{MCP_TEST_TOKEN:secret},body),"self_test");
+  assert.equal(await mcpTrafficClass(request(),{},body),"unclassified");
+  assert.equal(await mcpTrafficClass(request(),{MCP_TEST_TOKEN:"short"},body),"unclassified");
+  assert.equal(await mcpTrafficClass(request(timestamp,"wrong-key"),{MCP_TEST_TOKEN:secret},body),"unclassified");
+  assert.equal(await mcpTrafficClass(request(String(Number(timestamp)-600)),{MCP_TEST_TOKEN:secret},body),"unclassified");
+  assert.equal(await mcpTrafficClass(request(),{MCP_TEST_TOKEN:secret},body+"altered"),"unclassified");
   const points=[],logs=[],oldInfo=console.info;
   try{
     console.info=(...parts)=>logs.push(parts.join(" "));
     const tracked={...env,MCP_TEST_TOKEN:secret,MCP_DIAGNOSTICS_SAMPLE_RATE:"1",
       MCP_USAGE:{writeDataPoint:point=>points.push(point)}};
-    const invoke=async(headers={})=>handleMcp(new Request("https://desk.example/mcp",{
-      method:"POST",headers,body:JSON.stringify({jsonrpc:"2.0",id:13,method:"tools/call",
-        params:{name:"search_datasets",arguments:{query:"bevolking"}}})
-    }),tracked);
-    assert.equal((await invoke({"x-bdd-test-token":secret})).status,200);
-    assert.equal((await invoke()).status,200);
+    assert.equal((await handleMcp(request(),tracked)).status,200);
+    assert.equal((await handleMcp(new Request("https://desk.example/mcp",{method:"POST",body}),tracked)).status,200);
     assert.deepEqual(points.map(x=>x.blobs[5]),["self_test","unclassified"]);
     assert.ok(logs.some(x=>x.includes("bdd.mcp.tool")&&x.includes('"tool":"search_datasets"')));
-    assert.ok(logs.every(x=>!x.includes("bevolking")&&!x.includes(secret)),"diagnostic logs never expose the query or the secret");
+    assert.ok(logs.every(x=>!x.includes("bevolking")&&!x.includes(secret)),"diagnostic logs never expose the query or secret");
   }finally{console.info=oldInfo}
 }
 const list=await rpc("tools/list");
