@@ -54,17 +54,21 @@ const rpcError=(id,code,message)=>jsonResponse({jsonrpc:"2.0",id:id??null,error:
 
 // Per-request budget: every asset read goes through here so no query can exceed the subrequest limit.
 function makeReader(env,origin){
-  let reads=0;const cache=new Map();
-  return{origin,
+  let reads=0;const cache=new Map(),stats={cache_hits:0,parse_ms:0,freeze_ms:0};
+  return{origin,stats,
     get reads(){return reads},
     async json(pathname){
-      if(cache.has(pathname))return cache.get(pathname);
+      if(cache.has(pathname)){stats.cache_hits++;return cache.get(pathname)}
       const hit=sharedGet(env?.ASSETS,pathname);
-      if(hit!==undefined){cache.set(pathname,hit);return hit}
+      if(hit!==undefined){stats.cache_hits++;cache.set(pathname,hit);return hit}
       if(reads>=MAX_ASSET_READS)return null;
       reads++;
       let v=null;
-      try{const r=await env.ASSETS.fetch(new Request(origin+pathname));if(r.ok){const text=await r.text();v=deepFreeze(JSON.parse(text));sharedSet(env?.ASSETS,pathname,v,text.length)}}catch{v=null}
+      try{const r=await env.ASSETS.fetch(new Request(origin+pathname));if(r.ok){
+        const text=await r.text(),t0=performance.now(),parsed=JSON.parse(text),t1=performance.now();
+        v=deepFreeze(parsed);stats.parse_ms+=t1-t0;stats.freeze_ms+=performance.now()-t1;
+        sharedSet(env?.ASSETS,pathname,v,text.length);
+      }}catch{v=null}
       cache.set(pathname,v);return v;
     }
   };
@@ -519,13 +523,34 @@ function mcpTopic(query=""){
   ];
   return groups.find(([,re])=>re.test(q))?.[0]||(q.trim()?"other":"none");
 }
-function writeMcpUsage(env,{method,tool="",args={},status="ok",durationMs=0,resultCount=0}={}){
+// Self-test classification requires an explicit secret, never a public client-supplied "test" flag.
+export function mcpTrafficClass(request,env){
+  const expected=typeof env?.MCP_TEST_TOKEN==="string"?env.MCP_TEST_TOKEN:"";
+  const provided=request.headers.get("x-bdd-test-token")||"";
+  if(expected.length<24||expected.length>256||provided.length!==expected.length)return "unclassified";
+  let diff=0;
+  for(let i=0;i<expected.length;i++)diff|=expected.charCodeAt(i)^provided.charCodeAt(i);
+  return diff===0?"self_test":"unclassified";
+}
+// Cloudflare's invocation log contains actual CPU time. A sampled console entry is
+// attached to that same invocation, so tool names can be correlated without query/IP logging.
+function logMcpDiagnostics(env,{tool,status,elapsedMs,reader,trafficClass}){
+  const rate=Math.min(1,Math.max(0,Number(env?.MCP_DIAGNOSTICS_SAMPLE_RATE)||0));
+  if(!rate||Math.random()>=rate)return;
+  console.info("bdd.mcp.tool",JSON.stringify({
+    tool,status,traffic_class:trafficClass,elapsed_ms:elapsedMs,
+    asset_reads:reader.reads,cache_hits:reader.stats.cache_hits,
+    parse_ms:Math.round(reader.stats.parse_ms*10)/10,
+    freeze_ms:Math.round(reader.stats.freeze_ms*10)/10
+  }));
+}
+function writeMcpUsage(env,{method,tool="",args={},status="ok",durationMs=0,resultCount=0,trafficClass="unclassified"}={}){
   const sink=env?.MCP_USAGE;if(!sink?.writeDataPoint)return;
   // Deliberately do not store query text, dataset ids, headers, IP addresses or conversation content.
   const query=String(args?.query||""),queryWords=query.trim().split(/\s+/).filter(Boolean).length;
   try{sink.writeDataPoint({
     indexes:[tool||method||"mcp"],
-    blobs:[method||"",tool||"",String(args?.scope||""),status,mcpTopic(query)],
+    blobs:[method||"",tool||"",String(args?.scope||""),status,mcpTopic(query),trafficClass],
     doubles:[Math.max(0,Number(durationMs)||0),Math.max(0,Number(resultCount)||0),queryWords]
   })}catch{}
 }
@@ -544,15 +569,16 @@ export function withPrecision(out){
 
 export const toolsFor=env=>TOOLS.filter(t=>t.name!=="report_data_issue"||feedbackConfig(env).on);
 
-export async function callTool(env,origin,name,args,{previewFile=null,dov=null,mailFetch=null}={}){
+export async function callTool(env,origin,name,args,{previewFile=null,dov=null,mailFetch=null,reader=null}={}){
+  const assets=reader||makeReader(env,origin);
   const tool=liveTool(name);
   if(tool){
     if(!dov?.fetchImpl)return asText({error:"Live data access is not available on this server."});
     if(dov.rateLimit&&!(await dov.rateLimit()))return asText({error:"Too many live-data requests right now; try again in a minute."});
     const client=makeDovClient({fetchImpl:dov.fetchImpl,hosts:tool.hosts,maxRequests:tool.maxRequests});
-    return asText(withPrecision(await tool.run(client,args||{},{assets:makeReader(env,origin)})));
+    return asText(withPrecision(await tool.run(client,args||{assets})));
   }
-  const reader=makeReader(env,origin);
+  reader=assets;
   if(name==="search_datasets")return asText(await searchDatasets(reader,args));
   if(name==="get_dataset")return asText(await getDataset(reader,args));
   if(name==="preview_dataset")return asText(await previewDataset(reader,args,previewFile));
@@ -594,25 +620,29 @@ export async function handleMcp(request,env,options={}){
   if(Array.isArray(msg))return rpcError(null,-32600,"Batch requests are not supported.");
   if(!msg||msg.jsonrpc!=="2.0"||typeof msg.method!=="string")return rpcError(msg?.id,-32600,"Invalid request.");
   if(msg.id===undefined)return new Response(null,{status:202,headers:{"access-control-allow-origin":"*"}});   // notification
-  const id=msg.id;
+  const id=msg.id,trafficClass=mcpTrafficClass(request,env);
   switch(msg.method){
     case"initialize":{
       const wanted=msg.params?.protocolVersion,version=SUPPORTED_PROTOCOLS.includes(wanted)?wanted:SUPPORTED_PROTOCOLS[0];
-      writeMcpUsage(env,{method:"initialize"});
+      writeMcpUsage(env,{method:"initialize",trafficClass});
       return jsonResponse({jsonrpc:"2.0",id,result:{protocolVersion:version,capabilities:{tools:{listChanged:false}},serverInfo:{name:"belgium-open-data",title:"Belgian Open Data",version:MCP_VERSION},
         instructions:"Belgian public data, answered from the official sources. For figures, use the answer tools: belgian_statistics (Statbel: population and income by municipality, province or region, rankings, inflation and health index, unemployment), air_quality (IRCEL-CELINE: now, forecast and annual means at an address), flood_risk (VMM's official flood-prone classes at an address in Flanders), river_levels (live river, canal and tide gauges in Flanders against their watch and alarm levels), weather (KMI/IRM: measured now, last days and a 48-hour forecast at a place), train_punctuality (Infrabel: a station, a train yesterday, an IC line or the network), and for the subsurface in Flanders subsurface_at_location, search_subsurface and get_subsurface_record (DOV). Their answers start with key_facts built from the data in the same answer; quote them with the reference date and cite the provenance block. To find datasets and files instead: search_datasets (Dutch, French or English; the official source first for common needs), get_dataset (licence, contact, link checks), preview_dataset (real columns and sample rows) and catalogue_overview. To tell a publisher about a problem in its data, contact_publisher drafts a message the user sends from their own mailbox. Catalogue results are metadata and link-check evidence, not statements about data correctness."}});
     }
     case"ping":return jsonResponse({jsonrpc:"2.0",id,result:{}});
     case"tools/list":return jsonResponse({jsonrpc:"2.0",id,result:{tools:toolsFor(env)}});
     case"tools/call":{
-      const name=msg.params?.name,args=msg.params?.arguments||{},started=Date.now(),tools=toolsFor(env);
+      const name=msg.params?.name,args=msg.params?.arguments||{},started=Date.now(),tools=toolsFor(env),reader=makeReader(env,origin);
       if(!tools.some(t=>t.name===name))return rpcError(id,-32602,"Unknown tool '"+String(name).slice(0,64)+"'. Available: "+tools.map(t=>t.name).join(", ")+".");
       try{
-        const result=await callTool(env,origin,name,args,options);
-        writeMcpUsage(env,{method:"tools/call",tool:name,args,status:result?.isError?"error":"ok",durationMs:Date.now()-started,resultCount:usageResultCount(result)});
+        const result=await callTool(env,origin,name,args,{...options,reader});
+        const elapsedMs=Date.now()-started,status=result?.isError?"error":"ok";
+        writeMcpUsage(env,{method:"tools/call",tool:name,args,status,durationMs:elapsedMs,resultCount:usageResultCount(result),trafficClass});
+        logMcpDiagnostics(env,{tool:name,status,elapsedMs,reader,trafficClass});
         return jsonResponse({jsonrpc:"2.0",id,result});
       }catch{
-        writeMcpUsage(env,{method:"tools/call",tool:name,args,status:"error",durationMs:Date.now()-started});
+        const elapsedMs=Date.now()-started;
+        writeMcpUsage(env,{method:"tools/call",tool:name,args,status:"error",durationMs:elapsedMs,trafficClass});
+        logMcpDiagnostics(env,{tool:name,status:"error",elapsedMs,reader,trafficClass});
         return jsonResponse({jsonrpc:"2.0",id,result:{content:[{type:"text",text:"The "+name+" tool hit an internal error while reading the catalogue index. Retry once; if it persists, report it at info@vecture.be."}],isError:true}});
       }
     }
