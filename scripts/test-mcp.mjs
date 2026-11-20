@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildIndex, inheritCuratedLicences, writeIndex } from "./build-mcp-index.mjs";
-import { handleMcp, idShard, prefixKey, publicOrigin, tokenize, tokenShard, withPrecision, normalizeSearchIntent } from "../mcp-server.mjs";
+import { handleMcp, idShard, prefixKey, publicOrigin, tokenize, tokenShard, withPrecision, normalizeSearchIntent, mcpTrafficClass } from "../mcp-server.mjs";
 import worker, { makePreviewFile } from "../worker.mjs";
 import { AUTHORITIES, authoritiesFor } from "../public/dataset-authority-v1.mjs";
 import { expandWord } from "../public/dataset-synonyms-v1.mjs";
@@ -47,6 +47,30 @@ const init=await rpc("initialize",{protocolVersion:"2025-03-26",capabilities:{},
 assert.equal(init.body.result.protocolVersion,"2025-03-26");assert.ok(init.body.result.capabilities.tools);
 const note=await worker.fetch(new Request("https://desk.example/mcp",{method:"POST",body:JSON.stringify({jsonrpc:"2.0",method:"notifications/initialized"})}),env);
 assert.equal(note.status,202);
+
+{ // Only holders of a configured, sufficiently long test secret may label traffic as self-test.
+  const secret="unit-test-token-0123456789abcdef0123456789";
+  const req=value=>new Request("https://desk.example/mcp",{headers:{"x-bdd-test-token":value}});
+  assert.equal(mcpTrafficClass(req(secret),{MCP_TEST_TOKEN:secret}),"self_test");
+  assert.equal(mcpTrafficClass(req(secret),{}),"unclassified");
+  assert.equal(mcpTrafficClass(req(secret),{MCP_TEST_TOKEN:"short"}),"unclassified");
+  assert.equal(mcpTrafficClass(req("wrong"),{MCP_TEST_TOKEN:secret}),"unclassified");
+  const points=[],logs=[],oldInfo=console.info;
+  try{
+    console.info=(...parts)=>logs.push(parts.join(" "));
+    const tracked={...env,MCP_TEST_TOKEN:secret,MCP_DIAGNOSTICS_SAMPLE_RATE:"1",
+      MCP_USAGE:{writeDataPoint:point=>points.push(point)}};
+    const invoke=async(headers={})=>handleMcp(new Request("https://desk.example/mcp",{
+      method:"POST",headers,body:JSON.stringify({jsonrpc:"2.0",id:13,method:"tools/call",
+        params:{name:"search_datasets",arguments:{query:"bevolking"}}})
+    }),tracked);
+    assert.equal((await invoke({"x-bdd-test-token":secret})).status,200);
+    assert.equal((await invoke()).status,200);
+    assert.deepEqual(points.map(x=>x.blobs[5]),["self_test","unclassified"]);
+    assert.ok(logs.some(x=>x.includes("bdd.mcp.tool")&&x.includes('"tool":"search_datasets"')));
+    assert.ok(logs.every(x=>!x.includes("bevolking")&&!x.includes(secret)),"diagnostic logs never expose the query or the secret");
+  }finally{console.info=oldInfo}
+}
 const list=await rpc("tools/list");
 assert.deepEqual(list.body.result.tools.map(t=>t.name).sort(),["air_quality","belgian_statistics","catalogue_overview","contact_publisher","electricity_grid","fetch","flood_risk","get_dataset","get_subsurface_record","heritage_at_location","preview_dataset","real_estate_prices","river_levels","search","search_datasets","search_subsurface","subsurface_at_location","train_punctuality","weather","zoning_at_location"]);
 // Anthropic directory requirements: every tool has a title, readOnlyHint/destructiveHint annotations and a name of at most 64 characters.
