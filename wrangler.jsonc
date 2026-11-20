@@ -18,6 +18,8 @@
   // Address used in links the MCP tools return. Forks: delete it (the request origin is used) or set your own domain.
   "vars": {
     "PUBLIC_ORIGIN": "https://data.vecture.be",
+    // Sample one in ten MCP tool calls for per-invocation CPU attribution. No query text, IP, or raw headers.
+    "MCP_DIAGNOSTICS_SAMPLE_RATE": "0.1",
     // Domain verification token for the OpenAI Apps directory, served at /.well-known/openai-apps-challenge. Forks: delete it.
     "OPENAI_APPS_CHALLENGE": "W3eC2C_EaoEOK9FfiQVZPBQVkYq3GXIu3VVjdhFhi_4"
   },

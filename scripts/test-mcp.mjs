@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
+import {createHmac} from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildIndex, inheritCuratedLicences, writeIndex } from "./build-mcp-index.mjs";
-import { handleMcp, idShard, prefixKey, publicOrigin, tokenize, tokenShard, withPrecision, normalizeSearchIntent } from "../mcp-server.mjs";
+import { handleMcp, idShard, prefixKey, publicOrigin, tokenize, tokenShard, withPrecision, normalizeSearchIntent, mcpTrafficClass } from "../mcp-server.mjs";
 import worker, { makePreviewFile } from "../worker.mjs";
 import { AUTHORITIES, authoritiesFor } from "../public/dataset-authority-v1.mjs";
 import { expandWord } from "../public/dataset-synonyms-v1.mjs";
@@ -47,6 +48,36 @@ const init=await rpc("initialize",{protocolVersion:"2025-03-26",capabilities:{},
 assert.equal(init.body.result.protocolVersion,"2025-03-26");assert.ok(init.body.result.capabilities.tools);
 const note=await worker.fetch(new Request("https://desk.example/mcp",{method:"POST",body:JSON.stringify({jsonrpc:"2.0",method:"notifications/initialized"})}),env);
 assert.equal(note.status,202);
+
+{ // Only the holder of a configured test secret may sign short-lived self-test requests.
+  const secret="unit-test-token-0123456789abcdef0123456789";
+  const timestamp=String(Math.floor(Date.now()/1000));
+  const body=JSON.stringify({jsonrpc:"2.0",id:13,method:"tools/call",
+    params:{name:"search_datasets",arguments:{query:"bevolking"}}});
+  const request=(at=timestamp,signingKey=secret)=>new Request("https://desk.example/mcp",{
+    method:"POST",body,headers:{
+      "x-bdd-test-timestamp":at,
+      "x-bdd-test-signature":createHmac("sha256",signingKey).update(at+"\n"+body).digest("hex")
+    }
+  });
+  assert.equal(await mcpTrafficClass(request(),{MCP_TEST_TOKEN:secret},body),"self_test");
+  assert.equal(await mcpTrafficClass(request(),{},body),"unclassified");
+  assert.equal(await mcpTrafficClass(request(),{MCP_TEST_TOKEN:"short"},body),"unclassified");
+  assert.equal(await mcpTrafficClass(request(timestamp,"wrong-key"),{MCP_TEST_TOKEN:secret},body),"unclassified");
+  assert.equal(await mcpTrafficClass(request(String(Number(timestamp)-600)),{MCP_TEST_TOKEN:secret},body),"unclassified");
+  assert.equal(await mcpTrafficClass(request(),{MCP_TEST_TOKEN:secret},body+"altered"),"unclassified");
+  const points=[],logs=[],oldInfo=console.info;
+  try{
+    console.info=(...parts)=>logs.push(parts.join(" "));
+    const tracked={...env,MCP_TEST_TOKEN:secret,MCP_DIAGNOSTICS_SAMPLE_RATE:"1",
+      MCP_USAGE:{writeDataPoint:point=>points.push(point)}};
+    assert.equal((await handleMcp(request(),tracked)).status,200);
+    assert.equal((await handleMcp(new Request("https://desk.example/mcp",{method:"POST",body}),tracked)).status,200);
+    assert.deepEqual(points.map(x=>x.blobs[5]),["self_test","unclassified"]);
+    assert.ok(logs.some(x=>x.includes("bdd.mcp.tool")&&x.includes('"tool":"search_datasets"')));
+    assert.ok(logs.every(x=>!x.includes("bevolking")&&!x.includes(secret)),"diagnostic logs never expose the query or secret");
+  }finally{console.info=oldInfo}
+}
 const list=await rpc("tools/list");
 assert.deepEqual(list.body.result.tools.map(t=>t.name).sort(),["air_quality","belgian_statistics","catalogue_overview","contact_publisher","electricity_grid","fetch","flood_risk","get_dataset","get_subsurface_record","heritage_at_location","preview_dataset","real_estate_prices","river_levels","search","search_datasets","search_subsurface","subsurface_at_location","train_punctuality","weather","zoning_at_location"]);
 // Anthropic directory requirements: every tool has a title, readOnlyHint/destructiveHint annotations and a name of at most 64 characters.
@@ -107,6 +138,25 @@ assert.equal((await rpc("tools/call",{name:"fetch",arguments:{id:"nope"}})).body
 // budget: no query may exceed the asset-read allowance (free-plan subrequest cap is 50)
 reads=0;await rpc("tools/call",{name:"search_datasets",arguments:{query:"bevolking gemeente luchtkwaliteit census",scope:"all",limit:20}});
 assert.ok(reads<=30,"asset reads per query must stay within budget, got "+reads);
+{ // A request that expands several synonyms into the same shard fetches it just once,
+  // even when several Promise.all branches request that shard simultaneously.
+  const fetchedPaths=new Map();
+  const isolated={ASSETS:{fetch:async req=>{
+    const name=new URL(req.url).pathname;
+    fetchedPaths.set(name,(fetchedPaths.get(name)||0)+1);
+    await Promise.resolve();
+    const file=path.join(dir,name);
+    return fs.existsSync(file)?new Response(fs.readFileSync(file)):new Response("nf",{status:404});
+  }}};
+  const req=new Request("https://desk.example/mcp",{method:"POST",body:JSON.stringify({
+    jsonrpc:"2.0",id:42,method:"tools/call",
+    params:{name:"search_datasets",arguments:{query:"bevolking gemeente luchtkwaliteit census",scope:"all",limit:20}}
+  })});
+  assert.equal((await handleMcp(req,isolated)).status,200);
+  assert.ok(fetchedPaths.size>=2,"fixture should exercise multiple search shards");
+  assert.deepEqual([...fetchedPaths].filter(([,n])=>n!==1),[],
+    "concurrent synonyms must not refetch an in-flight index shard");
+}
 
 // protocol hygiene
 assert.equal((await rpc("nope")).body.error.code,-32601);

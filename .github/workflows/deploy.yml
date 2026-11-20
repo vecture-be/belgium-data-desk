@@ -130,6 +130,8 @@ jobs:
         run: npx wrangler deploy
 
       - name: Smoke test every MCP tool
+        env:
+          BDD_TEST_TOKEN: ${{ secrets.MCP_TEST_TOKEN }}
         run: node scripts/smoke-mcp.mjs ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}
       # A successful tools/list is not enough: require every name, schema, description and annotation
       # to match exactly what this revision declares. Retries allow for Cloudflare propagation.
