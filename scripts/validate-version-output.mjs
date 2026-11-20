@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { idShard, DOC_CHUNK } from "../mcp-server.mjs";
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const dir=path.join(root,"public","cards"),summaryFile=path.join(dir,"summary.json");
 const hasProfiles=[".cache/full-check.jsonl",".cache/link-probe.jsonl"].some(p=>fs.existsSync(path.join(root,p)));
@@ -34,8 +35,23 @@ if(!fs.existsSync(summaryFile)){
   if(count!==summary.cards||count!==summary.versioning?.passports||count!==manifest.assessed)fail("counts","card/summary/manifest mismatch");
   if(review!==manifest.requiring_review||review!==summary.versioning?.requiring_review)fail("counts","review totals mismatch");
   if(!Array.isArray(manifest.entries)||manifest.entries.length>250)fail("manifest","invalid entries");
+  // True selective release validation: only impacted records are cross-checked against
+  // the built MCP id index and search shards, before the Worker can publish them.
+  const mcp=path.join(root,"public","mcp"),idCache=new Map(),docCache=new Map();
+  const getJson=(base,key,cache)=>{
+    if(!cache.has(key))cache.set(key,JSON.parse(fs.readFileSync(path.join(base,key+".json"),"utf8")));
+    return cache.get(key);
+  };
   for(const e of manifest.entries||[]){
     if(!ids.has(e.dataset_id))fail(e.dataset_id,"impact points to nonexistent card");
+    try{
+      const idx=getJson(path.join(mcp,"i"),idShard(e.dataset_id),idCache)[e.dataset_id];
+      if(!Number.isSafeInteger(idx))fail(e.dataset_id,"affected dataset missing from MCP id index");
+      else{
+        const chunk=Math.floor(idx/DOC_CHUNK),doc=getJson(path.join(mcp,"d"),String(chunk),docCache)[idx%DOC_CHUNK];
+        if(doc?.id!==e.dataset_id)fail(e.dataset_id,"affected MCP search document is not the same dataset");
+      }
+    }catch(err){fail(e.dataset_id,"affected index unreadable: "+err.message)}
     if(!["review","informational"].includes(e.decision?.severity))fail(e.dataset_id,"unexpected impact severity");
   }
   if(problem.length)throw Error("Version release gate failed:\n"+problem.join("\n"));
