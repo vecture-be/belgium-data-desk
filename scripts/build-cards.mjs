@@ -10,7 +10,6 @@ import { buildCard } from "./dataset-card.mjs";
 import { pickTabularDistribution } from "./tabular-profile.mjs";
 import { idShard } from "../mcp-server.mjs";
 import { buildScorecards } from "./health.mjs";
-import { versionPassport, dependencyImpact, changeDecision } from "./version-intelligence.mjs";
 import { facetsOf } from "./build-mcp-index.mjs";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),".."),pub=path.join(root,"public"),out=path.join(pub,"cards");
@@ -57,9 +56,6 @@ export function buildCards(records,current,previous,{now=new Date().toISOString(
     const card=buildCard(rec,p.profile,{previous:prevCard,now:p.checkedAt||now,
       file:{url:d.url,format:d.format||p.fmt,bytesRead:p.bytes,totalBytes:p.total,lastModified:p.lastModified,etag:p.etag,sha256:p.sha256,headerCheck:p.header_check,change:p.change||null,
         ...(p.content_since?{content:{since:p.content_since,changedAt:p.content_changed_at,changedAfter:p.changed_after,observedSince:p.observed_since,lastModifiedUsable:p.header_check?.last_modified_usable,rowOrderUnstable:!!p.row_order_unstable}}:{})}});
-    card.version_passport=versionPassport(rec,p);
-    card.lineage=dependencyImpact(rec,p);
-    card.change_impact=changeDecision(p,rec);
     cards.set(rec.id,card);
   }
   return cards;
@@ -129,9 +125,6 @@ function main(){
     catalogue_date_not_in_file:count(c=>c.freshness.metadata_date_not_reflected_in_file),
     row_order_unstable:count(c=>c.quality.row_order_unstable),
     with_change_seen:count(c=>c.last_change_seen),
-    versioning:{passports:all.length,whole_file:count(c=>c.version_passport?.observation?.extent==="whole_file"),
-      unassessed:count(c=>c.version_passport?.change_classification?.kind==="unassessed"),
-      requiring_review:count(c=>c.change_impact?.severity==="review"),impact_manifest:"/cards/impact-manifest.json"},
     with_time_coverage:count(c=>c.coverage.time),join_keys:keyKinds,schema_changed:count(c=>c.schema.changed_since),
     cadence_not_met:count(c=>c.freshness.cadence_not_met),
     period_read_from_file:backfillIndex(cards),
@@ -144,21 +137,6 @@ function main(){
     fs.writeFileSync(path.join(out,"publishers.json"),JSON.stringify(sc));
     summary.publisher_health={...sc.totals,publishers:sc.publishers.length,details:"/cards/publishers.json"};
   }
-  // A bounded public index of affected outputs: upstream anomalies are not blanket release blockers.
-  const impacts=all.filter(c=>["review","informational"].includes(c.change_impact?.severity)).map(c=>({
-    dataset_id:c.id,title:c.title||null,publisher:c.publisher||null,
-    checked_at:c.version_passport?.observation?.checked_at||null,
-    change:c.version_passport?.change_classification,
-    decision:c.change_impact,
-    passport_in_get_dataset:true
-  }));
-  impacts.sort((a,b)=>(b.decision.severity==="review")-(a.decision.severity==="review")||String(a.dataset_id).localeCompare(String(b.dataset_id)));
-  fs.writeFileSync(path.join(out,"impact-manifest.json"),JSON.stringify({
-    schema_version:1,built:new Date().toISOString(),assessed:all.length,
-    requiring_review:impacts.filter(i=>i.decision.severity==="review").length,
-    entries:impacts.slice(0,250),truncated:impacts.length>250,
-    note:"Impacts describe this catalogue pipeline. Upstream changes are not necessarily publisher errors or changes to live answer tools."
-  }));
   fs.writeFileSync(path.join(out,"summary.json"),JSON.stringify(summary));
   console.log("[cards] "+all.length+" dataset cards in "+shards.size+" shards; "+JSON.stringify(summary.freshness)+"; keys "+JSON.stringify(keyKinds)+"; schema changed "+summary.schema_changed);
 }
