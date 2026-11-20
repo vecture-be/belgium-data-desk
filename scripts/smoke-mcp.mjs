@@ -4,10 +4,13 @@
 import { callThroughRollout } from "./smoke-retry.mjs";
 const origin=(process.argv[2]||"https://data.vecture.be").replace(/\/$/,"");
 const PROTOCOL="2025-06-18";
+// Optional authenticated self-test marker; never print its value.
+const TEST_TOKEN=process.env.BDD_TEST_TOKEN||"";
+if(TEST_TOKEN&&TEST_TOKEN.length<24)throw new Error("BDD_TEST_TOKEN must have at least 24 characters");
 let id=0,failed=0,warned=0;
 async function rpc(method,params){
   const t=Date.now();
-  const r=await fetch(origin+"/mcp",{method:"POST",headers:{"content-type":"application/json",accept:"application/json, text/event-stream","mcp-protocol-version":PROTOCOL},body:JSON.stringify({jsonrpc:"2.0",id:++id,method,params})});
+  const r=await fetch(origin+"/mcp",{method:"POST",headers:{"content-type":"application/json",accept:"application/json, text/event-stream","mcp-protocol-version":PROTOCOL,...(TEST_TOKEN?{"x-bdd-test-token":TEST_TOKEN}:{})},body:JSON.stringify({jsonrpc:"2.0",id:++id,method,params})});
   const text=await r.text();let body=null;try{body=JSON.parse(text)}catch{}
   return{status:r.status,body,ms:Date.now()-t,text};
 }
