@@ -47,7 +47,7 @@ const fcRun=T-36e5;
 const vmmFc=Array.from({length:4*60},(_,i)=>{const t=fcRun-12*36e5+i*15*60e3,h=(t-T)/36e5;return[new Date(t).toISOString(),h<=0?24.18:24.18+2.15*Math.min(1,h/48)]});
 const hicTide=Array.from({length:12*60},(_,i)=>{const t=T-36e5+i*5*60e3,h=(t-T)/36e5;return[new Date(t).toISOString(),round2(2.6+2.5*Math.cos((h+0.5)/12.42*2*Math.PI))]});
 function round2(x){return Math.round(x*100)/100}
-function kiwis({hicDown=false,noForecast=false,fcTimeout=false}={}){
+function kiwis({hicDown=false,noForecast=false,fcTimeout=false,historyDown=false,statusDown=false}={}){
   return async url=>{
     const u=new URL(url),p=P(url),host=u.hostname;
     if(host==="hicws.vlaanderen.be"&&hicDown)throw Object.assign(new Error("t"),{name:"TimeoutError"});
@@ -65,12 +65,16 @@ function kiwis({hicDown=false,noForecast=false,fcTimeout=false}={}){
     }
     if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id==="118730")return json(vmmLayer);
     if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id==="156154")return json(hicLayer);
-    if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id==="111236,111237")return json([
+    if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id==="111236,111237"){
+      if(statusDown)throw Object.assign(new Error("timeout"),{name:"TimeoutError"});
+      return json([
       {ts_name:"AlarmStatus",station_no:"L08_097",ts_value:0,timestamp:at(40)},{ts_name:"KT-AlarmStatus.O",station_no:"L08_097",ts_value:2,timestamp:new Date(T+36e5*30).toISOString()},
       {ts_name:"AlarmStatus",station_no:"S01_42A8",ts_value:1,timestamp:at(40)}]);
+    }
     if(p.request==="getTimeseriesValueLayer"&&p.timeseriesgroup_id.startsWith("156152"))return json([{ts_name:"AlarmStatus.O",station_no:"zes21a-1066",ts_value:0,timestamp:at(10)},
       {ts_name:"DrempelWaak.O",station_no:"zes21a-1066",ts_value:6.6,timestamp:"2022-12-14T00:00:00+01:00"},{ts_name:"DrempelAlarm.O",station_no:"zes21a-1066",ts_value:7.3,timestamp:"2022-12-14T00:00:00+01:00"}]);
     if(p.request==="getTimeseriesValues"&&p.period==="PT26H"){
+      if(historyDown)throw Object.assign(new Error("timeout"),{name:"TimeoutError"});
       const ids=p.ts_id.split(",");
       return json(ids.map(id=>({ts_id:id,data:id==="9"?series(h=>2.6+2.5*Math.cos(h/12.42*2*Math.PI),313,5)   // tide: 5 m swing
         :id==="5"?series(h=>0.5+0.3*Math.sin(h/4*2*Math.PI))   // a brook after showers: turns every 2 h, at 145 m TAW
@@ -124,6 +128,20 @@ const river=(args,opts)=>atTime(NOW,()=>{const client=makeDovClient({fetchImpl:k
   assert.equal(out.gauges[0].level_forecast,undefined);assert.equal(out.complete,false);assert.deepEqual(out.search.forecasts_not_answering,["VMM"]);
   assert.match(out.key_facts.at(-1),/^The VMM water-level forecast could not be read just now \(waterinfo\.be \(VMM\) did not answer within \d+ s\); the levels above are measured only/);
   assert.deepEqual(checkAnswer(out),[]);
+}
+{ // A silent history endpoint must not be mistaken for a flat river.
+  const out=await river({station:"L08_097"},{historyDown:true});
+  assert.equal(out.complete,false);
+  assert.deepEqual(out.search.details_not_answering,[{provider:"VMM",detail:"24-hour history"}]);
+  assert.equal(out.gauges[0].change_cm,undefined);
+  assert.match(out.key_facts.at(-1),/24-hour history could not be read/);
+  assert.equal(out.gauges[0].latest.level_m_taw,24.18,"the latest dated gauge reading may still be shown");
+}
+{ // Missing official status is explicit; an absent status must never mean 'normal'.
+  const out=await river({station:"L08_097"},{statusDown:true});
+  assert.equal(out.complete,false);
+  assert.deepEqual(out.search.details_not_answering,[{provider:"VMM",detail:"official status"}]);
+  assert.equal(out.gauges[0].official_status,undefined);
 }
 { // above the watch level: said plainly, with a negative margin
   const out=await river({station:"Ichtegem"});
