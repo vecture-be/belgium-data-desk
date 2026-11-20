@@ -63,13 +63,19 @@ function makeReader(env,origin){
       if(hit!==undefined){stats.cache_hits++;cache.set(pathname,hit);return hit}
       if(reads>=MAX_ASSET_READS)return null;
       reads++;
-      let v=null;
-      try{const r=await env.ASSETS.fetch(new Request(origin+pathname));if(r.ok){
-        const text=await r.text(),t0=performance.now(),parsed=JSON.parse(text),t1=performance.now();
-        v=deepFreeze(parsed);stats.parse_ms+=t1-t0;stats.freeze_ms+=performance.now()-t1;
-        sharedSet(env?.ASSETS,pathname,v,text.length);
-      }}catch{v=null}
-      cache.set(pathname,v);return v;
+      // Search synonym groups often ask for the same shard concurrently. Register
+      // the in-flight promise before fetching so it is fetched/parsed only once.
+      const pending=(async()=>{
+        let v=null;
+        try{const r=await env.ASSETS.fetch(new Request(origin+pathname));if(r.ok){
+          const text=await r.text(),t0=performance.now(),parsed=JSON.parse(text),t1=performance.now();
+          v=deepFreeze(parsed);stats.parse_ms+=t1-t0;stats.freeze_ms+=performance.now()-t1;
+          sharedSet(env?.ASSETS,pathname,v,text.length);
+        }}catch{v=null}
+        return v;
+      })();
+      cache.set(pathname,pending);
+      return pending;
     }
   };
 }
