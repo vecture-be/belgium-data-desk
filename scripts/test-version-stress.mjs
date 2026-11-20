@@ -61,7 +61,7 @@ try{
     assert.equal(classifyVersionChange(schema).kind,'schema_evolution');
   });
   body=variants[5];
-  const emptied=await checkFile(work,{previous:schema,prevRows:schema[ROWS]});checked++;
+  const emptied=await checkFile(work,{previous:appended,prevRows:appended[ROWS]});checked++;
   soft('header-only export preserves zero-row profile and flags empty',()=>{
     assert.equal(emptied.profile?.rows,0);
     assert.deepEqual(emptied.profile?.columns?.map(x=>x.name),['jaar','nis','waarde']);
