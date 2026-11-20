@@ -37,11 +37,15 @@ from CI runners alone.
 ## Identify your own tests, without user tracking
 
 `MCP_USAGE` now includes `blob6 = self_test | unclassified`.
-Only a request with the secret `MCP_TEST_TOKEN` in header
-`x-bdd-test-token` is marked `self_test`. The secret must have at least
-24 characters and must be configured with `wrangler secret put MCP_TEST_TOKEN`;
+Only requests carrying a valid, short-lived HMAC-SHA256 proof are
+marked `self_test`. A test runner signs `timestamp + "\\n" + raw_json_body`
+and sends `x-bdd-test-timestamp` (UTC Unix seconds) and
+`x-bdd-test-signature` (hex). The server checks the signature and a
+two-minute freshness window against `MCP_TEST_TOKEN`; the secret itself
+**is never sent in any request header**. The secret must have at least 24
+characters and must be configured with `wrangler secret put MCP_TEST_TOKEN`;
 it is never committed to the repository. With no configured secret or no
-matching header, events remain `unclassified` — **not** proven external
+valid proof, events remain `unclassified` — **not** proven external
 users. No historic traffic is reclassified.
 
 To tag authenticated production smoke tests:
