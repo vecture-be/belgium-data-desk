@@ -2,6 +2,7 @@
 //   node scripts/smoke-mcp.mjs [origin]     exit code 1 when a call fails or returns an error result
 // Live tools reach DOV, Statbel tables, IRCEL and VMM, so a failure can also mean an upstream service is down; the output says which.
 import { callThroughRollout } from "./smoke-retry.mjs";
+import {createHmac} from "node:crypto";
 const origin=(process.argv[2]||"https://data.vecture.be").replace(/\/$/,"");
 const PROTOCOL="2025-06-18";
 // Optional authenticated self-test marker; never print its value.
@@ -9,8 +10,12 @@ const TEST_TOKEN=process.env.BDD_TEST_TOKEN||"";
 if(TEST_TOKEN&&TEST_TOKEN.length<24)throw new Error("BDD_TEST_TOKEN must have at least 24 characters");
 let id=0,failed=0,warned=0;
 async function rpc(method,params){
-  const t=Date.now();
-  const r=await fetch(origin+"/mcp",{method:"POST",headers:{"content-type":"application/json",accept:"application/json, text/event-stream","mcp-protocol-version":PROTOCOL,...(TEST_TOKEN?{"x-bdd-test-token":TEST_TOKEN}:{})},body:JSON.stringify({jsonrpc:"2.0",id:++id,method,params})});
+  const t=Date.now(),body=JSON.stringify({jsonrpc:"2.0",id:++id,method,params});
+  const timestamp=String(Math.floor(t/1000));
+  const proof=TEST_TOKEN?{"x-bdd-test-timestamp":timestamp,
+    "x-bdd-test-signature":createHmac("sha256",TEST_TOKEN).update(timestamp+"\n"+body).digest("hex")}:{};
+  const r=await fetch(origin+"/mcp",{method:"POST",headers:{"content-type":"application/json",
+    accept:"application/json, text/event-stream","mcp-protocol-version":PROTOCOL,...proof},body});
   const text=await r.text();let body=null;try{body=JSON.parse(text)}catch{}
   return{status:r.status,body,ms:Date.now()-t,text};
 }
