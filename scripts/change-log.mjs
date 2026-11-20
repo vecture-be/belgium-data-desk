@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { classifyVersionChange, dependencyImpact } from "./version-intelligence.mjs";
 
 const fmt=n=>n==null?"":Number(n).toLocaleString("en-GB");
 const signed=n=>n==null?"":(n>0?"+":n<0?"−":"±")+fmt(Math.abs(n));
@@ -26,7 +27,8 @@ export function buildChangeLog(records,{since,titles=new Map(),date=new Date().t
   const count=(list,f)=>{const m={};for(const r of list)for(const k of [].concat(f(r)).filter(Boolean))m[k]=(m[k]||0)+1;return m};
   const changed=profiled.filter(r=>r.change&&Date.parse(r.change.seen_at||0)>=t0).map(r=>{
     const t=titles.get(r.ds)||{};
-    return{id:r.ds,title:t.title||null,publisher:t.publisher||r.prov||null,url:r.url,...r.change};
+    return{id:r.ds,title:t.title||null,publisher:t.publisher||r.prov||null,url:r.url,...r.change,
+      change_type:classifyVersionChange(r),affected_outputs:dependencyImpact({id:r.ds},r).affected_outputs};
   });
   const size=c=>(c.distinct_rows_added||0)+(c.distinct_rows_removed||0)+Math.abs((c.rows.after||0)-(c.rows.before||0));
   changed.sort((a,b)=>size(b)-size(a)||String(a.title).localeCompare(String(b.title)));
@@ -118,8 +120,8 @@ export function renderReadme(log,history){
   }
   lines.push("## Changed since the previous check","");
   if(log.changed.length){
-    lines.push("| Dataset | Publisher | Rows before → after | Change |","| --- | --- | ---: | --- |");
-    for(const c of log.changed.slice(0,100))lines.push("| ["+cell(c.title||c.id)+"]("+c.url+") | "+cell(c.publisher)+" | "+fmt(c.rows.before)+" → "+fmt(c.rows.after)+" | "+cell(describe(c))+" |");
+    lines.push("| Dataset | Publisher | Change type | Rows before → after | Change |","| --- | --- | ---: | ---: | --- |");
+    for(const c of log.changed.slice(0,100))lines.push("| ["+cell(c.title||c.id)+"]("+c.url+") | "+cell(c.publisher)+" | "+cell(c.change_type?.kind||"unassessed")+" | "+fmt(c.rows.before)+" → "+fmt(c.rows.after)+" | "+cell(describe(c))+" |");
     if(log.changed.length>100)lines.push("","… and "+fmt(log.changed.length-100)+" more in [changes/"+r.date+".json](changes/"+r.date+".json).");
   }else lines.push(hasBaseline?"No dataset changed among the "+fmt(r.files_compared)+" files compared with a previous check.":"This is an initial baseline: no files were compared with a previous check, so changes cannot yet be determined.");
   lines.push("","## Earlier checks","",...history.map(h=>"- ["+h.date+"](changes/"+h.date+".json): "+(h.files_compared>0?fmt(h.files_changed)+" changed of "+fmt(h.files_compared)+" compared":"initial baseline (0 compared)")),"",
