@@ -238,20 +238,20 @@ assert.notEqual(authoritiesFor(["used","batteries","collection"])[0]?.ids[0],"cu
  assert.equal((await get("/api/dataset?id=nope")).status,404);
  assert.equal((await (await get("/api/overview")).json()).records,items.length);
  assert.equal((await worker.fetch(new Request("https://desk.example/api/search?q=x",{method:"POST"}),env)).status,405);}
-// Regression: the MCP projection must not silently discard evidence published in a dataset card.
+// Regression: the MCP still exposes existing measured file evidence and change history.
 {
  const id="national:1",fn=path.join(dir,"cards",idShard(id)+".json");
  fs.mkdirSync(path.dirname(fn),{recursive:true});
  fs.writeFileSync(fn,JSON.stringify({[id]:{
    id,profiled_at:"2026-11-20",facts:[],freshness:{status:"unknown"},coverage:{time:null,keys:[]},
-   quality:{},schema:{fingerprint:"fixture"},file:{read:"whole file",rows_exact:true,rows:2,bytes_read:16},columns:[],
-   version_passport:{schema_version:1,dataset_id:id,publisher_revision:null,publisher_release:null},
-   lineage:{confidence:"declared_pipeline_only",affected_outputs:["mcp:get_dataset:"+id]},
-   change_impact:{classification:"unchanged",severity:"none",automatic_release_block:false}
+   quality:{},schema:{fingerprint:"fixture"},file:{read:"whole file",rows_exact:true,rows:2,bytes_read:16,sha256:"samplefingerprint"},columns:[],
+   last_change_seen:{distinct_rows_added:2,seen_at:"2026-11-20T00:00:00Z"}
  }}));
- const g2=(await rpc("tools/call",{name:"get_dataset",arguments:{id}})).body.result.structuredContent;
- assert.equal(g2.card?.version_passport?.dataset_id,id,"version passport is visible through MCP");
- assert.equal(g2.card?.lineage?.confidence,"declared_pipeline_only");
- assert.equal(g2.card?.change_impact?.automatic_release_block,false);
+ const card=(await rpc("tools/call",{name:"get_dataset",arguments:{id}})).body.result.structuredContent.card;
+ assert.equal(card?.file?.sha256,"samplefingerprint","original file hash is visible through MCP");
+ assert.equal(card?.last_change_seen?.distinct_rows_added,2,"existing change evidence is visible through MCP");
+ assert.equal(card?.version_passport,undefined,"no redundant passport");
+ assert.equal(card?.lineage,undefined,"no synthetic graph payload");
+ assert.equal(card?.change_impact,undefined,"no duplicate impact decision");
 }
 console.log(JSON.stringify({ok:true,mcp:"search/get/preview/overview/authority",tools:12}));
