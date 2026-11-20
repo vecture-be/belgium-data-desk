@@ -485,6 +485,9 @@ async function cardFor(reader,id){
   if(!c)return null;
   return{profiled_at:c.profiled_at,facts:c.facts,...(c.disagreements?.length?{disagreements:c.disagreements}:{}),...(c.repairs?{repairs:c.repairs}:{}),freshness:c.freshness,...(c.last_change_seen?{last_change_seen:c.last_change_seen}:{}),coverage:c.coverage,quality:c.quality,schema:c.schema,
     file:c.file,columns:(c.columns||[]).slice(0,25),
+    ...(c.version_passport?{version_passport:c.version_passport}:{}),
+    ...(c.lineage?{lineage:c.lineage}:{}),
+    ...(c.change_impact?{change_impact:c.change_impact}:{}),
     note:(c.file?.rows_exact
       ?"Computed by code from the whole file ("+Math.round((c.file?.bytes_read||0)/1024)+" KiB) and the catalogue record; change dates are checked against the file's content week over week"
       :"Computed by code from the first "+Math.round((c.file?.bytes_read||0)/1024)+" KiB of the file and the catalogue record; ranges and counts describe the rows read")+". Quote facts with their evidence."};
