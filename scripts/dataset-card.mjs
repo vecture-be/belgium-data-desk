@@ -140,9 +140,15 @@ export function profileColumns(text,{url="",format="",bytesRead=null,totalBytes=
  *  finish({exact:true}). Same output as profileColumns, plus duplicate_rows (rows identical to an earlier row). */
 export function createColumnProfiler(delimiter){
   const cols=[],seen=new Set(),grain=createGrainTracker();let duplicates=0,dupCapped=false,sumHi=0,sumLo=0,hdr="",coord=null;
+  // Keep the schema of a header-only file: a zero-row export can be a serious
+  // regression, but an unchanged header must not be misreported as columns removed.
+  const initHeaders=headers=>{
+    if(cols.length||!headers?.length)return;
+    headers.slice(0,MAX_COLUMNS).forEach(h=>cols.push({name:h,filled:0,distinct:new Map(),capped:false,min:null,max:null,dmin:null,dmax:null,observedMin:null,observedMax:null,pmin:null,pmax:null,periods:0,nums:0,ints:0,dates:0,keySample:[],style:{decimal:0,thousands:0,plain:0,plain1000:0,ambiguous:0,zeros:0},amb:{dmin:null,dmax:null,tmin:null,tmax:null}}));hdr=headers.join("\u0001");
+    const cc=coordinateColumns(headers);if(cc)coord={...cc,tally:coordinateTally()};
+  };
   const a=createDelimitedAccumulator(delimiter,{sampleRows:0,inferRows:250,onRow(values,headers){
-    if(!cols.length){headers.slice(0,MAX_COLUMNS).forEach(h=>cols.push({name:h,filled:0,distinct:new Map(),capped:false,min:null,max:null,dmin:null,dmax:null,observedMin:null,observedMax:null,pmin:null,pmax:null,periods:0,nums:0,ints:0,dates:0,keySample:[],style:{decimal:0,thousands:0,plain:0,plain1000:0,ambiguous:0,zeros:0},amb:{dmin:null,dmax:null,tmin:null,tmax:null}}));hdr=headers.join("\u0001");
-      const cc=coordinateColumns(headers);if(cc)coord={...cc,tally:coordinateTally()}}
+    initHeaders(headers);
     grain.row(values);
     if(coord)coord.tally.add(values[coord.lat],values[coord.lon]);
     // a 53-bit hash per row. Duplicate rows: a Set of these (numbers stay small); past MAX_ROW_HASHES the count stops growing and
@@ -187,6 +193,7 @@ export function createColumnProfiler(delimiter){
   }});
   const self={push:t=>a.push(t),rowHashes:null,finish({exact=true,keepRowHashes=false}={}){
     const parsed=a.finish();
+    initHeaders(parsed.headers);
     // the distinct row hashes, sorted, for a row-level diff with the next run (scripts/full-check.mjs); none past the cap
     if(keepRowHashes&&exact&&!dupCapped)self.rowHashes=Float64Array.from(seen).sort();
     seen.clear();

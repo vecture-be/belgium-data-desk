@@ -39,13 +39,23 @@ export function dependencyImpact(record,check){
   const id=clean(record?.id)||clean(check?.ds)||null;
   if(!id)return {nodes:[],edges:[],affected_outputs:[],confidence:'unknown'};
   const source='source:'+id,profile='profile:'+id,card='card:'+id,mcp='mcp:get_dataset:'+id,web='web:dataset:'+id;
+  const doc='mcp:search_document:'+id,search='mcp:search_datasets:'+id;
+  const facets='mcp:search_facets',summary='cards:summary',overview='mcp:catalogue_overview';
   return {
     nodes:[{id:source,role:'publisher_distribution',url:safeUrl(check?.url)},
       {id:profile,role:'weekly_observation'},{id:card,role:'static_dataset_card'},
-      {id:mcp,role:'mcp_read_model'},{id:web,role:'web_dataset_page'}],
-    edges:[[source,profile],[profile,card],[card,mcp],[card,web]],
-    affected_outputs:[card,mcp,web],confidence:'declared_pipeline_only',
-    boundary:'No claim that another live tool or an external analysis depends on this file.'
+      {id:mcp,role:'mcp_read_model'},{id:web,role:'web_dataset_page'},
+      {id:doc,role:'derived_search_document'},{id:search,role:'search_result_projection'},
+      {id:facets,role:'derived_year_and_language_filters'},
+      {id:summary,role:'catalogue_card_summary'},{id:overview,role:'catalogue_overview'}],
+    // backfillDocs() derives latest data, disagreements and measured period from the
+    // card; summary counts are reported in catalogue_overview(). No dependence of
+    // independent live answer tools on the harvested CSV is asserted.
+    edges:[[source,profile],[profile,card],[card,mcp],[card,web],
+      [card,doc],[doc,search],[doc,facets],[card,summary],[summary,overview]],
+    affected_outputs:[card,mcp,web,doc,search,facets,summary,overview],
+    confidence:'declared_pipeline_only',
+    boundary:'These edges describe potential internal recalculation, not proof that other live tools, external analyses, or every search query depend on this file.'
   };
 }
 

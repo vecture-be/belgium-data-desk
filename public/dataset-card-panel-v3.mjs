@@ -29,7 +29,17 @@ export function renderCard(c){
   const facts=(c.facts||[]).filter(x=>!inGrid(x.evidence||{})&&!x.evidence?.disagreement&&!x.evidence?.repair).map(x=>'<li>'+esc(x.text)+'</li>').join("");
   // values written in a wrong form that the desk reads the way they were meant (public/data-repair-v1.mjs)
   const rep=(c.repairs?.summary||[]).map(t=>'<li>'+esc(t)+'</li>').join("");
-  return (dis?'<div class="card-disagree"><h4>The publisher\'s metadata and the file disagree</h4><ul class="card-facts">'+dis+'</ul><p class="dk-note">We cannot correct the publisher; where they disagree, the file is what you get.</p></div>':"")+
+  const v=c.version_passport,impact=c.change_impact;
+  const kind=String(v?.change_classification?.kind||"unassessed").replace(/_/g," ");
+  const when=v?.observation?.checked_at?.slice(0,10)||c.profiled_at||"unknown date";
+  const scope=v?.observation?.extent==="whole_file"?"entire checked file":"file sample only";
+  const source=v?.citation?.publisher_record_url;
+  const sourceLink=source&&/^https?:\/\//i.test(source)
+    ?' <a href="'+esc(source)+'" target="_blank" rel="noopener noreferrer">Original publisher record</a>.':"";
+  const version=v?'<div class="card-measured"><h4>Version evidence</h4><p>Observed '+esc(when)+' ('+esc(scope)+'). Change assessment: <strong>'+esc(kind)+'</strong>'+esc(impact?.severity==="review"?" — review recommended":"")+'.</p>'+
+    '<p>Official publisher revision and release: '+esc(v.publisher_revision||v.publisher_release||"not established by this check")+'.'+sourceLink+'</p>'+
+    '<p class="dk-note">This is a Belgium Data Desk observation, not a publisher-certified release. Only declared internal outputs are tracked in the lineage.</p></div>':"";
+  return version+(dis?'<div class="card-disagree"><h4>The publisher\'s metadata and the file disagree</h4><ul class="card-facts">'+dis+'</ul><p class="dk-note">We cannot correct the publisher; where they disagree, the file is what you get.</p></div>':"")+
     (rep?'<div class="card-repaired"><h4>How the desk reads this file</h4><ul class="card-facts">'+rep+'</ul><p class="dk-note">The publisher\'s file is unchanged. Load it in the SQL Lab to get a <code>_repaired</code> view with these readings applied and a <code>coordinate_repair</code> column per row.</p></div>':"")+
     (facts?'<div class="card-measured"><h4>Measured in the file</h4><ul class="card-facts">'+facts+'</ul></div>':"");
 }

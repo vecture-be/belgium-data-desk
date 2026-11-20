@@ -99,6 +99,8 @@ jobs:
       - name: Build search index and pages (catalogue sanity gates compare with the deployed catalogue)
         env:
           SANITY_PREVIOUS_ORIGIN: ${{ vars.PUBLIC_URL || 'https://data.vecture.be' }}
+          REQUIRE_FULL_FILE_PROFILE: '1'
+          MIN_FULL_FILE_CARDS: '2000'
         run: npm run build:index
       - name: Relevance gate
         run: npm run eval

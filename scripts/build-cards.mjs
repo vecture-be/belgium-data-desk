@@ -18,12 +18,14 @@ const arg=(name,def)=>{const i=process.argv.indexOf("--"+name);return path.resol
 const probeFile=arg("probe",path.join(root,".cache/link-probe.jsonl")),prevFile=arg("previous",path.join(root,".cache/link-probe-prev.jsonl"));
 const fullFile=arg("full",path.join(root,".cache/full-check.jsonl"));
 
-function loadProfiles(file){
+export function loadProfiles(file){
   const byUrl=new Map();
   if(!fs.existsSync(file))return byUrl;
   for(const line of fs.readFileSync(file,"utf8").split("\n")){
     let r;try{r=JSON.parse(line)}catch{continue}
-    if(r?.url&&r.profile&&!r.profile.error&&r.profile.rows>0)byUrl.set(r.url,r);
+    // A successfully parsed header-only file is a real zero-row observation.
+    // Keep only exact empty profiles: zero rows in a partial sample proves nothing.
+    if(r?.url&&r.profile&&!r.profile.error&&(r.profile.rows>0||(r.profile.rows===0&&r.profile.rows_exact===true)))byUrl.set(r.url,r);
   }
   return byUrl;
 }
