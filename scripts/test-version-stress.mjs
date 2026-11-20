@@ -67,7 +67,7 @@ try{
   soft('header-only export preserves zero-row profile and flags empty',()=>{
     assert.equal(emptied.profile?.rows,0);
     assert.deepEqual(emptied.profile?.columns?.map(x=>x.name),['jaar','nis','waarde']);
-    assert.equal(emptied.change?.columns_removed?.length,0,'header-only export is not a schema deletion');
+    assert.equal((emptied.change?.columns_removed||[]).length,0,'header-only export is not a schema deletion');
     assert.equal(emptied.change?.alerts?.includes('emptied'),true);
     assert.equal(classifyVersionChange(emptied).kind,'potential_breaking_change');
   });
