@@ -5,6 +5,8 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { checkFile, ROWS } from './full-check.mjs';
 import { profileColumns } from './dataset-card.mjs';
 import { buildCards, backfillDocs, loadProfiles } from './build-cards.mjs';
@@ -116,6 +118,16 @@ for(let i=0;i<3000;i++){
   if(i<100)soft('lineage captures affected search-derived outputs #'+i,()=>{
     assert.ok(g.affected_outputs.some(t=>t.includes('search_datasets')), 'missing search results dependent on measured periods and disagreements');
     assert.ok(g.affected_outputs.some(t=>t.includes('catalogue_overview')), 'missing published card summary');
+  });
+}
+// Production must fail closed on a missing full-file baseline, not ship empty/stale passports.
+const checkout=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+if(!fs.existsSync(path.join(checkout,'.cache','full-check.jsonl'))){
+  const gate=spawnSync(process.execPath,['scripts/validate-version-output.mjs'],{
+    cwd:checkout,env:{...process.env,REQUIRE_FULL_FILE_PROFILE:'1',MIN_FULL_FILE_CARDS:'2000'},encoding:'utf8'});
+  soft('production gate rejects missing full-file baseline',()=>{
+    assert.notEqual(gate.status,0);
+    assert.match((gate.stderr||'')+(gate.stdout||''),/full-file profile cache is missing or empty/);
   });
 }
 console.log('[audit] checked HTTP fixture cases='+checked+' and metamorphic versions=3000; classes='+JSON.stringify(kindCounts));
