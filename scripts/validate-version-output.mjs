@@ -6,6 +6,11 @@ import {fileURLToPath} from "node:url";
 import {idShard,DOC_CHUNK} from "../mcp-server.mjs";
 
 export const isCardShardFile=name=>/^[a-f0-9]{2}[.]json$/.test(name);
+// A bounded link-probe can read a small CSV in full without computing a content hash.
+export const validWholeFileEvidence=file=>!file?.rows_exact||(
+  Number.isSafeInteger(file.rows)&&file.rows>=0&&
+  (file.sha256==null||/^[a-f0-9]{32}$/.test(file.sha256))
+);
 
 // When imported in tests, only the pure filename predicate is loaded.
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
@@ -40,8 +45,8 @@ if(!fs.existsSync(summaryPath)){
       if(card?.id!==id||idShard(id)!==file.slice(0,2))fail(id,"card identity/shard mismatch");
       if(card?.file?.rows_exact)whole++;
       // Guard against publishing an internally inconsistent measured observation.
-      if(card?.file?.rows_exact&&(!card.file.sha256||!Number.isSafeInteger(card.file.rows)||card.file.rows<0))
-        fail(id,"invalid whole-file fingerprint or row count");
+      if(!validWholeFileEvidence(card?.file))
+        fail(id,"invalid whole-file row count or supplied fingerprint");
       try{
         const pos=load(idxDir,idShard(id),idCache)[id];
         if(!Number.isSafeInteger(pos)||pos<0){fail(id,"missing from MCP id index");continue}

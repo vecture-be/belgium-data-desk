@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {buildCards} from './build-cards.mjs';
 import {classifyVersionChange} from './version-intelligence.mjs';
-import {isCardShardFile} from './validate-version-output.mjs';
+import {isCardShardFile,validWholeFileEvidence} from './validate-version-output.mjs';
 import {idShard} from '../mcp-server.mjs';
 
 const record={id:'national:belgian-population',title:'Population by municipality',publisher:'Statbel'};
@@ -37,4 +37,9 @@ assert.deepEqual(
   [idShard(record.id)+'.json','aa.json'],
   'card release gate must discover actual two-hex-digit static card shards'
 );
+assert.equal(validWholeFileEvidence({rows_exact:true,rows:77,sha256:undefined}),true,'entire small CSV observed by probe is valid without a hash');
+assert.equal(validWholeFileEvidence({rows_exact:true,rows:7,sha256:null}),true,'unknown fingerprint is not evidence of corruption');
+assert.equal(validWholeFileEvidence({rows_exact:true,rows:0,sha256:'a'.repeat(32)}),true,'empty file with exact hash is valid');
+assert.equal(validWholeFileEvidence({rows_exact:true,rows:-1}),false,'negative rows must be rejected');
+assert.equal(validWholeFileEvidence({rows_exact:true,rows:7,sha256:'not-a-hash'}),false,'malformed claimed hash must be rejected');
 console.log('change classification and lean card contracts: PASS');
