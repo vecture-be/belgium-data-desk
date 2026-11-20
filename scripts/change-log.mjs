@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { classifyVersionChange, dependencyImpact } from "./version-intelligence.mjs";
+import { classifyVersionChange } from "./version-intelligence.mjs";
 
 const fmt=n=>n==null?"":Number(n).toLocaleString("en-GB");
 const signed=n=>n==null?"":(n>0?"+":n<0?"−":"±")+fmt(Math.abs(n));
@@ -28,7 +28,7 @@ export function buildChangeLog(records,{since,titles=new Map(),date=new Date().t
   const changed=profiled.filter(r=>r.change&&Date.parse(r.change.seen_at||0)>=t0).map(r=>{
     const t=titles.get(r.ds)||{};
     return{id:r.ds,title:t.title||null,publisher:t.publisher||r.prov||null,url:r.url,...r.change,
-      change_type:classifyVersionChange(r),affected_outputs:dependencyImpact({id:r.ds},r).affected_outputs};
+      change_type:classifyVersionChange(r)};
   });
   const size=c=>(c.distinct_rows_added||0)+(c.distinct_rows_removed||0)+Math.abs((c.rows.after||0)-(c.rows.before||0));
   changed.sort((a,b)=>size(b)-size(a)||String(a.title).localeCompare(String(b.title)));
