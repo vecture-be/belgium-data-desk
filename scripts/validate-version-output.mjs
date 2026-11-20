@@ -7,6 +7,12 @@ import { idShard, DOC_CHUNK } from "../mcp-server.mjs";
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const dir=path.join(root,"public","cards"),summaryFile=path.join(dir,"summary.json");
 const hasProfiles=[".cache/full-check.jsonl",".cache/link-probe.jsonl"].some(p=>fs.existsSync(path.join(root,p)));
+const production=process.env.REQUIRE_FULL_FILE_PROFILE==="1";
+const fullProfilePath=path.join(root,".cache","full-check.jsonl");
+// A missing Actions cache must not silently replace thousands of evidence-backed
+// cards with a small partial sample or an empty static directory in production.
+if(production&&(!fs.existsSync(fullProfilePath)||fs.statSync(fullProfilePath).size===0))
+  throw Error("Production version gate: full-file profile cache is missing or empty; restore full-check-state before deploying.");
 if(!fs.existsSync(summaryFile)){
   if(hasProfiles)throw Error("Profiles exist but no cards/summary.json was generated");
   console.log("[version-gate] no profiles in this checkout; bootstrap check skipped");
@@ -33,6 +39,11 @@ if(!fs.existsSync(summaryFile)){
     }
   }
   if(count!==summary.cards||count!==summary.versioning?.passports||count!==manifest.assessed)fail("counts","card/summary/manifest mismatch");
+  if(production){
+    const min=Number(process.env.MIN_FULL_FILE_CARDS||1);
+    if(!Number.isSafeInteger(min)||min<1)fail("configuration","invalid MIN_FULL_FILE_CARDS");
+    else if(summary.versioning?.whole_file<min)fail("coverage","only "+summary.versioning?.whole_file+" whole-file cards, minimum "+min);
+  }
   if(review!==manifest.requiring_review||review!==summary.versioning?.requiring_review)fail("counts","review totals mismatch");
   if(!Array.isArray(manifest.entries)||manifest.entries.length>250)fail("manifest","invalid entries");
   // True selective release validation: only impacted records are cross-checked against
