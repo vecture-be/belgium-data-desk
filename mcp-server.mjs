@@ -523,14 +523,19 @@ function mcpTopic(query=""){
   ];
   return groups.find(([,re])=>re.test(q))?.[0]||(q.trim()?"other":"none");
 }
-// Self-test classification requires an explicit secret, never a public client-supplied "test" flag.
-export function mcpTrafficClass(request,env){
-  const expected=typeof env?.MCP_TEST_TOKEN==="string"?env.MCP_TEST_TOKEN:"";
-  const provided=request.headers.get("x-bdd-test-token")||"";
-  if(expected.length<24||expected.length>256||provided.length!==expected.length)return "unclassified";
-  let diff=0;
-  for(let i=0;i<expected.length;i++)diff|=expected.charCodeAt(i)^provided.charCodeAt(i);
-  return diff===0?"self_test":"unclassified";
+// A short-lived HMAC proves a test runner knows the secret without sending the
+// secret on the wire (request headers can appear in platform observability).
+export async function mcpTrafficClass(request,env,body=""){
+  const secret=typeof env?.MCP_TEST_TOKEN==="string"?env.MCP_TEST_TOKEN:"";
+  const timestamp=request.headers.get("x-bdd-test-timestamp")||"";
+  const proof=request.headers.get("x-bdd-test-signature")||"";
+  if(secret.length<24||secret.length>256||!/^[0-9]{10}$/.test(timestamp)||!/^[a-f0-9]{64}$/.test(proof))return "unclassified";
+  if(Math.abs(Date.now()/1000-Number(timestamp))>120)return "unclassified";
+  try{
+    const encoder=new TextEncoder(),key=await crypto.subtle.importKey("raw",encoder.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["verify"]);
+    const signature=Uint8Array.from(proof.match(/../g),h=>parseInt(h,16));
+    return await crypto.subtle.verify("HMAC",key,signature,encoder.encode(timestamp+"\n"+body))?"self_test":"unclassified";
+  }catch{return "unclassified"}
 }
 // Cloudflare's invocation log contains actual CPU time. A sampled console entry is
 // attached to that same invocation, so tool names can be correlated without query/IP logging.
@@ -620,7 +625,7 @@ export async function handleMcp(request,env,options={}){
   if(Array.isArray(msg))return rpcError(null,-32600,"Batch requests are not supported.");
   if(!msg||msg.jsonrpc!=="2.0"||typeof msg.method!=="string")return rpcError(msg?.id,-32600,"Invalid request.");
   if(msg.id===undefined)return new Response(null,{status:202,headers:{"access-control-allow-origin":"*"}});   // notification
-  const id=msg.id,trafficClass=mcpTrafficClass(request,env);
+  const id=msg.id,trafficClass=await mcpTrafficClass(request,env,text);
   switch(msg.method){
     case"initialize":{
       const wanted=msg.params?.protocolVersion,version=SUPPORTED_PROTOCOLS.includes(wanted)?wanted:SUPPORTED_PROTOCOLS[0];
