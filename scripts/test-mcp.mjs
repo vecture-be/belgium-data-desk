@@ -238,4 +238,20 @@ assert.notEqual(authoritiesFor(["used","batteries","collection"])[0]?.ids[0],"cu
  assert.equal((await get("/api/dataset?id=nope")).status,404);
  assert.equal((await (await get("/api/overview")).json()).records,items.length);
  assert.equal((await worker.fetch(new Request("https://desk.example/api/search?q=x",{method:"POST"}),env)).status,405);}
+// Regression: the MCP projection must not silently discard evidence published in a dataset card.
+{
+ const id="national:1",fn=path.join(dir,"cards",idShard(id)+".json");
+ fs.mkdirSync(path.dirname(fn),{recursive:true});
+ fs.writeFileSync(fn,JSON.stringify({[id]:{
+   id,profiled_at:"2026-11-20",facts:[],freshness:{status:"unknown"},coverage:{time:null,keys:[]},
+   quality:{},schema:{fingerprint:"fixture"},file:{read:"whole file",rows_exact:true,rows:2,bytes_read:16},columns:[],
+   version_passport:{schema_version:1,dataset_id:id,publisher_revision:null,publisher_release:null},
+   lineage:{confidence:"declared_pipeline_only",affected_outputs:["mcp:get_dataset:"+id]},
+   change_impact:{classification:"unchanged",severity:"none",automatic_release_block:false}
+ }}));
+ const g2=(await rpc("tools/call",{name:"get_dataset",arguments:{id}})).body.result.structuredContent;
+ assert.equal(g2.card?.version_passport?.dataset_id,id,"version passport is visible through MCP");
+ assert.equal(g2.card?.lineage?.confidence,"declared_pipeline_only");
+ assert.equal(g2.card?.change_impact?.automatic_release_block,false);
+}
 console.log(JSON.stringify({ok:true,mcp:"search/get/preview/overview/authority",tools:12}));
