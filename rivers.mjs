@@ -32,6 +32,9 @@ const KIWIS={
 const ENABLED=["vmm","hic"];
 export const RIVER_HOSTS=Object.freeze(ENABLED.map(k=>new URL(KIWIS[k].base).hostname));
 const LIVE_TTL=600,FRESH_H=3,STAT_TTL=86400;
+// A slow publisher should degrade the optional context, not stall the complete MCP call
+// for three sequential 12-second waits. Station measurements get a longer budget.
+const CORE_TIMEOUT_MS=8000,OPTIONAL_TIMEOUT_MS=4000;
 export const RIVER_LIMITS=Object.freeze({radiusKm:{default:10,max:30},stations:{default:3,max:6}});
 // Short-term deterministic forecasts (KT-det) the publishers run every few hours and draw on waterinfo.be:
 // VMM: about 330 gauges, water level in m TAW for 48 h after the run (the series also holds ~36 h of hindcast before the run), plus the
@@ -58,7 +61,7 @@ const fmtM=v=>v==null?null:v.toFixed(2)+" m";
 async function stationLayer(client,key){
   const p=KIWIS[key];
   const r=await getJson(client,url(p,{request:"getTimeseriesValueLayer",timeseriesgroup_id:p.level,metadata:"true",
-    md_returnfields:"ts_id,ts_name,station_no,station_name,ts_unitsymbol,ca_sta",ca_sta_returnfields:p.levelCa}),{maxBytes:1<<20,ttl:LIVE_TTL});
+    md_returnfields:"ts_id,ts_name,station_no,station_name,ts_unitsymbol,ca_sta",ca_sta_returnfields:p.levelCa}),{maxBytes:1<<20,ttl:LIVE_TTL,timeoutMs:CORE_TIMEOUT_MS});
   if(r.error)return{error:r.error};
   if(!Array.isArray(r.json))return{error:p.short+" answered without a station list"};
   const by=new Map();
@@ -93,14 +96,14 @@ function levels(s,value){
  *  24-hour window would not reach back to the reading 24 hours before it. */
 async function history(client,key,ids){
   const r=await getJson(client,url(KIWIS[key],{request:"getTimeseriesValues",ts_id:ids.join(","),period:"PT26H",returnfields:"Timestamp,Value",
-    metadata:"true",md_returnfields:"ts_id"}),{maxBytes:1<<20,ttl:LIVE_TTL});
-  if(r.error||!Array.isArray(r.json))return{};
+    metadata:"true",md_returnfields:"ts_id"}),{maxBytes:1<<20,ttl:LIVE_TTL,timeoutMs:CORE_TIMEOUT_MS});
+  if(r.error||!Array.isArray(r.json))return{error:r.error||"water-level history did not answer"};
   return Object.fromEntries(r.json.map(t=>[String(t.ts_id),(t.data||[]).filter(d=>typeof d[1]==="number").map(([t2,v])=>[Date.parse(t2),v])]));
 }
 /** Status, forecast status and (HIC) threshold layers of one provider, keyed by station number (one request). */
 async function statusLayer(client,key){
   const r=await getJson(client,url(KIWIS[key],{request:"getTimeseriesValueLayer",timeseriesgroup_id:KIWIS[key].status,metadata:"true",
-    md_returnfields:"ts_id,ts_name,station_no"}),{maxBytes:1<<20,ttl:LIVE_TTL});
+    md_returnfields:"ts_id,ts_name,station_no"}),{maxBytes:1<<20,ttl:LIVE_TTL,timeoutMs:OPTIONAL_TIMEOUT_MS});
   if(r.error||!Array.isArray(r.json))return{error:r.error||"no status layer"};
   const by={};
   for(const row of r.json){const k=row.station_no;if(!k)continue;(by[k]||(by[k]={}))[row.ts_name]={value:row.ts_value,time:row.timestamp}}
@@ -114,13 +117,15 @@ async function longTerm(client,key,stations){
     :key==="spw"?["75-Hauteur.InterAn.Jour.P10","73-Hauteur.InterAn.Jour.Median","78-Hauteur.InterAn.Jour.P90"]:null;
   if(!names)return{};
   const list=await getJson(client,url(p,{request:"getTimeseriesList",station_no:nos,stationparameter_name:key==="vmm"?"H":"Hauteur",ts_name:names.join(","),
-    returnfields:"station_no,ts_id,ts_name"}),{maxBytes:256*1024,ttl:STAT_TTL});
-  if(list.error||!Array.isArray(list.json)||list.json.length<2)return{};
+    returnfields:"station_no,ts_id,ts_name"}),{maxBytes:256*1024,ttl:STAT_TTL,timeoutMs:OPTIONAL_TIMEOUT_MS});
+  if(list.error||!Array.isArray(list.json))return{error:list.error||"historical statistics did not answer"};
+  if(list.json.length<2)return{};
   const rows=list.json.slice(1).map(([station_no,ts_id,ts_name])=>({station_no,ts_id:String(ts_id),ts_name}));
   // SPW's daily percentiles answer today's value without a period. VMM's yearly statistics end in an empty placeholder row for next year,
   // so they are read from three years back and the last real value is used.
   const extra=key==="vmm"?{from:(new Date().getUTCFullYear()-3)+"-01-01"}:{};
-  const a=await getJson(client,url(p,{request:"getTimeseriesValues",ts_id:rows.map(r=>r.ts_id).join(","),returnfields:"Timestamp,Value",metadata:"true",md_returnfields:"ts_id",...extra}),{maxBytes:256*1024,ttl:STAT_TTL});
+  const a=await getJson(client,url(p,{request:"getTimeseriesValues",ts_id:rows.map(r=>r.ts_id).join(","),returnfields:"Timestamp,Value",metadata:"true",md_returnfields:"ts_id",...extra}),{maxBytes:256*1024,ttl:STAT_TTL,timeoutMs:OPTIONAL_TIMEOUT_MS});
+  if(a.error||!Array.isArray(a.json))return{error:a.error||"historical statistics values did not answer"};
   const last={};for(const t of a.json||[]){const d=(t.data||[]).filter(x=>typeof x[1]==="number").at(-1);if(d)last[String(t.ts_id)]={time:d[0],value:d[1]}}
   const out={};
   for(const r of rows){const v=last[r.ts_id];if(!v)continue;(out[r.station_no]||(out[r.station_no]={}))[r.ts_name]=v}
@@ -131,7 +136,7 @@ async function longTerm(client,key,stations){
 async function forecastLayer(client,key){
   const f=FORECAST[key];
   const r=await getJson(client,url(KIWIS[key],{request:"getTimeseriesValueLayer",timeseriesgroup_id:f.group,metadata:"true",
-    md_returnfields:"ts_id,station_no,parametertype_name"}),{maxBytes:1<<20,ttl:LIVE_TTL});
+    md_returnfields:"ts_id,station_no,parametertype_name"}),{maxBytes:1<<20,ttl:LIVE_TTL,timeoutMs:OPTIONAL_TIMEOUT_MS});
   if(r.error||!Array.isArray(r.json))return{by:{},error:r.error||"no forecast list"};
   const by={};
   for(const row of r.json){
@@ -146,7 +151,7 @@ async function forecastLayer(client,key){
  *  hindcast before it); HIC answers nothing at all when a from/to window is given, so none is. */
 async function forecastValues(client,key,ids){
   if(!ids.length)return{values:{}};
-  const r=await getJson(client,url(KIWIS[key],{request:"getTimeseriesValues",ts_id:ids.join(","),returnfields:"Timestamp,Value",metadata:"true",md_returnfields:"ts_id"}),{maxBytes:2<<20,ttl:LIVE_TTL});
+  const r=await getJson(client,url(KIWIS[key],{request:"getTimeseriesValues",ts_id:ids.join(","),returnfields:"Timestamp,Value",metadata:"true",md_returnfields:"ts_id"}),{maxBytes:2<<20,ttl:LIVE_TTL,timeoutMs:OPTIONAL_TIMEOUT_MS});
   if(r.error||!Array.isArray(r.json))return{values:{},error:r.error||"no forecast values"};
   return{values:Object.fromEntries(r.json.map(t=>[String(t.ts_id),(t.data||[]).filter(d=>typeof d[1]==="number").map(([t2,v])=>[Date.parse(t2),v])]))};
 }
@@ -375,6 +380,11 @@ export async function riverLevels(client,args,{assets}={}){
   const D=Object.fromEntries(details);
   // a forecast that could not be read is said to be missing: silence would read as "no forecast for this gauge"
   const fcFailed=provs.filter(k=>D[k].fcError).map(k=>KIWIS[k].short);
+  const detailsFailed=provs.flatMap(k=>[
+    ...(D[k].hist?.error?["24-hour history"]:[]),
+    ...(D[k].status?.error?["official status"]:[]),
+    ...(D[k].lt?.error?["long-term statistics"]:[])
+  ].map(detail=>({provider:KIWIS[k].short,detail})));
   const views=picked.map(({s,d})=>{const x=D[s.provider];return view(s,d,x.hist,x.status?.by?.[s.provider==="spw"?null:s.station_no],x.lt?.[s.station_no],
     s.provider==="spw"&&s.basin?x.status?.by?.[s.basin]?.["00-Statut.InfoCrue.O"]:null,x.fc)});
   const facts=views.map(fact);
@@ -385,14 +395,15 @@ export async function riverLevels(client,args,{assets}={}){
     (noThr?" ("+(noThr===views.length?"none of them publishes one":noThr+" of them "+(noThr===1?"publishes":"publish")+" none")+")":"")+(fcw.length?"; a forecast raises the status at "+fcw.map(v=>v.name).join(", "):"")+".");
   if(failed.length)facts.push("Incomplete: "+downWhy.replace(/^the/,"The")+"; its gauges are missing from this answer, so ask again in a minute"+(mode==="station"?".":" for the full picture."));
   if(fcFailed.length)facts.push("The "+fcFailed.join(" and ")+" water-level forecast could not be read just now ("+D[provs.find(k=>D[k].fcError)].fcError+"); the levels above are measured only, so ask again in a minute for the forecast.");
+  if(detailsFailed.length)facts.push("Incomplete: "+detailsFailed.map(x=>x.provider+" "+x.detail).join(", ")+" could not be read; unavailable trends and statuses are not inferred from the latest gauge reading.");
   const place=loc?await placeContext(client,assets,loc).catch(()=>null):null;
   if(/Waals|Wallon/i.test(place?.region||""))facts.push("This place is in Wallonia: its own river gauges (SPW, hydrometrie.wallonie.be) are not included, because SPW's terms forbid passing that data on; the gauges above are Flemish ones nearby.");
   else if(/Brussel|Bruxelles/i.test(place?.region||""))facts.push("Brussels' own gauges (Flowbru) are not included; the gauges above are on the canal and around the region.");
   const d=new Date().toISOString().slice(0,10);
-  return clean({key_facts:facts.slice(0,10),complete:fcFailed.length||failed.length?false:null,
+  return clean({key_facts:facts.slice(0,10),complete:fcFailed.length||failed.length||detailsFailed.length?false:null,
     location:loc?clean({...loc,x_lambert72:loc.x,y_lambert72:loc.y,x:undefined,y:undefined,geocoded:undefined}):null,place,
     search:clean({mode,radius_km:mode==="station"?null:radius,river:river||null,gauges_reporting_now:pool.length,gauges_not_reporting:retired,services_not_answering:failed.length?failed:null,
-      forecasts_not_answering:fcFailed.length?fcFailed:null}),
+      forecasts_not_answering:fcFailed.length?fcFailed:null,details_not_answering:detailsFailed.length?detailsFailed:null}),
     gauges:views,
     definitions:{level_m_taw:"Water level in metres above the Belgian reference level TAW/DNG (Tweede Algemene Waterpassing = Deuxième Nivellement Général). Levels at different gauges are not comparable as depths: each river bed has its own height.",
       level_above_gauge_zero_m:"The gauge's own reading above its zero; level_m_taw = reading + gauge_zero_m_taw.",
