@@ -77,8 +77,8 @@ try{
   assert.deepEqual(log.run.header_issues,{content_changed_etag_same:1});
   const md=renderReadme(log,[log.run]);
   assert.match(md,/Changed since the previous check: \*\*2\*\*/);
-  assert.match(md,/\| \[Meetstations\]\(http:\/\/127\.0\.0\.1:\d+\/m\.csv\) \| VMM \| 3 → 4 \| \+2 \/ −1 distinct rows; datum now 2026-11-01 to 2026-11-05 \(was 2026-11-01 to 2026-11-03\); waarde now 1–5 \(was 1–3\) \|/);
-  assert.match(renderReadme({run:log.run,changed:[{id:"x",url:"u",rows:{before:1,after:1}}]},[]),/\| 1 → 1 \| values changed \|/,"never an empty change cell");
+  assert.match(md,/\| \[Meetstations\]\(http:\/\/127\.0\.0\.1:\d+\/m\.csv\) \| VMM \| rows_replaced_or_removed \| 3 → 4 \| \+2 \/ −1 distinct rows; datum now 2026-11-01 to 2026-11-05 \(was 2026-11-01 to 2026-11-03\); waarde now 1–5 \(was 1–3\) \|/);
+  assert.match(renderReadme({run:log.run,changed:[{id:"x",url:"u",rows:{before:1,after:1}}]},[]),/\| unassessed \| 1 → 1 \| values changed \|/,"never an empty change cell");
   assert.match(md,/- \[2026-11-14\]\(changes\/2026-11-14\.json\): 2 changed of 2 compared/);
 }finally{server.close();fs.rmSync(tmp,{recursive:true,force:true})}
 

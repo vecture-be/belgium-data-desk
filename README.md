@@ -34,6 +34,14 @@ The public service combines a searchable catalogue, browser-based analysis and r
 
 Answers start with `key_facts` built only from data in the same answer, and carry a `provenance` block. Catalogue results are metadata and link-check evidence, not claims that the data is correct.
 
+## Dataset version intelligence and lineage
+
+For catalogued CSV/TSV files with weekly profiles, `get_dataset` now returns a **version passport** distinguishing the publisher's unknown official revision/release from the file manifestation we actually observed, a cautious change type, original-source citation, and the internal outputs affected by the change. The website uses the same dataset card.
+
+The public `/cards/impact-manifest.json` lists changed datasets and affected internal outputs, while `/cards/summary.json` reports version-coverage and review counts. Publisher issues are flagged for review rather than blocking all site updates; the deploy checks the consistency of the version records and selectively verifies impacted MCP records.
+
+See [version and lineage limitations](docs/reference/version-lineage.md). This system reports observations, **not** publisher-certified versions or a measured 94.5% defect-detection rate.
+
 ## Run it locally
 
 Requires Node 22+.
