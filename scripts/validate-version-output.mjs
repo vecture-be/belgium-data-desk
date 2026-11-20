@@ -5,6 +5,10 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {idShard,DOC_CHUNK} from "../mcp-server.mjs";
 
+export const isCardShardFile=name=>/^[a-f0-9]{2}[.]json$/.test(name);
+
+// When imported in tests, only the pure filename predicate is loaded.
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const cardsDir=path.join(root,"public","cards"),summaryPath=path.join(cardsDir,"summary.json");
 const fullPath=path.join(root,".cache","full-check.jsonl");
@@ -27,7 +31,7 @@ if(!fs.existsSync(summaryPath)){
   };
   let count=0,whole=0,checkedIndex=0;
   const seen=new Set();
-  for(const file of fs.readdirSync(cardsDir).filter(f=>/^[a-f0-9]{2}\\.json$/.test(f))){
+  for(const file of fs.readdirSync(cardsDir).filter(isCardShardFile)){
     const shard=JSON.parse(fs.readFileSync(path.join(cardsDir,file),"utf8"));
     for(const [id,card] of Object.entries(shard)){
       count++;
@@ -54,6 +58,7 @@ if(!fs.existsSync(summaryPath)){
     if(!Number.isSafeInteger(min)||min<1)fail("configuration","invalid MIN_FULL_FILE_CARDS");
     else if(whole<min)fail("coverage","only "+whole+" whole-file cards, minimum "+min);
   }
-  if(problems.length)throw Error("Card release gate failed:\\n"+problems.join("\\n"));
+  if(problems.length)throw Error("Card release gate failed:\n"+problems.join("\n"));
   console.log("[cards-gate] PASS",JSON.stringify({cards:count,whole_file:whole,index_verified:checkedIndex}));
+}
 }

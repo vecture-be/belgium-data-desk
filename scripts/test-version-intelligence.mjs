@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import {buildCards} from './build-cards.mjs';
 import {classifyVersionChange} from './version-intelligence.mjs';
+import {isCardShardFile} from './validate-version-output.mjs';
+import {idShard} from '../mcp-server.mjs';
 
 const record={id:'national:belgian-population',title:'Population by municipality',publisher:'Statbel'};
 const url='https://statbel.fgov.be/data.csv';
@@ -30,4 +32,9 @@ assert.equal(card.last_change_seen?.distinct_rows_added,10);
 assert.equal(card.version_passport,undefined,'no duplicated passport in every static dataset card');
 assert.equal(card.lineage,undefined,'no serialized synthetic dependency graph');
 assert.equal(card.change_impact,undefined,'no redundant decision layer');
+assert.deepEqual(
+  ['summary.json',idShard(record.id)+'.json','aa.json','a.json','GG.json','zz.json','a1.json.old'].filter(isCardShardFile),
+  [idShard(record.id)+'.json','aa.json'],
+  'card release gate must discover actual two-hex-digit static card shards'
+);
 console.log('change classification and lean card contracts: PASS');
