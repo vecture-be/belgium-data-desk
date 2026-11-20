@@ -57,7 +57,7 @@ assert.equal(note.status,202);
   const request=(at=timestamp,signingKey=secret)=>new Request("https://desk.example/mcp",{
     method:"POST",body,headers:{
       "x-bdd-test-timestamp":at,
-      "x-bdd-test-signature":createHmac("sha256",signingKey).update(at+"\\n"+body).digest("hex")
+      "x-bdd-test-signature":createHmac("sha256",signingKey).update(at+"\n"+body).digest("hex")
     }
   });
   assert.equal(await mcpTrafficClass(request(),{MCP_TEST_TOKEN:secret},body),"self_test");
