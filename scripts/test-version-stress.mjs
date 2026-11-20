@@ -18,7 +18,7 @@ const variants=[
  'jaar;nis;waarde\n2025;11003;30\n2023;11001;10\n2024;11002;20\n',
  'jaar;nis;waarde\n2023;11001;10\n2024;11002;20\n2025;11003;30\n2026;11004;40\n',
  'jaar;nis;waarde\n2023;11001;10\n2025;11003;30\n',
- 'jaar;nis;waarde;extra\n2023;11001;10;y\n2024;11002;20;n\n',
+ 'jaar;nis;waarde;extra\n2023;11001;10;y\n2024;11002;20;n\n2025;11003;30;y\n2026;11004;40;n\n',
  'jaar;nis;waarde\n',
  '<!doctype html><html><body>not a dataset</body></html>'
 ];
@@ -52,11 +52,11 @@ try{
   body=variants[3];
   const removed=await checkFile(work,{previous:appended,prevRows:appended[ROWS]});checked++;
   soft('removed rows receive review',()=>{
-    assert.equal(classifyVersionChange(removed).kind,'rows_replaced_or_removed');
+    assert.equal(classifyVersionChange(removed).kind,'potential_breaking_change'); // coverage shrank, a higher-priority alert
     assert.equal(changeDecision(removed,fake).severity,'review');
   });
   body=variants[4];
-  const schema=await checkFile(work,{previous:removed,prevRows:removed[ROWS]});checked++;
+  const schema=await checkFile(work,{previous:appended,prevRows:appended[ROWS]});checked++;
   soft('schema evolution receives review',()=>{
     assert.equal(classifyVersionChange(schema).kind,'schema_evolution');
   });
@@ -64,6 +64,8 @@ try{
   const emptied=await checkFile(work,{previous:schema,prevRows:schema[ROWS]});checked++;
   soft('header-only export preserves zero-row profile and flags empty',()=>{
     assert.equal(emptied.profile?.rows,0);
+    assert.deepEqual(emptied.profile?.columns?.map(x=>x.name),['jaar','nis','waarde']);
+    assert.equal(emptied.change?.columns_removed?.length,0,'header-only export is not a schema deletion');
     assert.equal(emptied.change?.alerts?.includes('emptied'),true);
     assert.equal(classifyVersionChange(emptied).kind,'potential_breaking_change');
   });
