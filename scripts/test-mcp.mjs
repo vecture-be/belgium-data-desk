@@ -138,6 +138,25 @@ assert.equal((await rpc("tools/call",{name:"fetch",arguments:{id:"nope"}})).body
 // budget: no query may exceed the asset-read allowance (free-plan subrequest cap is 50)
 reads=0;await rpc("tools/call",{name:"search_datasets",arguments:{query:"bevolking gemeente luchtkwaliteit census",scope:"all",limit:20}});
 assert.ok(reads<=30,"asset reads per query must stay within budget, got "+reads);
+{ // A request that expands several synonyms into the same shard fetches it just once,
+  // even when several Promise.all branches request that shard simultaneously.
+  const fetchedPaths=new Map();
+  const isolated={ASSETS:{fetch:async req=>{
+    const name=new URL(req.url).pathname;
+    fetchedPaths.set(name,(fetchedPaths.get(name)||0)+1);
+    await Promise.resolve();
+    const file=path.join(dir,name);
+    return fs.existsSync(file)?new Response(fs.readFileSync(file)):new Response("nf",{status:404});
+  }}};
+  const req=new Request("https://desk.example/mcp",{method:"POST",body:JSON.stringify({
+    jsonrpc:"2.0",id:42,method:"tools/call",
+    params:{name:"search_datasets",arguments:{query:"bevolking gemeente luchtkwaliteit census",scope:"all",limit:20}}
+  })});
+  assert.equal((await handleMcp(req,isolated)).status,200);
+  assert.ok(fetchedPaths.size>=2,"fixture should exercise multiple search shards");
+  assert.deepEqual([...fetchedPaths].filter(([,n])=>n!==1),[],
+    "concurrent synonyms must not refetch an in-flight index shard");
+}
 
 // protocol hygiene
 assert.equal((await rpc("nope")).body.error.code,-32601);
