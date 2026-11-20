@@ -18,7 +18,7 @@ const arg=(name,def)=>{const i=process.argv.indexOf("--"+name);return path.resol
 const probeFile=arg("probe",path.join(root,".cache/link-probe.jsonl")),prevFile=arg("previous",path.join(root,".cache/link-probe-prev.jsonl"));
 const fullFile=arg("full",path.join(root,".cache/full-check.jsonl"));
 
-function loadProfiles(file){
+export function loadProfiles(file){
   const byUrl=new Map();
   if(!fs.existsSync(file))return byUrl;
   for(const line of fs.readFileSync(file,"utf8").split("\n")){
