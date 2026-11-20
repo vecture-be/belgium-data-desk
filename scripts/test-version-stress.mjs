@@ -1,4 +1,4 @@
-// Reproducible adversarial audit for version passports, lineage claims and publisher-file parsing.
+// Reproducible adversarial tests for observed changes, publisher-file parsing and production protections.
 // All inputs are local fixtures; no publisher is contacted and no public dataset is changed.
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -8,9 +8,8 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { checkFile, ROWS } from './full-check.mjs';
-import { profileColumns } from './dataset-card.mjs';
-import { buildCards, backfillDocs, loadProfiles } from './build-cards.mjs';
-import { classifyVersionChange, versionPassport, dependencyImpact, changeDecision, validatePassport } from './version-intelligence.mjs';
+import { buildCards, loadProfiles } from './build-cards.mjs';
+import { classifyVersionChange } from './version-intelligence.mjs';
 import { renderCard } from '../public/dataset-card-panel-v3.mjs';
 
 const failures=[], soft=(name,fn)=>{try{fn()}catch(e){failures.push(name+': '+e.message)}};
@@ -55,7 +54,7 @@ try{
   const removed=await checkFile(work,{previous:appended,prevRows:appended[ROWS]});checked++;
   soft('removed rows receive review',()=>{
     assert.equal(classifyVersionChange(removed).kind,'potential_breaking_change'); // coverage shrank, a higher-priority alert
-    assert.equal(changeDecision(removed,fake).severity,'review');
+    assert.equal(classifyVersionChange(removed).severity,'review');
   });
   body=variants[4];
   const schema=await checkFile(work,{previous:appended,prevRows:appended[ROWS]});checked++;
@@ -79,12 +78,18 @@ try{
     soft('zero-row full-file observation is not discarded',()=>assert.equal(loaded.has(base),true));
     const cards=buildCards([{...fake,distributions:[{url:base,format:'CSV'}]}],new Map([[base,emptied]]),new Map());
     const card=cards.get(fake.id);
-    soft('zero-row dataset still gets version evidence',()=>assert.equal(card.version_passport?.observation?.rows_examined,0));
-    soft('passport field equivalence',()=>assert.deepEqual(validatePassport(card.version_passport,fake,emptied),[]));
-    soft('rendering exposes observed classification safely',()=>{
+    soft('zero-row dataset retains true measurement',()=>{
+      assert.equal(card.file.rows,0);
+      assert.equal(card.file.rows_exact,true);
+      assert.ok(card.file.sha256);
+      assert.equal(card.last_change_seen?.alerts?.includes('emptied'),true);
+      assert.equal(card.version_passport,undefined);
+      assert.equal(card.lineage,undefined);
+      assert.equal(card.change_impact,undefined);
+    });
+    soft('rendering stays safe without a duplicate version panel',()=>{
       const h=renderCard(card);
-      assert.match(h,/Version evidence/i);
-      assert.match(h,/potential_breaking_change|potential breaking change/i);
+      assert.doesNotMatch(h,/Version evidence/i);
       assert.doesNotMatch(h,/<img src=x onerror=/);
     });
   }finally{fs.rmSync(tmp,{recursive:true,force:true})}
@@ -96,7 +101,7 @@ try{
   soft('declared oversized file short-circuits download',()=>assert.equal(tooLarge.too_large,true));
 }finally{await new Promise(r=>srv.close(r))}
 
-// Deterministic metamorphic variants: no claimed publisher versions, no negative counts, no invented impact.
+// Deterministic metamorphic variants: classify only evidence from the current full-file comparison.
 let seed=2374481;
 const rand=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
 const severity=new Set(['none','informational','review']);
@@ -108,19 +113,13 @@ for(let i=0;i<3000;i++){
   if(prior)check.change={seen_at:at,since:previous,rows:{before:100,after:100+a-r},distinct_rows_added:a,distinct_rows_removed:r,
     ...(rand()<0.2?{columns_removed:['nis']}:{}),...(rand()<0.2?{columns_added:['extra']}:{}),
     ...(rand()<0.1?{alerts:['coverage_shrank']}:{}),...(rand()<0.1?{coverage:[{column:'jaar',before:['2023','2024'],after:['2023','2025']}]}:{})};
-  const v=versionPassport(fake,check),d=changeDecision(check,fake),g=dependencyImpact(fake,check);
-  kindCounts[v.change_classification.kind]=(kindCounts[v.change_classification.kind]||0)+1;
-  if(!severity.has(d.severity)||d.automatic_release_block!==false||v.publisher_revision!=null||v.publisher_release!=null||validatePassport(v,fake,check).length){
-    failures.push('metamorphic #'+i+': unsafe or contradictory version');
-    break;
-  }
-  if(d.classification!==v.change_classification.kind)failures.push('metamorphic #'+i+': inconsistent decision/classification');
-  if(i<100)soft('lineage captures affected search-derived outputs #'+i,()=>{
-    assert.ok(g.affected_outputs.some(t=>t.includes('search_datasets')), 'missing search results dependent on measured periods and disagreements');
-    assert.ok(g.affected_outputs.some(t=>t.includes('catalogue_overview')), 'missing published card summary');
-  });
+  const classification=classifyVersionChange(check);
+  kindCounts[classification.kind]=(kindCounts[classification.kind]||0)+1;
+  if(!severity.has(classification.severity)||typeof classification.kind!=='string')failures.push('metamorphic #'+i+': invalid classification');
+  if(!exact&&classification.kind!=='not_observed')failures.push('metamorphic #'+i+': partial sample implies a full-file change');
+  if(exact&&!prior&&classification.severity!=='none')failures.push('metamorphic #'+i+': no current observed change should require review');
 }
-// Production must fail closed on a missing full-file baseline, not ship empty/stale passports.
+// Production must fail closed on a missing full-file baseline, not silently lose measured cards.
 const checkout=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 if(!fs.existsSync(path.join(checkout,'.cache','full-check.jsonl'))){
   const gate=spawnSync(process.execPath,['scripts/validate-version-output.mjs'],{
