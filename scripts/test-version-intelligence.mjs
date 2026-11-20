@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { buildCards } from './build-cards.mjs';
+import { profileColumns } from './dataset-card.mjs';
 import {classifyVersionChange,versionPassport,dependencyImpact,changeDecision,validatePassport} from './version-intelligence.mjs';
 const rec={id:'national:belgian-population',title:'Population by municipality',publisher:'Statbel',updatedAt:'2026-11-20',landingPage:'https://statbel.fgov.be/data'};
 const d='https://statbel.fgov.be/data.csv';
@@ -35,4 +37,14 @@ assert.ok(impact.affected_outputs.includes('mcp:get_dataset:'+rec.id));
 assert.ok(!JSON.stringify(impact).includes('belgian_statistics'),'do not assert an unsupported live-tool dependency');
 assert.equal(changeDecision(change({alerts:['columns_removed']}),rec).automatic_release_block,false);
 assert.equal(versionPassport({},added),null);
+// Integration: a real card built from delimited publisher rows exposes the same evidence via get_dataset.
+const csv='jaar;waarde\n2024;1\n2025;2\n';
+const profile=profileColumns(csv,{bytesRead:Buffer.byteLength(csv),totalBytes:Buffer.byteLength(csv)});
+const cards=buildCards([{...rec,distributions:[{url:d,format:'CSV'}]}],new Map([[d,{url:d,profile,checkedAt:now,sha256:'abc',content_since:now}]]),new Map());
+const built=cards.get(rec.id);
+assert.equal(built.version_passport.dataset_id,rec.id);
+assert.equal(built.version_passport.publisher_release,null);
+assert.equal(built.version_passport.observation.extent,'whole_file');
+assert.ok(built.lineage.affected_outputs.includes('mcp:get_dataset:'+rec.id));
+assert.equal(built.change_impact.automatic_release_block,false);
 console.log('version intelligence: semantic, lineage, limitation and contract checks pass');
