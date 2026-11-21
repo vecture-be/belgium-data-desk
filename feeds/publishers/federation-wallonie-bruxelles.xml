@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Belgian open data: Fédération Wallonie-Bruxelles</title>
+<link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/federation-wallonie-bruxelles.xml"/>
+<link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
+<id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/federation-wallonie-bruxelles.xml</id>
+<updated>2026-11-21T00:00:00Z</updated>
+<author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Points verts de l'ADEPS</title><link href="https://www.odwb.be/explore/dataset/points-verts-de-ladeps/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:points-verts-de-ladeps</id><updated>2026-11-21T00:00:00Z</updated><summary>Fédération Wallonie-Bruxelles: +4 / −4 distinct rows; latitude now 49.537–50.904 (was 49.537–50,374); longitude now 3.211–6.035 (was 3.211–4,691)</summary></entry>
+</feed>

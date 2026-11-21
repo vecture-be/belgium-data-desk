@@ -1,0 +1,5804 @@
+{
+ "generated": "2026-11-21",
+ "totals": {
+  "files": 3382,
+  "ok": 2915,
+  "gone": 40,
+  "not_a_table": 61,
+  "empty": 28,
+  "cloud_refused": 271,
+  "access_denied": 5,
+  "unreachable": 18,
+  "too_large": 44,
+  "cadence_not_met": 5
+ },
+ "publishers": [
+  {
+   "publisher": "City of Namur",
+   "files": 490,
+   "ok": 472,
+   "problems": {
+    "gone": 8,
+    "not_a_table": 0,
+    "empty": 1
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 1,
+    "too_large": 8
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:city-of-namur:communes-gemeente-belgium",
+     "title": "Communes de la Province de Namur",
+     "url": "https://data.namur.be/explore/dataset/communes-gemeente-belgium/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/nationalite_nis_ue/",
+     "title": "Codes nationalité des pays de l'UE",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/nationalite_nis_ue/exports/csv?use_labels=true#",
+     "problem": "gone"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/namur-annuaire-aires-de-jeux/",
+     "title": "Namur - Aires de jeux",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/namur-annuaire-aires-de-jeux/exports/csv?use_labels=true#",
+     "problem": "gone"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/namur-contrat-riviere-points-noirs-resolus/",
+     "title": "Namur - Contrat Rivière - Points Noirs résolus sur cours d'eau",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/namur-contrat-riviere-points-noirs-resolus/exports/csv?use_labels=true#",
+     "problem": "gone"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/namur-mobilite-zones-reglementees-de-cyclopartage/",
+     "title": "Namur - Mobilité - Zones réglementées de Cyclopartage",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/namur-mobilite-zones-reglementees-de-cyclopartage/exports/csv?use_labels=true#",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 98.1,
+   "judged": 481,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "City of Ghent",
+   "files": 321,
+   "ok": 309,
+   "problems": {
+    "gone": 4,
+    "not_a_table": 0,
+    "empty": 5
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 1,
+    "too_large": 2
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:city-of-ghent:gent-kunst-op-straat",
+     "title": "Kunst op straat - Gent",
+     "url": "https://data.stad.gent/explore/dataset/gent-kunst-op-straat/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:city-of-ghent:lijst-van-verenigingen-op-stadgentwebsite",
+     "title": "Lijst van verenigingen op stad.gent",
+     "url": "https://data.stad.gent/explore/dataset/lijst-van-verenigingen-op-stadgentwebsite/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:city-of-ghent:taxistandplaatsen-gent",
+     "title": "Standplaatsen Taxi's Gent",
+     "url": "https://data.stad.gent/explore/dataset/taxistandplaatsen-gent/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:city-of-ghent:vastgesteld-bouwkundig-erfgoed-gent",
+     "title": "Vastgesteld bouwkundig erfgoed Gent",
+     "url": "https://data.stad.gent/explore/dataset/vastgesteld-bouwkundig-erfgoed-gent/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:city-of-ghent:organisaties",
+     "title": "Organisaties gepubliceerd op www.stad.gent",
+     "url": "https://data.stad.gent/explore/dataset/organisaties/download/?format=csv",
+     "problem": "empty"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 97.2,
+   "judged": 318,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Brussels Open Data",
+   "files": 206,
+   "ok": 201,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 5
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:brussels-open-data:aires-jeux-publiques-vbx",
+     "title": "Aires de jeux publiques situées sur le territoire de la Ville de Bruxelles",
+     "url": "https://bruxellesdata.opendatasoft.com/explore/dataset/aires-jeux-publiques-vbx/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:brussels-open-data:enseignement-nl-de-promotion-sociale-vbx",
+     "title": "Enseignement néerlandophone de promotion sociale sur le territoire de la Ville de Bruxelles",
+     "url": "https://bruxellesdata.opendatasoft.com/explore/dataset/enseignement-nl-de-promotion-sociale-vbx/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:brussels-open-data:enseignement-fr-de-promotion-sociale-vbx",
+     "title": "Enseignement francophone de promotion sociale sur le territoire de la Ville de Bruxelles",
+     "url": "https://bruxellesdata.opendatasoft.com/explore/dataset/enseignement-fr-de-promotion-sociale-vbx/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:brussels-open-data:plans-de-deplacements-scolaires-vbx",
+     "title": "Plans de déplacements scolaires (PDS) des écoles situées sur le territoire de la Ville de Bruxelles",
+     "url": "https://bruxellesdata.opendatasoft.com/explore/dataset/plans-de-deplacements-scolaires-vbx/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:brussels-open-data:costumes-de-manneken-pis",
+     "title": "Costumes de Manneken-Pis",
+     "url": "https://bruxellesdata.opendatasoft.com/explore/dataset/costumes-de-manneken-pis/download/?format=csv",
+     "problem": "empty"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 97.6,
+   "judged": 206,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "City of Liège",
+   "files": 196,
+   "ok": 192,
+   "problems": {
+    "gone": 2,
+    "not_a_table": 0,
+    "empty": 2
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 1,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:city-of-li-ge:eguichet-userstats",
+     "title": "Les utilisateurs d'E-guichet - statistiques",
+     "url": "https://opendata.liege.be/explore/dataset/eguichet-userstats/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/belaqi-qualite-air-issep/",
+     "title": "Indice BelAQI - Belgian Air Quality Index",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/belaqi-qualite-air-issep/exports/csv?use_labels=true#",
+     "problem": "cadence_not_met",
+     "latest_data_point": "2026-10-22",
+     "declared": "CONT"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/eguichet-userstats/",
+     "title": "Les utilisateurs d'E-guichet - statistiques",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/eguichet-userstats/exports/csv?use_labels=true#",
+     "problem": "empty"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/dechets-speciaux-des-menages/",
+     "title": "Collecte déchets ménagers spéciaux ou dangereux",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/dechets-speciaux-des-menages/exports/csv?use_labels=true#",
+     "problem": "gone"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/pcdn/",
+     "title": "Plan Communal de Développement de la Nature (PCDN)",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/pcdn/exports/csv?use_labels=true#",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 98,
+   "judged": 196,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Departement Omgeving",
+   "files": 173,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 165,
+    "access_denied": 1,
+    "unreachable": 5,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 2,
+   "examples": [],
+   "refused_hosts": [
+    "datasets.omgeving.vlaanderen.be"
+   ],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "IWEPS WalStat",
+   "files": 148,
+   "ok": 148,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 148,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Infrabel",
+   "files": 130,
+   "ok": 129,
+   "problems": {
+    "gone": 1,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:infrabel:studie-railspect-2019",
+     "title": "Studie Railspect 2019",
+     "url": "https://opendata.infrabel.be/explore/dataset/studie-railspect-2019/download/?format=csv",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 99.2,
+   "judged": 130,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Flanders Environment Agency",
+   "files": 123,
+   "ok": 112,
+   "problems": {
+    "gone": 6,
+    "not_a_table": 2,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 3,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 1,
+   "examples": [
+    {
+     "id": "national:3998407b-c694-4ce3-badd-cc5b3c944017",
+     "title": "Dioxines en PCB's in neervallend stof (depositie)",
+     "url": "https://vmm.vlaanderen.be/feiten-cijfers/lucht/overzicht-per-vervuilende-stof/andere-vervuilende-stoffen/dioxines-en-pcbs-in-depositie/dioxines-pcbs-maandgemiddelden/@@download/csv",
+     "problem": "gone"
+    },
+    {
+     "id": "national:8ccf2515-5dd8-4f68-9a54-429fb13f5669",
+     "title": "Dioxines en PCB’s in neervallend stof (depositie) in Beerse",
+     "url": "https://vmm.vlaanderen.be/feiten-cijfers/lucht/luchtkwaliteit-in-jouw-buurt/beerse/Dioxines-en-PCBs-in-depositie/dioxines-pcbs-jaargemiddelden/@@download/csv",
+     "problem": "gone"
+    },
+    {
+     "id": "national:07eb4fc7-d5ae-4bef-ab23-7a017f27f462",
+     "title": "Emissie van ammoniak door de landbouw",
+     "url": "https://vmm.vlaanderen.be/feiten-cijfers/lucht/vanwaar-komt-de-luchtverontreiniging/landbouw/uitstoot-ammoniak-naar-lucht/veelteelt-ammoniak-aandeel@@download/csv",
+     "problem": "gone"
+    },
+    {
+     "id": "national:f39e8b1a-178c-4a4d-ad41-c8ee5a95dff7",
+     "title": "Emissies broeikasgassen",
+     "url": "https://vmm.vlaanderen.be/feiten-cijfers/klimaat/klimaatthemas/broeikasuitstoot/indicator-totale-broeikasgasuitstoot-ets-esr/uitstoot-per-gas/@@download/csv",
+     "problem": "gone"
+    },
+    {
+     "id": "national:2f695aef-5a19-4a5b-ae93-efc3a807a02d",
+     "title": "Kost voor de productie en levering van drinkwater",
+     "url": "https://vmm.vlaanderen.be/beleid/waterbeleid/waterfactuur/waterregulator/regulering/graph",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 93.3,
+   "judged": 120,
+   "last_modified_sent_pct": 0.9
+  },
+  {
+   "publisher": "Elia",
+   "files": 110,
+   "ok": 87,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 2
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 6,
+    "too_large": 15
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:https://opendata.elia.be/explore/dataset/ods087/",
+     "title": "Photovoltaic power production estimation and forecast on Belgian grid (Near real-time)",
+     "url": "https://opendata.elia.be/api/explore/v2.1/catalog/datasets/ods087/exports/csv?use_labels=true#",
+     "problem": "empty"
+    },
+    {
+     "id": "national:https://opendata.elia.be/explore/dataset/ods191/",
+     "title": "Production-Based CO2 Intensity and Consumption-Based CO2 Intensity Belgium (Near real-time)",
+     "url": "https://opendata.elia.be/api/explore/v2.1/catalog/datasets/ods191/exports/csv?use_labels=true#",
+     "problem": "empty"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 97.8,
+   "judged": 89,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "BEP",
+   "files": 95,
+   "ok": 95,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 95,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Federal Planning Bureau",
+   "files": 84,
+   "ok": 84,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 2,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 84,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "SPW ARNE",
+   "files": 84,
+   "ok": 79,
+   "problems": {
+    "gone": 2,
+    "not_a_table": 0,
+    "empty": 2
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 1,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:open-data-wallonie-bruxelles:circulation-sur-les-cours-deau-en-wallonie",
+     "title": "Circulation sur les cours d'eau en Wallonie",
+     "url": "https://www.odwb.be/explore/dataset/circulation-sur-les-cours-deau-en-wallonie/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:open-data-wallonie-bruxelles:perimetres-des-conseils-cynegetiques-wallonie",
+     "title": "Périmètres des conseils cynégétiques - wallonie",
+     "url": "https://www.odwb.be/explore/dataset/perimetres-des-conseils-cynegetiques-wallonie/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/fiches-de-caracterisation-des-masses-d-eau-souterraines/",
+     "title": "Fiches de caractérisation des masses d’eau souterraines",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/fiches-de-caracterisation-des-masses-d-eau-souterraines/exports/csv?use_labels=true#",
+     "problem": "gone"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-vue-par-intersections/",
+     "title": "Masses d'eau souterraines (MESo)",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-vue-par-intersections/exports/csv?use_labels=true#",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 95.2,
+   "judged": 83,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Catholic University of Louvain",
+   "files": 77,
+   "ok": 27,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 46,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 4
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 3,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "www.sodha.be"
+   ],
+   "readable_pct": 100,
+   "judged": 27,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Sciensano",
+   "files": 76,
+   "ok": 76,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 2,
+   "last_modified_sent": 70,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 76,
+   "last_modified_sent_pct": 92.1
+  },
+  {
+   "publisher": "Fédération Wallonie-Bruxelles",
+   "files": 63,
+   "ok": 63,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 63,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Departement Werk en Sociale Economie",
+   "files": 58,
+   "ok": 56,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 1,
+    "too_large": 1
+   },
+   "cadence_not_met": 2,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 1,
+   "examples": [
+    {
+     "id": "national:https://opendata.wewis.vlaanderen.be/api/v2/catalog/datasets/awi02_dossier_v1",
+     "title": "AWI02 - Aantal goedgekeurde dossiers aanwervingsincentive per maand",
+     "url": "https://opendata.wewis.vlaanderen.be/api/v2/catalog/datasets/awi02_dossier_v1/exports/csv?use_labels=true#",
+     "problem": "cadence_not_met",
+     "latest_data_point": "2024",
+     "declared": "DAILY"
+    },
+    {
+     "id": "national:https://opendata.wewis.vlaanderen.be/api/v2/catalog/datasets/az01_product_bedrag_v1",
+     "title": "AZ01 - Bedrag Structurele arbeidszorg per maand",
+     "url": "https://opendata.wewis.vlaanderen.be/api/v2/catalog/datasets/az01_product_bedrag_v1/exports/csv?use_labels=true#",
+     "problem": "cadence_not_met",
+     "latest_data_point": "2021",
+     "declared": "MONTHLY"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 56,
+   "last_modified_sent_pct": 1.8
+  },
+  {
+   "publisher": "Ville de Verviers",
+   "files": 41,
+   "ok": 41,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 41,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "transportdata.be",
+   "files": 35,
+   "ok": 8,
+   "problems": {
+    "gone": 1,
+    "not_a_table": 26,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 7,
+   "examples": [
+    {
+     "id": "harvest:transport:b2a80fdc-e5a0-4cc2-a775-5cae377c6da3",
+     "title": "Technicar - vehicle technical information",
+     "url": "https://www.febiac.be/public/statistics.aspx?FID=18&lang=FR",
+     "problem": "gone"
+    },
+    {
+     "id": "harvest:transport:8596687f-4c92-482f-9603-453b6a4f70f8",
+     "title": "Vergunde voertuigen Individueel bezoldigd personenvervoer",
+     "url": "https://www.vlaanderen.be/taxi/vergunning-individueel-bezoldigd-personenvervoer-taxivergunning",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "harvest:transport:79a27eab-2ce9-4feb-a720-17cbfd6a908e",
+     "title": "Gader",
+     "url": "https://gader.io",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "harvest:transport:96ee7559-5f31-4996-8d60-def266b64b20",
+     "title": "Attribution des retards par mois - Toewijzing vertraging per maand - Monthly imputation of delays",
+     "url": "https://opendata.infrabel.be/explore/dataset/toewijzingvertraging/information/",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "harvest:transport:a2d44e31-14ba-425c-8d0c-e33000ed3b4b",
+     "title": "Attribution des suppressions de trains - Toewijzing afgeschafte treinen per maand - Monthly imputation of train cancellations",
+     "url": "https://opendata.infrabel.be/explore/dataset/toewijzing-afgeschafte-treinen/information/",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 22.9,
+   "judged": 35,
+   "last_modified_sent_pct": 87.5
+  },
+  {
+   "publisher": "NIHDI",
+   "files": 33,
+   "ok": 31,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 2
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 31,
+   "examples": [
+    {
+     "id": "national:781c6e2f-6b25-472e-875d-4aa4d6407184",
+     "title": "Quality Electronic Registration of Medical acts, Implants and Devices: Orthopedic Prosthesis Identification Data: Total femur",
+     "url": "https://hddc.blob.core.windows.net/hdfair/dataset/781c6e2f-6b25-472e-875d-4aa4d6407184/HD_DCD_submcsv_HDBP0048_Orthopride_Femur_Primo_v1_20230504_HEADER.csv",
+     "problem": "empty"
+    },
+    {
+     "id": "national:5c0976c4-33ce-46ab-9c71-27bfd2f69290",
+     "title": "Quality Electronic Registration of Medical acts, Implants and Devices: Pacemakers",
+     "url": "https://hddc.blob.core.windows.net/hdfair/dataset/5c0976c4-33ce-46ab-9c71-27bfd2f69290/HD_DCD_submcsv_HDBP0016_PACEMAKER_AddReplaceElectrodes_02_20230505_HEADER.csv",
+     "problem": "empty"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 93.9,
+   "judged": 33,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "ORES",
+   "files": 32,
+   "ok": 30,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 2
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 30,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Fluvius",
+   "files": 28,
+   "ok": 24,
+   "problems": {
+    "gone": 4,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:fluvius:premies-per-gemeente",
+     "title": "Premies per gemeente",
+     "url": "https://opendata.fluvius.be/explore/dataset/premies-per-gemeente/download/?format=csv",
+     "problem": "gone"
+    },
+    {
+     "id": "national:https://opendata.fluvius.be/explore/dataset/verbruiksgegevens-per-straat-lopend-jaar/",
+     "title": "Verbruiksgegevens per straat lopend jaar",
+     "url": "https://opendata.fluvius.be/api/explore/v2.1/catalog/datasets/verbruiksgegevens-per-straat-lopend-jaar/exports/csv?use_labels=true#",
+     "problem": "gone"
+    },
+    {
+     "id": "harvest:fluvius:1_50-verbruiksprofielen-dm-elek-kwartierwaarden-voor-een-volledig-jaar",
+     "title": "Verbruiksprofielen digitale elektriciteitsmeters: kwartierwaarden voor een volledig jaar.",
+     "url": "https://opendata.fluvius.be/explore/dataset/1_50-verbruiksprofielen-dm-elek-kwartierwaarden-voor-een-volledig-jaar/download/?format=csv",
+     "problem": "gone"
+    },
+    {
+     "id": "harvest:fluvius:1_50-verbruiksprofielen-dm-gas-uurwaarden-voor-een-volledig-jaar",
+     "title": "Verbruiksprofielen digitale gasmeters: uurwaarden voor een volledig jaar.",
+     "url": "https://opendata.fluvius.be/explore/dataset/1_50-verbruiksprofielen-dm-gas-uurwaarden-voor-een-volledig-jaar/download/?format=csv",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 85.7,
+   "judged": 28,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "data.gov.be source",
+   "files": 27,
+   "ok": 24,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 3
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:premies-per-gemeente",
+     "title": null,
+     "url": "https://fluvius.opendatasoft.com/api/v2/catalog/datasets/premies-per-gemeente/exports/csv",
+     "problem": "empty"
+    },
+    {
+     "id": "national:1_50-verbruiksprofielen-dm-elek-kwartierwaarden-voor-een-volledig-jaar",
+     "title": null,
+     "url": "https://fluvius.opendatasoft.com/api/v2/catalog/datasets/1_50-verbruiksprofielen-dm-elek-kwartierwaarden-voor-een-volledig-jaar/exports/csv",
+     "problem": "empty"
+    },
+    {
+     "id": "national:1_50-verbruiksprofielen-dm-gas-uurwaarden-voor-een-volledig-jaar",
+     "title": null,
+     "url": "https://fluvius.opendatasoft.com/api/v2/catalog/datasets/1_50-verbruiksprofielen-dm-gas-uurwaarden-voor-een-volledig-jaar/exports/csv",
+     "problem": "empty"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 88.9,
+   "judged": 27,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "IDELUX",
+   "files": 26,
+   "ok": 26,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 26,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Open Data Wallonie-Bruxelles",
+   "files": 26,
+   "ok": 26,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 26,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "City of Mons",
+   "files": 25,
+   "ok": 24,
+   "problems": {
+    "gone": 1,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/stationnements-specifiques-a-mons/",
+     "title": "Stationnements spécifiques",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/stationnements-specifiques-a-mons/exports/csv?use_labels=true#",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 96,
+   "judged": 25,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Ville de Marche-en-Famenne",
+   "files": 25,
+   "ok": 25,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 25,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Agence du Numérique",
+   "files": 24,
+   "ok": 20,
+   "problems": {
+    "gone": 4,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:open-data-wallonie-bruxelles:communes-et-localites",
+     "title": "Communes et localités belges",
+     "url": "https://www.odwb.be/explore/dataset/communes-et-localites/download/?format=csv",
+     "problem": "gone"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/etat-des-masses-d-eau-souterraines/",
+     "title": "Etat des masses d'eau souterraines - cartographie",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/etat-des-masses-d-eau-souterraines/exports/csv?use_labels=true#",
+     "problem": "gone"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-wallonnes/",
+     "title": "Masses d'eau souterraines wallonnes",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-wallonnes/exports/csv?use_labels=true#",
+     "problem": "gone"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-liste/",
+     "title": "Masses d'eau souterraines - Liste",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-liste/exports/csv?use_labels=true#",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 83.3,
+   "judged": 24,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "FPS Health",
+   "files": 24,
+   "ok": 24,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 24,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 24,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Ville de Tournai",
+   "files": 23,
+   "ok": 23,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 23,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Ville de Thuin",
+   "files": 22,
+   "ok": 20,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 2
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:open-data-wallonie-bruxelles:schema_creches_thuin",
+     "title": "Schema_Crèches_Thuin",
+     "url": "https://www.odwb.be/explore/dataset/schema_creches_thuin/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:open-data-wallonie-bruxelles:schemas_eolienne_thuin",
+     "title": "schémas_eolienne_thuin",
+     "url": "https://www.odwb.be/explore/dataset/schemas_eolienne_thuin/download/?format=csv",
+     "problem": "empty"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 90.9,
+   "judged": 22,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Agentschap Wegen en Verkeer",
+   "files": 21,
+   "ok": 19,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 1,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 1,
+    "too_large": 0
+   },
+   "cadence_not_met": 2,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [
+    {
+     "id": "national:74376e19-c48a-4d09-b31a-b498ccd5d7a8",
+     "title": "Verkeersborden.Vlaanderen_Borden",
+     "url": "https://opendata.apps.mow.vlaanderen.be/opendata-geoserver/awv/wfs?typeName=Verkeersborden.Vlaanderen_Borden&SERVICE=WFS&VERSION=2.0.0&REQUEST=getFeature&outputFormat=CSV&Count=10",
+     "problem": "cadence_not_met",
+     "latest_data_point": "2003",
+     "declared": "DAILY"
+    },
+    {
+     "id": "national:e161b4b9-b951-4694-8561-3ea2d5539f74",
+     "title": "Werf - Innames",
+     "url": "https://opendata.apps.mow.vlaanderen.be/opendata-geoserver/awv/wfs?typeName=Werf_Innames&service=WFS&version=2.0.0&request=getFeature&outputFormat=CSV&Count=10",
+     "problem": "cadence_not_met",
+     "latest_data_point": "2017",
+     "declared": "CONT"
+    },
+    {
+     "id": "national:324819c2-0e02-438f-a002-2e359776068b",
+     "title": "Fietstellingen AWV",
+     "url": "https://opendata.apps.mow.vlaanderen.be/fietstellingen/index.html",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 95,
+   "judged": 20,
+   "last_modified_sent_pct": 5.3
+  },
+  {
+   "publisher": "FPS Finance",
+   "files": 21,
+   "ok": 21,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 19,
+   "last_modified_sent": 21,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 21,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Ville d'Andenne",
+   "files": 19,
+   "ok": 19,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 19,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "CGT - Commissariat Général au Tourisme",
+   "files": 17,
+   "ok": 16,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 1
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:open-data-wallonie-bruxelles:cgt-pivot-villages-de-vacances",
+     "title": "CGT Pivot - Villages de vacances",
+     "url": "https://www.odwb.be/explore/dataset/cgt-pivot-villages-de-vacances/download/?format=csv",
+     "problem": "empty"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 94.1,
+   "judged": 17,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Service public de Wallonie (SPW)",
+   "files": 16,
+   "ok": 15,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 1
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 15,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "State Archives of Belgium",
+   "files": 15,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 15,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "www.sodha.be"
+   ],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Ville de La Louvière",
+   "files": 15,
+   "ok": 15,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 15,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Commune de Seneffe",
+   "files": 14,
+   "ok": 14,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 14,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "in BW",
+   "files": 14,
+   "ok": 14,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 14,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Statbel",
+   "files": 14,
+   "ok": 13,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 1
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 13,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 13,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Departement Cultuur, Jeugd en Media",
+   "files": 13,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 1,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 12,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:2c3bff6a-face-3e1a-865e-ac48884f8fe4",
+     "title": "Vlaamse Immaterieel Cultureel erfgoed elementen opgenomen in lijsten",
+     "url": "https://metadata.vlaanderen.be/srv/dut/catalog.search#/metadata/9f721882-48f9-59fb-b8dd-b994d7edb1e6",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [
+    "metadata.dcjm.be"
+   ],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "INTRADEL SC",
+   "files": 12,
+   "ok": 12,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 12,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Royal Belgian Institute of Natural Sciences",
+   "files": 12,
+   "ok": 8,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 1,
+    "too_large": 3
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 5,
+   "last_modified_sent": 7,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 8,
+   "last_modified_sent_pct": 87.5
+  },
+  {
+   "publisher": "SPW EER Économie, Emploi, Recherche",
+   "files": 12,
+   "ok": 12,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 12,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "University of Antwerp",
+   "files": 12,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 12,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "www.sodha.be"
+   ],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Académie de recherche et d'enseignement supérieur (ARES)",
+   "files": 11,
+   "ok": 10,
+   "problems": {
+    "gone": 1,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:open-data-wallonie-bruxelles:ares-inscriptions-dans-l-enseignement-superieur-hors-universites",
+     "title": "ARES - Inscriptions dans l'enseignement supérieur (hors universités)",
+     "url": "https://www.odwb.be/explore/dataset/ares-inscriptions-dans-l-enseignement-superieur-hors-universites/download/?format=csv",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 90.9,
+   "judged": 11,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Databank Ondergrond Vlaanderen (DOV)",
+   "files": 10,
+   "ok": 10,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 10,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Flemish Energy and Climate Agency",
+   "files": 10,
+   "ok": 9,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 1
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 9,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 9,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "SPW-SG Secrétariat général",
+   "files": 10,
+   "ok": 9,
+   "problems": {
+    "gone": 1,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/points-et-lignes-de-vue-remarquables-en-wallonie/",
+     "title": "SPW - Points et Lignes de Vue Remarquables en Wallonie",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/points-et-lignes-de-vue-remarquables-en-wallonie/exports/csv?use_labels=true#",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 90,
+   "judged": 10,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Université de Liège",
+   "files": 10,
+   "ok": 9,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 1
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 9,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Ville d'Antoing",
+   "files": 10,
+   "ok": 10,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 10,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "VisitFlanders",
+   "files": 10,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 10,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:47d14c9c-a496-41ec-bd71-a39dc142522e",
+     "title": "B&Bs via POI-service, v.2",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=3960&title=B_Bs_via_POI_service_v_2",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:4d0e5794-a99e-4426-8a99-d3ff07775b15",
+     "title": "Campings via POI-service, v.2",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=3963&title=Campings_via_POI_service_v_2",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:50789456-c596-4e6e-9ecc-e83be60e3e9c",
+     "title": "Hostels via POI-service, v.2",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=3944&title=Hostels_via_POI_service_v_2",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:46c4ebad-3c27-4cc7-a2ce-c485b06f99cc",
+     "title": "Hotels via POI-service, v.2",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=3964&title=Hotels_via_POI_service_v_2",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:24b84e0d-8928-4232-9df6-aee9c8b615ea",
+     "title": "Camperterreinen via POI-service, v.2",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=3961&title=Camperterreinen_via_POI_service_v_2",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 0,
+   "judged": 10,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Commune de Fernelmont",
+   "files": 9,
+   "ok": 9,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 9,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Consortium Eerstelijnsdata",
+   "files": 9,
+   "ok": 9,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 9,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 9,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Bureau Economique Namur",
+   "files": 8,
+   "ok": 6,
+   "problems": {
+    "gone": 2,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/essaimage-facteur-conversion-energetique/",
+     "title": "Essaimage - facteur conversion énergétique",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/essaimage-facteur-conversion-energetique/exports/csv?use_labels=true#",
+     "problem": "gone"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/visites-sur-les-recyparcs-du-bep-en-2019/",
+     "title": "Visites sur les recyparcs du BEP en 2019",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/visites-sur-les-recyparcs-du-bep-en-2019/exports/csv?use_labels=true#",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 75,
+   "judged": 8,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Commune de Merbes-le-Château",
+   "files": 7,
+   "ok": 7,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 7,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Ghent University",
+   "files": 7,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 7,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "www.sodha.be"
+   ],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Huwise",
+   "files": 6,
+   "ok": 5,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 1
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 5,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "IDEA",
+   "files": 6,
+   "ok": 6,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 6,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Liège Métropole",
+   "files": 6,
+   "ok": 6,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 6,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Agentschap Landbouw en Visserij",
+   "files": 5,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 5,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:755c76a0-ec9b-47b0-a487-89a68386247f",
+     "title": "Bedrijfseconomische resultaten van de Vlaamse landbouwbedrijven: resultatenrekening volledig bedrijf",
+     "url": "https://landbouwcijfers.vlaanderen.be/resultatenrekening-volledig-bedrijf",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:c21c0168-7810-4c42-81f6-a8695673da7c",
+     "title": "Aan­deel recht­streek­se steun in de op­brengst en het inkomen",
+     "url": "https://landbouwcijfers.vlaanderen.be/bedrijfseconomische-resultaten-bedrijfstakken",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:139daf3e-fece-4450-a6ae-495b75127096",
+     "title": "Gebruik van gewasbeschermingsmiddelen in de Vlaamse landbouw: risico (HRI1)",
+     "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/gewasbescherming-risico-hri1",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:b357acee-b70b-4f21-9b80-4a4bcec43c8e",
+     "title": "Gebruik van kunstmest in de Vlaamse landbouw",
+     "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/kunstmestgebruik-kalium",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:71ee65bc-6f34-44a5-8f30-e391b63692d6",
+     "title": "Deelname van landbouwbedrijven aan ecoregelingen en agromilieu- en klimaatmaatregelen",
+     "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/deelname-aan-ecoregelingen-en-agromilieu-en-klimaatmaatregelen",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 0,
+   "judged": 5,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Parlement de Wallonie",
+   "files": 5,
+   "ok": 5,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 5,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Vrije Universiteit Brussel",
+   "files": 5,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 5,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "metadata.dcjm.be",
+    "www.sodha.be"
+   ],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Agentschap Wonen in Vlaanderen",
+   "files": 4,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 4,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:a1239b30-d03f-455b-84ee-c7e94ddb7831",
+     "title": "Panden met een herstelvordering via POI-service",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=7755&title=Panden_met_een_herstelvordering_via_POI_service",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:a4bc9fab-ad72-4bbb-898e-e6d4246d61db",
+     "title": "Vlaams kotlabel via POI-service",
+     "url": "https://download.vlaanderen.be/product/10652-vlaams_kotlabel_via_poi-service",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:21d3f117-5caa-485c-a929-cf30db8d1b71",
+     "title": "Vlaamse inventaris van ongeschikte en onbewoonbare woningen via POI-service",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=7756&title=Vlaamse_inventaris_van_ongeschikte_en_onbewoonbare_woningen_via_POI_service",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:34e801ed-d2b2-48ce-8ec7-3bce7ecebcb3",
+     "title": "Woningen met een conformiteitsattest via POI-service",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=7758&title=Woningen_met_een_conformiteitsattest_via_POI_service",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 0,
+   "judged": 4,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "BiomMap",
+   "files": 4,
+   "ok": 4,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 4,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Centrum voor Kankeropsporing",
+   "files": 4,
+   "ok": 4,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 4,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 4,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Cluster Eco-construction",
+   "files": 4,
+   "ok": 4,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 4,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Commune de Chaudfontaine",
+   "files": 4,
+   "ok": 4,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 4,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Departement Zorg",
+   "files": 4,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 2,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 2,
+   "examples": [
+    {
+     "id": "national:734f6673-e72c-4cba-9060-f4496dfebea1",
+     "title": "Zorgvoorzieningen erkend door het Departement Zorg (gezondheidszorg en woonzorg) via POI-service",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=573&title=Zorgvoorzieningen_erkend_door_het_Departement_Zorg_gezondheidszorg_en_woonzorg_via_POI_service",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:b0616149-c151-4d78-ac8b-793f1b8ba047",
+     "title": "Zorgvoorzieningen erkend door het Departement Zorg (welzijnswerk) via POI-service",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=603&title=Zorgvoorzieningen_erkend_door_het_Departement_Zorg_welzijnswerk_via_POI_service",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 50,
+   "judged": 4,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "FAMHP",
+   "files": 4,
+   "ok": 4,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 4,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 4,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "iMio",
+   "files": 4,
+   "ok": 4,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 4,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "SPW-MI Mobilité et Infrastructures",
+   "files": 4,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 3
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "TIBI",
+   "files": 4,
+   "ok": 4,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 4,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Ville de Charleroi",
+   "files": 4,
+   "ok": 4,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 4,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Be WaPP asbl",
+   "files": 3,
+   "ok": 3,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 3,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Cambio",
+   "files": 3,
+   "ok": 3,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 3,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Catholic University of Leuven",
+   "files": 3,
+   "ok": 3,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 3,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 3,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Centropôle ASBL",
+   "files": 3,
+   "ok": 3,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 3,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Commune d'Ecaussinnes",
+   "files": 3,
+   "ok": 3,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 3,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Croix-rouge de Belgique - Service du sang",
+   "files": 3,
+   "ok": 3,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 3,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Departement Onderwijs en Vorming (Opgroeien)",
+   "files": 3,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 3,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:0d449c97-77a4-4a39-a1fc-d07b9b143c92",
+     "title": "Onderwijsaanbod in Vlaanderen en Brussel via POI-service",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=934&title=Onderwijsaanbod_in_Vlaanderen_en_Brussel_via_POI_service",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:8bd07396-d386-4604-9cac-e66b9fc15a86",
+     "title": "Kinderopvangvoorzieningen erkend door Opgroeien Regie via POI-service",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=577&title=Kinderopvangvoorzieningen_erkend_door_Opgroeien_Regie_via_POI_service",
+     "problem": "not_a_table"
+    },
+    {
+     "id": "national:9163d7a8-ef53-48e4-bb1f-4a67d2261f26",
+     "title": "Zorgvoorzieningen erkend door het agentschap Opgroeien via POI-service",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=579&title=Zorgvoorzieningen_erkend_door_het_agentschap_Opgroeien_via_POI_service",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 0,
+   "judged": 3,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Federal Agency for the Safety of the Food Chain",
+   "files": 3,
+   "ok": 3,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 3,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 3,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "GAL MeuseCampagnes asbl",
+   "files": 3,
+   "ok": 3,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 3,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Immolytics",
+   "files": 3,
+   "ok": 3,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 3,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 3,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Intermutualistic Agency",
+   "files": 3,
+   "ok": 3,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 3,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 3,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Perspective Brussels",
+   "files": 3,
+   "ok": 3,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 2,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": 100,
+   "judged": 3,
+   "last_modified_sent_pct": 66.7
+  },
+  {
+   "publisher": "Université libre de Bruxelles",
+   "files": 3,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 3,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "www.sodha.be"
+   ],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Ville de Mons",
+   "files": 3,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 3
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "harvest:open-data-wallonie-bruxelles:archives-etat-d-avancement-inventaires-personnes",
+     "title": "Archives - Etats d'avancement des encodages prévus",
+     "url": "https://www.odwb.be/explore/dataset/archives-etat-d-avancement-inventaires-personnes/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:open-data-wallonie-bruxelles:livre-d-or",
+     "title": "Archives - Livres d'or de la Ville et du CPAS de Mons",
+     "url": "https://www.odwb.be/explore/dataset/livre-d-or/download/?format=csv",
+     "problem": "empty"
+    },
+    {
+     "id": "harvest:open-data-wallonie-bruxelles:inventaire-des-sentiers-a-mons",
+     "title": "Inventaire des sentiers",
+     "url": "https://www.odwb.be/explore/dataset/inventaire-des-sentiers-a-mons/download/?format=csv",
+     "problem": "empty"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": 0,
+   "judged": 3,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Bebat",
+   "files": 2,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "BEP - PNVH",
+   "files": 2,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Conseil régional Hauts-de-France",
+   "files": 2,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 2,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Departement Kanselarij en Buitenlandse Zaken",
+   "files": 2,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 1,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [
+    {
+     "id": "national:e1413037-9b9b-47de-ab89-282fe8003a8d",
+     "title": "Bevolkingsvooruitzichten",
+     "url": "https://www.statistiekvlaanderen.be/sites/default/files/docs/vooruitzichten_personen_ABB.csv",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "FPS BOSA",
+   "files": 2,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 1
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "FPS Mobility and Transport",
+   "files": 2,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 1,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [
+    {
+     "id": "national:52ea177d3f4c8d863597a45384d2f693b5d6cdfe",
+     "title": "Inschrijvingen van voertuigen (maandelijks)",
+     "url": "https://mobilit.belgium.be/nl/documenten/open-data/wegverkeer/inschrijvingen-van-voertuigen",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "FPS Social Security",
+   "files": 2,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 2,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "FuturoCité",
+   "files": 2,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Letsgocity",
+   "files": 2,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "OpenStreetMap",
+   "files": 2,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "TBC",
+   "files": 2,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "TEC",
+   "files": 2,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Union des Villes et Communes de Wallonie",
+   "files": 2,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Ville d'Arlon",
+   "files": 2,
+   "ok": 2,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 2,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Administration de Villers-la-Ville",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Agentschap Digitaal Vlaanderen",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 1,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:817de870-fbfd-4217-b52c-e1944e88c5bc",
+     "title": "Interbestuurlijke Producten en Diensten Catalogus",
+     "url": "https://productencatalogus.vlaanderen.be/start",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Agentschap Innoveren en Ondernemen",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 1,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:fa8ac588-dbb1-49ff-ae16-2011ceb92949",
+     "title": "Businesscenters in Vlaanderen via POI-service",
+     "url": "https://download.vlaanderen.be/Producten/Detail?id=4020&title=Businesscenters_in_Vlaanderen_via_POI_service",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Agromet",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Amgen",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Arlon Centre-Ville asbl",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Batopin",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Belgian Association for Cardio-Thoracic Surgery",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Belgian Cancer Registry",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Belgian Cerebral Palsy Registry",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Belgian Food Truck Federation",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 1,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Belgian Hematological Society",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Belgian Sexual Assault Care Centres",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Belgian Society of Medical Oncology",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Belgian Study Group for Multiple Sclerosis (BSGMS)",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Belgian Trauma Registry",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "BEP et ISSEP",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Bolt",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "bpost",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Brussels Planning and Heritage",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Cabinet du Ministre de l'économie",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Chiesi",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "City of Nivelles",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 1,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/nivelles-emplacements-de-stationnement-pour-personnes-handicapees/",
+     "title": "Nivelles - Emplacements de stationnement pour personnes handicapées",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/nivelles-emplacements-de-stationnement-pour-personnes-handicapees/exports/csv?use_labels=true#",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Code Postal.be",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "College of Physicians Reproductive Medicine",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Commune de Braine-l'Alleud",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Commune de Chapelle-lez-Herlaimont – Service Mobilité- Urbanisme",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Departement Financiën en Begroting",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 1,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Direction des Aînés (AViQ - DA)",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "European Society for Immunodeficiencies",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Federated consortium for Appraisal of Integrated care Teams in Health in Belgium",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "FPS Economy",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 1,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:fpseco-cbeopen-download",
+     "title": "CBE - Open data",
+     "url": "https://economie.fgov.be/nl/themas/ondernemingen/kruispuntbank-van/diensten-voor-iedereen/hergebruik-van-publieke/kruispuntbank-van-0",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "FPS Foreign Affairs",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 1,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:336aa8e641a997af1a80f46264f322b621c86ff8",
+     "title": "OpenAid.be (Official Aid by the Directorate-general Development Cooperation and Humanitarian Aid)",
+     "url": "https://openaid.be/nl",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "FPS Interior",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 1,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "curated:ibz-election-candidate-results",
+     "title": "Official candidate preference-vote results",
+     "url": "https://verkiezingsresultaten.belgium.be/",
+     "problem": "not_a_table"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Hasselt University",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 1,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "www.sodha.be"
+   ],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "IDETA",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "IGRETEC",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Interuniversity Consortium of Centers for Pulmonary Hypertension",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "IRCEL-CELINE",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "JC Decaux",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 1,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/li-bia-velo-namur-jc-decaux/",
+     "title": "Li bia velo - Namur - JC Decaux",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/li-bia-velo-namur-jc-decaux/exports/csv?use_labels=true#",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "KBR",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 1,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "www.sodha.be"
+   ],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "L’Adeps",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Le Forem",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Mediahuis",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 1,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "www.sodha.be"
+   ],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Merck Sharp and Dohme",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Municipality of Chaudfontaine",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 1,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/autostop-elabore-et-securise-a-chaudfontaine/",
+     "title": "Autostop élaboré et sécurisé à Chaudfontaine",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/autostop-elabore-et-securise-a-chaudfontaine/exports/csv?use_labels=true#",
+     "problem": "gone"
+    }
+   ],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Musées Royaux des Beaux Arts",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 1,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "www.sodha.be"
+   ],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "NGI",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 1,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "NMBS-SNCB",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Novartis",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Paradigm",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Parking Brussels",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Pfizer",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Province de Luxembourg",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Recupel",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Région Hauts-de-France",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Royal Belgian Society of Rheumatology",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "SCS Boehringer Ingelheim Comm. V",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Spi",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Spine Society of Belgium",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "SPW TLPE Territoire, Logement, Patrimoine, Énergie",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Telraam",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Tijdloze.Rocks",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "University of Luxembourg",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 1,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "www.sodha.be"
+   ],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "University of Namur",
+   "files": 1,
+   "ok": 0,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 1,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [
+    "www.sodha.be"
+   ],
+   "readable_pct": null,
+   "judged": 0,
+   "last_modified_sent_pct": null
+  },
+  {
+   "publisher": "Vertex Pharmaceuticals",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 1,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 100
+  },
+  {
+   "publisher": "Ville de Chimay",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Ville de Hannut",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Ville de Huy",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Ville de Liège",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Ville de Namur - Cohésion sociale",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
+   "publisher": "Ville de Péruwelz",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  }
+ ],
+ "cadence_not_met": [
+  {
+   "id": "national:74376e19-c48a-4d09-b31a-b498ccd5d7a8",
+   "title": "Verkeersborden.Vlaanderen_Borden",
+   "publisher": "Agentschap Wegen en Verkeer",
+   "url": "https://opendata.apps.mow.vlaanderen.be/opendata-geoserver/awv/wfs?typeName=Verkeersborden.Vlaanderen_Borden&SERVICE=WFS&VERSION=2.0.0&REQUEST=getFeature&outputFormat=CSV&Count=10",
+   "declared": "DAILY",
+   "latest_data_point": "2003",
+   "column": "fabricage_jaar",
+   "latest_data_age_days": 8361
+  },
+  {
+   "id": "national:e161b4b9-b951-4694-8561-3ea2d5539f74",
+   "title": "Werf - Innames",
+   "publisher": "Agentschap Wegen en Verkeer",
+   "url": "https://opendata.apps.mow.vlaanderen.be/opendata-geoserver/awv/wfs?typeName=Werf_Innames&service=WFS&version=2.0.0&request=getFeature&outputFormat=CSV&Count=10",
+   "declared": "CONT",
+   "latest_data_point": "2017",
+   "column": "Uitvoer_van_jaar",
+   "latest_data_age_days": 3247
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/belaqi-qualite-air-issep/",
+   "title": "Indice BelAQI - Belgian Air Quality Index",
+   "publisher": "City of Liège",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/belaqi-qualite-air-issep/exports/csv?use_labels=true#",
+   "declared": "CONT",
+   "latest_data_point": "2026-10-22",
+   "column": "Heure de la mesure AQI",
+   "latest_data_age_days": 30
+  },
+  {
+   "id": "national:https://opendata.wewis.vlaanderen.be/api/v2/catalog/datasets/awi02_dossier_v1",
+   "title": "AWI02 - Aantal goedgekeurde dossiers aanwervingsincentive per maand",
+   "publisher": "Departement Werk en Sociale Economie",
+   "url": "https://opendata.wewis.vlaanderen.be/api/v2/catalog/datasets/awi02_dossier_v1/exports/csv?use_labels=true#",
+   "declared": "DAILY",
+   "latest_data_point": "2024",
+   "column": "JAAR",
+   "latest_data_age_days": 690
+  },
+  {
+   "id": "national:https://opendata.wewis.vlaanderen.be/api/v2/catalog/datasets/az01_product_bedrag_v1",
+   "title": "AZ01 - Bedrag Structurele arbeidszorg per maand",
+   "publisher": "Departement Werk en Sociale Economie",
+   "url": "https://opendata.wewis.vlaanderen.be/api/v2/catalog/datasets/az01_product_bedrag_v1/exports/csv?use_labels=true#",
+   "declared": "MONTHLY",
+   "latest_data_point": "2021",
+   "column": "JAAR",
+   "latest_data_age_days": 1786
+  }
+ ],
+ "broken": [
+  {
+   "id": "national:https://opendata.elia.be/explore/dataset/ods087/",
+   "title": "Photovoltaic power production estimation and forecast on Belgian grid (Near real-time)",
+   "publisher": "Elia",
+   "url": "https://opendata.elia.be/api/explore/v2.1/catalog/datasets/ods087/exports/csv?use_labels=true#",
+   "problem": "empty"
+  },
+  {
+   "id": "national:https://opendata.elia.be/explore/dataset/ods191/",
+   "title": "Production-Based CO2 Intensity and Consumption-Based CO2 Intensity Belgium (Near real-time)",
+   "publisher": "Elia",
+   "url": "https://opendata.elia.be/api/explore/v2.1/catalog/datasets/ods191/exports/csv?use_labels=true#",
+   "problem": "empty"
+  },
+  {
+   "id": "national:781c6e2f-6b25-472e-875d-4aa4d6407184",
+   "title": "Quality Electronic Registration of Medical acts, Implants and Devices: Orthopedic Prosthesis Identification Data: Total femur",
+   "publisher": "NIHDI",
+   "url": "https://hddc.blob.core.windows.net/hdfair/dataset/781c6e2f-6b25-472e-875d-4aa4d6407184/HD_DCD_submcsv_HDBP0048_Orthopride_Femur_Primo_v1_20230504_HEADER.csv",
+   "problem": "empty"
+  },
+  {
+   "id": "national:5c0976c4-33ce-46ab-9c71-27bfd2f69290",
+   "title": "Quality Electronic Registration of Medical acts, Implants and Devices: Pacemakers",
+   "publisher": "NIHDI",
+   "url": "https://hddc.blob.core.windows.net/hdfair/dataset/5c0976c4-33ce-46ab-9c71-27bfd2f69290/HD_DCD_submcsv_HDBP0016_PACEMAKER_AddReplaceElectrodes_02_20230505_HEADER.csv",
+   "problem": "empty"
+  },
+  {
+   "id": "national:premies-per-gemeente",
+   "title": null,
+   "publisher": "data.gov.be source",
+   "url": "https://fluvius.opendatasoft.com/api/v2/catalog/datasets/premies-per-gemeente/exports/csv",
+   "problem": "empty"
+  },
+  {
+   "id": "national:1_50-verbruiksprofielen-dm-elek-kwartierwaarden-voor-een-volledig-jaar",
+   "title": null,
+   "publisher": "data.gov.be source",
+   "url": "https://fluvius.opendatasoft.com/api/v2/catalog/datasets/1_50-verbruiksprofielen-dm-elek-kwartierwaarden-voor-een-volledig-jaar/exports/csv",
+   "problem": "empty"
+  },
+  {
+   "id": "national:1_50-verbruiksprofielen-dm-gas-uurwaarden-voor-een-volledig-jaar",
+   "title": null,
+   "publisher": "data.gov.be source",
+   "url": "https://fluvius.opendatasoft.com/api/v2/catalog/datasets/1_50-verbruiksprofielen-dm-gas-uurwaarden-voor-een-volledig-jaar/exports/csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:brussels-open-data:aires-jeux-publiques-vbx",
+   "title": "Aires de jeux publiques situées sur le territoire de la Ville de Bruxelles",
+   "publisher": "Brussels Open Data",
+   "url": "https://bruxellesdata.opendatasoft.com/explore/dataset/aires-jeux-publiques-vbx/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:brussels-open-data:enseignement-nl-de-promotion-sociale-vbx",
+   "title": "Enseignement néerlandophone de promotion sociale sur le territoire de la Ville de Bruxelles",
+   "publisher": "Brussels Open Data",
+   "url": "https://bruxellesdata.opendatasoft.com/explore/dataset/enseignement-nl-de-promotion-sociale-vbx/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:brussels-open-data:enseignement-fr-de-promotion-sociale-vbx",
+   "title": "Enseignement francophone de promotion sociale sur le territoire de la Ville de Bruxelles",
+   "publisher": "Brussels Open Data",
+   "url": "https://bruxellesdata.opendatasoft.com/explore/dataset/enseignement-fr-de-promotion-sociale-vbx/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:brussels-open-data:plans-de-deplacements-scolaires-vbx",
+   "title": "Plans de déplacements scolaires (PDS) des écoles situées sur le territoire de la Ville de Bruxelles",
+   "publisher": "Brussels Open Data",
+   "url": "https://bruxellesdata.opendatasoft.com/explore/dataset/plans-de-deplacements-scolaires-vbx/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:city-of-li-ge:eguichet-userstats",
+   "title": "Les utilisateurs d'E-guichet - statistiques",
+   "publisher": "City of Liège",
+   "url": "https://opendata.liege.be/explore/dataset/eguichet-userstats/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:brussels-open-data:costumes-de-manneken-pis",
+   "title": "Costumes de Manneken-Pis",
+   "publisher": "Brussels Open Data",
+   "url": "https://bruxellesdata.opendatasoft.com/explore/dataset/costumes-de-manneken-pis/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:open-data-wallonie-bruxelles:circulation-sur-les-cours-deau-en-wallonie",
+   "title": "Circulation sur les cours d'eau en Wallonie",
+   "publisher": "SPW ARNE",
+   "url": "https://www.odwb.be/explore/dataset/circulation-sur-les-cours-deau-en-wallonie/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:city-of-namur:communes-gemeente-belgium",
+   "title": "Communes de la Province de Namur",
+   "publisher": "City of Namur",
+   "url": "https://data.namur.be/explore/dataset/communes-gemeente-belgium/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:open-data-wallonie-bruxelles:perimetres-des-conseils-cynegetiques-wallonie",
+   "title": "Périmètres des conseils cynégétiques - wallonie",
+   "publisher": "SPW ARNE",
+   "url": "https://www.odwb.be/explore/dataset/perimetres-des-conseils-cynegetiques-wallonie/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:open-data-wallonie-bruxelles:schema_creches_thuin",
+   "title": "Schema_Crèches_Thuin",
+   "publisher": "Ville de Thuin",
+   "url": "https://www.odwb.be/explore/dataset/schema_creches_thuin/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:open-data-wallonie-bruxelles:schemas_eolienne_thuin",
+   "title": "schémas_eolienne_thuin",
+   "publisher": "Ville de Thuin",
+   "url": "https://www.odwb.be/explore/dataset/schemas_eolienne_thuin/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/eguichet-userstats/",
+   "title": "Les utilisateurs d'E-guichet - statistiques",
+   "publisher": "City of Liège",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/eguichet-userstats/exports/csv?use_labels=true#",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:open-data-wallonie-bruxelles:cgt-pivot-villages-de-vacances",
+   "title": "CGT Pivot - Villages de vacances",
+   "publisher": "CGT - Commissariat Général au Tourisme",
+   "url": "https://www.odwb.be/explore/dataset/cgt-pivot-villages-de-vacances/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:open-data-wallonie-bruxelles:archives-etat-d-avancement-inventaires-personnes",
+   "title": "Archives - Etats d'avancement des encodages prévus",
+   "publisher": "Ville de Mons",
+   "url": "https://www.odwb.be/explore/dataset/archives-etat-d-avancement-inventaires-personnes/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:open-data-wallonie-bruxelles:livre-d-or",
+   "title": "Archives - Livres d'or de la Ville et du CPAS de Mons",
+   "publisher": "Ville de Mons",
+   "url": "https://www.odwb.be/explore/dataset/livre-d-or/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:open-data-wallonie-bruxelles:inventaire-des-sentiers-a-mons",
+   "title": "Inventaire des sentiers",
+   "publisher": "Ville de Mons",
+   "url": "https://www.odwb.be/explore/dataset/inventaire-des-sentiers-a-mons/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:city-of-ghent:gent-kunst-op-straat",
+   "title": "Kunst op straat - Gent",
+   "publisher": "City of Ghent",
+   "url": "https://data.stad.gent/explore/dataset/gent-kunst-op-straat/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:city-of-ghent:lijst-van-verenigingen-op-stadgentwebsite",
+   "title": "Lijst van verenigingen op stad.gent",
+   "publisher": "City of Ghent",
+   "url": "https://data.stad.gent/explore/dataset/lijst-van-verenigingen-op-stadgentwebsite/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:city-of-ghent:taxistandplaatsen-gent",
+   "title": "Standplaatsen Taxi's Gent",
+   "publisher": "City of Ghent",
+   "url": "https://data.stad.gent/explore/dataset/taxistandplaatsen-gent/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:city-of-ghent:vastgesteld-bouwkundig-erfgoed-gent",
+   "title": "Vastgesteld bouwkundig erfgoed Gent",
+   "publisher": "City of Ghent",
+   "url": "https://data.stad.gent/explore/dataset/vastgesteld-bouwkundig-erfgoed-gent/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "harvest:city-of-ghent:organisaties",
+   "title": "Organisaties gepubliceerd op www.stad.gent",
+   "publisher": "City of Ghent",
+   "url": "https://data.stad.gent/explore/dataset/organisaties/download/?format=csv",
+   "problem": "empty"
+  },
+  {
+   "id": "national:817de870-fbfd-4217-b52c-e1944e88c5bc",
+   "title": "Interbestuurlijke Producten en Diensten Catalogus",
+   "publisher": "Agentschap Digitaal Vlaanderen",
+   "url": "https://productencatalogus.vlaanderen.be/start",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:2c3bff6a-face-3e1a-865e-ac48884f8fe4",
+   "title": "Vlaamse Immaterieel Cultureel erfgoed elementen opgenomen in lijsten",
+   "publisher": "Departement Cultuur, Jeugd en Media",
+   "url": "https://metadata.vlaanderen.be/srv/dut/catalog.search#/metadata/9f721882-48f9-59fb-b8dd-b994d7edb1e6",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:52ea177d3f4c8d863597a45384d2f693b5d6cdfe",
+   "title": "Inschrijvingen van voertuigen (maandelijks)",
+   "publisher": "FPS Mobility and Transport",
+   "url": "https://mobilit.belgium.be/nl/documenten/open-data/wegverkeer/inschrijvingen-van-voertuigen",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:fa8ac588-dbb1-49ff-ae16-2011ceb92949",
+   "title": "Businesscenters in Vlaanderen via POI-service",
+   "publisher": "Agentschap Innoveren en Ondernemen",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=4020&title=Businesscenters_in_Vlaanderen_via_POI_service",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:47d14c9c-a496-41ec-bd71-a39dc142522e",
+   "title": "B&Bs via POI-service, v.2",
+   "publisher": "VisitFlanders",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=3960&title=B_Bs_via_POI_service_v_2",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:4d0e5794-a99e-4426-8a99-d3ff07775b15",
+   "title": "Campings via POI-service, v.2",
+   "publisher": "VisitFlanders",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=3963&title=Campings_via_POI_service_v_2",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:50789456-c596-4e6e-9ecc-e83be60e3e9c",
+   "title": "Hostels via POI-service, v.2",
+   "publisher": "VisitFlanders",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=3944&title=Hostels_via_POI_service_v_2",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:46c4ebad-3c27-4cc7-a2ce-c485b06f99cc",
+   "title": "Hotels via POI-service, v.2",
+   "publisher": "VisitFlanders",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=3964&title=Hotels_via_POI_service_v_2",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:24b84e0d-8928-4232-9df6-aee9c8b615ea",
+   "title": "Camperterreinen via POI-service, v.2",
+   "publisher": "VisitFlanders",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=3961&title=Camperterreinen_via_POI_service_v_2",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:94e52cf6-047b-498d-bdd5-7d2afb6f81e2",
+   "title": "Jeugdverblijven via POI-service, v.2",
+   "publisher": "VisitFlanders",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=3962&title=Jeugdverblijven_via_POI_service_v_2",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:ab400974-b7bd-49b3-8aa8-6fa372380356",
+   "title": "Kamergebonden logies via POI-service, v.2",
+   "publisher": "VisitFlanders",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=4033&title=Kamergebonden_logies_via_POI_service_v_2",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:0d449c97-77a4-4a39-a1fc-d07b9b143c92",
+   "title": "Onderwijsaanbod in Vlaanderen en Brussel via POI-service",
+   "publisher": "Departement Onderwijs en Vorming (Opgroeien)",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=934&title=Onderwijsaanbod_in_Vlaanderen_en_Brussel_via_POI_service",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:a1239b30-d03f-455b-84ee-c7e94ddb7831",
+   "title": "Panden met een herstelvordering via POI-service",
+   "publisher": "Agentschap Wonen in Vlaanderen",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=7755&title=Panden_met_een_herstelvordering_via_POI_service",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:8bd07396-d386-4604-9cac-e66b9fc15a86",
+   "title": "Kinderopvangvoorzieningen erkend door Opgroeien Regie via POI-service",
+   "publisher": "Departement Onderwijs en Vorming (Opgroeien)",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=577&title=Kinderopvangvoorzieningen_erkend_door_Opgroeien_Regie_via_POI_service",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:9ff5750e-772c-491f-9a04-d0b37794fe39",
+   "title": "Terreingebonden logies via POI-service, v.2",
+   "publisher": "VisitFlanders",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=4034&title=Terreingebonden_logies_via_POI_service_v_2",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:cbd6e8a6-5434-43a6-b2e9-861033b0f049",
+   "title": "Vakantieparken via POI-service, v.2",
+   "publisher": "VisitFlanders",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=3945&title=Vakantieparken_via_POI_service_v_2",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:8f79b39d-9366-409e-974b-a7337c94ed7e",
+   "title": "Vakantiewoningen via POI-service, v.2",
+   "publisher": "VisitFlanders",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=3946&title=Vakantiewoningen_via_POI_service_v_2",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:a4bc9fab-ad72-4bbb-898e-e6d4246d61db",
+   "title": "Vlaams kotlabel via POI-service",
+   "publisher": "Agentschap Wonen in Vlaanderen",
+   "url": "https://download.vlaanderen.be/product/10652-vlaams_kotlabel_via_poi-service",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:21d3f117-5caa-485c-a929-cf30db8d1b71",
+   "title": "Vlaamse inventaris van ongeschikte en onbewoonbare woningen via POI-service",
+   "publisher": "Agentschap Wonen in Vlaanderen",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=7756&title=Vlaamse_inventaris_van_ongeschikte_en_onbewoonbare_woningen_via_POI_service",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:34e801ed-d2b2-48ce-8ec7-3bce7ecebcb3",
+   "title": "Woningen met een conformiteitsattest via POI-service",
+   "publisher": "Agentschap Wonen in Vlaanderen",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=7758&title=Woningen_met_een_conformiteitsattest_via_POI_service",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:9163d7a8-ef53-48e4-bb1f-4a67d2261f26",
+   "title": "Zorgvoorzieningen erkend door het agentschap Opgroeien via POI-service",
+   "publisher": "Departement Onderwijs en Vorming (Opgroeien)",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=579&title=Zorgvoorzieningen_erkend_door_het_agentschap_Opgroeien_via_POI_service",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:734f6673-e72c-4cba-9060-f4496dfebea1",
+   "title": "Zorgvoorzieningen erkend door het Departement Zorg (gezondheidszorg en woonzorg) via POI-service",
+   "publisher": "Departement Zorg",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=573&title=Zorgvoorzieningen_erkend_door_het_Departement_Zorg_gezondheidszorg_en_woonzorg_via_POI_service",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:b0616149-c151-4d78-ac8b-793f1b8ba047",
+   "title": "Zorgvoorzieningen erkend door het Departement Zorg (welzijnswerk) via POI-service",
+   "publisher": "Departement Zorg",
+   "url": "https://download.vlaanderen.be/Producten/Detail?id=603&title=Zorgvoorzieningen_erkend_door_het_Departement_Zorg_welzijnswerk_via_POI_service",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:fluvius:premies-per-gemeente",
+   "title": "Premies per gemeente",
+   "publisher": "Fluvius",
+   "url": "https://opendata.fluvius.be/explore/dataset/premies-per-gemeente/download/?format=csv",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://opendata.fluvius.be/explore/dataset/verbruiksgegevens-per-straat-lopend-jaar/",
+   "title": "Verbruiksgegevens per straat lopend jaar",
+   "publisher": "Fluvius",
+   "url": "https://opendata.fluvius.be/api/explore/v2.1/catalog/datasets/verbruiksgegevens-per-straat-lopend-jaar/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "harvest:fluvius:1_50-verbruiksprofielen-dm-elek-kwartierwaarden-voor-een-volledig-jaar",
+   "title": "Verbruiksprofielen digitale elektriciteitsmeters: kwartierwaarden voor een volledig jaar.",
+   "publisher": "Fluvius",
+   "url": "https://opendata.fluvius.be/explore/dataset/1_50-verbruiksprofielen-dm-elek-kwartierwaarden-voor-een-volledig-jaar/download/?format=csv",
+   "problem": "gone"
+  },
+  {
+   "id": "harvest:fluvius:1_50-verbruiksprofielen-dm-gas-uurwaarden-voor-een-volledig-jaar",
+   "title": "Verbruiksprofielen digitale gasmeters: uurwaarden voor een volledig jaar.",
+   "publisher": "Fluvius",
+   "url": "https://opendata.fluvius.be/explore/dataset/1_50-verbruiksprofielen-dm-gas-uurwaarden-voor-een-volledig-jaar/download/?format=csv",
+   "problem": "gone"
+  },
+  {
+   "id": "harvest:transport:b2a80fdc-e5a0-4cc2-a775-5cae377c6da3",
+   "title": "Technicar - vehicle technical information",
+   "publisher": "transportdata.be",
+   "url": "https://www.febiac.be/public/statistics.aspx?FID=18&lang=FR",
+   "problem": "gone"
+  },
+  {
+   "id": "national:324819c2-0e02-438f-a002-2e359776068b",
+   "title": "Fietstellingen AWV",
+   "publisher": "Agentschap Wegen en Verkeer",
+   "url": "https://opendata.apps.mow.vlaanderen.be/fietstellingen/index.html",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:e1413037-9b9b-47de-ab89-282fe8003a8d",
+   "title": "Bevolkingsvooruitzichten",
+   "publisher": "Departement Kanselarij en Buitenlandse Zaken",
+   "url": "https://www.statistiekvlaanderen.be/sites/default/files/docs/vooruitzichten_personen_ABB.csv",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:8596687f-4c92-482f-9603-453b6a4f70f8",
+   "title": "Vergunde voertuigen Individueel bezoldigd personenvervoer",
+   "publisher": "transportdata.be",
+   "url": "https://www.vlaanderen.be/taxi/vergunning-individueel-bezoldigd-personenvervoer-taxivergunning",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:fpseco-cbeopen-download",
+   "title": "CBE - Open data",
+   "publisher": "FPS Economy",
+   "url": "https://economie.fgov.be/nl/themas/ondernemingen/kruispuntbank-van/diensten-voor-iedereen/hergebruik-van-publieke/kruispuntbank-van-0",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:3998407b-c694-4ce3-badd-cc5b3c944017",
+   "title": "Dioxines en PCB's in neervallend stof (depositie)",
+   "publisher": "Flanders Environment Agency",
+   "url": "https://vmm.vlaanderen.be/feiten-cijfers/lucht/overzicht-per-vervuilende-stof/andere-vervuilende-stoffen/dioxines-en-pcbs-in-depositie/dioxines-pcbs-maandgemiddelden/@@download/csv",
+   "problem": "gone"
+  },
+  {
+   "id": "national:8ccf2515-5dd8-4f68-9a54-429fb13f5669",
+   "title": "Dioxines en PCB’s in neervallend stof (depositie) in Beerse",
+   "publisher": "Flanders Environment Agency",
+   "url": "https://vmm.vlaanderen.be/feiten-cijfers/lucht/luchtkwaliteit-in-jouw-buurt/beerse/Dioxines-en-PCBs-in-depositie/dioxines-pcbs-jaargemiddelden/@@download/csv",
+   "problem": "gone"
+  },
+  {
+   "id": "national:07eb4fc7-d5ae-4bef-ab23-7a017f27f462",
+   "title": "Emissie van ammoniak door de landbouw",
+   "publisher": "Flanders Environment Agency",
+   "url": "https://vmm.vlaanderen.be/feiten-cijfers/lucht/vanwaar-komt-de-luchtverontreiniging/landbouw/uitstoot-ammoniak-naar-lucht/veelteelt-ammoniak-aandeel@@download/csv",
+   "problem": "gone"
+  },
+  {
+   "id": "national:f39e8b1a-178c-4a4d-ad41-c8ee5a95dff7",
+   "title": "Emissies broeikasgassen",
+   "publisher": "Flanders Environment Agency",
+   "url": "https://vmm.vlaanderen.be/feiten-cijfers/klimaat/klimaatthemas/broeikasuitstoot/indicator-totale-broeikasgasuitstoot-ets-esr/uitstoot-per-gas/@@download/csv",
+   "problem": "gone"
+  },
+  {
+   "id": "national:2f695aef-5a19-4a5b-ae93-efc3a807a02d",
+   "title": "Kost voor de productie en levering van drinkwater",
+   "publisher": "Flanders Environment Agency",
+   "url": "https://vmm.vlaanderen.be/beleid/waterbeleid/waterfactuur/waterregulator/regulering/graph",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:c4674871-9db4-4159-a3b2-e77f203876bd",
+   "title": "Milieuschadekosten van verschillende technologieën voor woningverwarming",
+   "publisher": "Flanders Environment Agency",
+   "url": "https://vmm.vlaanderen.be/nieuws/afbeeldingen-nieuws/milieuschadekosten-emissiestof",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:babd2a59-d61c-48d5-beab-e0a886951018",
+   "title": "Uitgestoten hoeveelheid fijn stof",
+   "publisher": "Flanders Environment Agency",
+   "url": "https://vmm.vlaanderen.be/feiten-cijfers/lucht/overzicht-per-vervuilende-stof/fijn-stof/indicator-uitstoot-pm2-5/uitstoot-pm2-5-aandeel/@@download/csv",
+   "problem": "gone"
+  },
+  {
+   "id": "national:cc9238ad-ae61-4e41-86e9-e12594e20b08",
+   "title": "Uitstoot precursoren van fijn stof",
+   "publisher": "Flanders Environment Agency",
+   "url": "https://vmm.vlaanderen.be/feiten-cijfers/lucht/overzicht-per-vervuilende-stof/fijn-stof/indicator-uitstoot-fijnstofprecursoren/uitstoot-nox-evolutie/@@download/csv",
+   "problem": "gone"
+  },
+  {
+   "id": "harvest:open-data-wallonie-bruxelles:ares-inscriptions-dans-l-enseignement-superieur-hors-universites",
+   "title": "ARES - Inscriptions dans l'enseignement supérieur (hors universités)",
+   "publisher": "Académie de recherche et d'enseignement supérieur (ARES)",
+   "url": "https://www.odwb.be/explore/dataset/ares-inscriptions-dans-l-enseignement-superieur-hors-universites/download/?format=csv",
+   "problem": "gone"
+  },
+  {
+   "id": "harvest:open-data-wallonie-bruxelles:communes-et-localites",
+   "title": "Communes et localités belges",
+   "publisher": "Agence du Numérique",
+   "url": "https://www.odwb.be/explore/dataset/communes-et-localites/download/?format=csv",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/autostop-elabore-et-securise-a-chaudfontaine/",
+   "title": "Autostop élaboré et sécurisé à Chaudfontaine",
+   "publisher": "Municipality of Chaudfontaine",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/autostop-elabore-et-securise-a-chaudfontaine/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/nationalite_nis_ue/",
+   "title": "Codes nationalité des pays de l'UE",
+   "publisher": "City of Namur",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/nationalite_nis_ue/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/dechets-speciaux-des-menages/",
+   "title": "Collecte déchets ménagers spéciaux ou dangereux",
+   "publisher": "City of Liège",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/dechets-speciaux-des-menages/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/essaimage-facteur-conversion-energetique/",
+   "title": "Essaimage - facteur conversion énergétique",
+   "publisher": "Bureau Economique Namur",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/essaimage-facteur-conversion-energetique/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/fiches-de-caracterisation-des-masses-d-eau-souterraines/",
+   "title": "Fiches de caractérisation des masses d’eau souterraines",
+   "publisher": "SPW ARNE",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/fiches-de-caracterisation-des-masses-d-eau-souterraines/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-vue-par-intersections/",
+   "title": "Masses d'eau souterraines (MESo)",
+   "publisher": "SPW ARNE",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-vue-par-intersections/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/namur-annuaire-aires-de-jeux/",
+   "title": "Namur - Aires de jeux",
+   "publisher": "City of Namur",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/namur-annuaire-aires-de-jeux/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/namur-contrat-riviere-points-noirs-resolus/",
+   "title": "Namur - Contrat Rivière - Points Noirs résolus sur cours d'eau",
+   "publisher": "City of Namur",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/namur-contrat-riviere-points-noirs-resolus/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/namur-mobilite-zones-reglementees-de-cyclopartage/",
+   "title": "Namur - Mobilité - Zones réglementées de Cyclopartage",
+   "publisher": "City of Namur",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/namur-mobilite-zones-reglementees-de-cyclopartage/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/population_mouv_indic_tbiientrees/",
+   "title": "Namur - Mouvement de population - Taux brut des Entrées en provenance d'un autre pays",
+   "publisher": "City of Namur",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/population_mouv_indic_tbiientrees/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/population_mouv_indic_tbminentrees/",
+   "title": "Namur - Mouvement de population - Taux brut des Entrées en provenance d'un autre quartier de la commune",
+   "publisher": "City of Namur",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/population_mouv_indic_tbminentrees/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/namur-les-prenoms/",
+   "title": "Namur - Prénoms",
+   "publisher": "City of Namur",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/namur-les-prenoms/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/nivelles-emplacements-de-stationnement-pour-personnes-handicapees/",
+   "title": "Nivelles - Emplacements de stationnement pour personnes handicapées",
+   "publisher": "City of Nivelles",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/nivelles-emplacements-de-stationnement-pour-personnes-handicapees/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/pcdn/",
+   "title": "Plan Communal de Développement de la Nature (PCDN)",
+   "publisher": "City of Liège",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/pcdn/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/stationnements-specifiques-a-mons/",
+   "title": "Stationnements spécifiques",
+   "publisher": "City of Mons",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/stationnements-specifiques-a-mons/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/visites-sur-les-recyparcs-du-bep-en-2019/",
+   "title": "Visites sur les recyparcs du BEP en 2019",
+   "publisher": "Bureau Economique Namur",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/visites-sur-les-recyparcs-du-bep-en-2019/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/wms-namur-fonds-de-plan/",
+   "title": "WMS Namur - Fonds de plan",
+   "publisher": "City of Namur",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/wms-namur-fonds-de-plan/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/etat-des-masses-d-eau-souterraines/",
+   "title": "Etat des masses d'eau souterraines - cartographie",
+   "publisher": "Agence du Numérique",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/etat-des-masses-d-eau-souterraines/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/li-bia-velo-namur-jc-decaux/",
+   "title": "Li bia velo - Namur - JC Decaux",
+   "publisher": "JC Decaux",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/li-bia-velo-namur-jc-decaux/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-wallonnes/",
+   "title": "Masses d'eau souterraines wallonnes",
+   "publisher": "Agence du Numérique",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-wallonnes/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-liste/",
+   "title": "Masses d'eau souterraines - Liste",
+   "publisher": "Agence du Numérique",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-liste/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/points-et-lignes-de-vue-remarquables-en-wallonie/",
+   "title": "SPW - Points et Lignes de Vue Remarquables en Wallonie",
+   "publisher": "SPW-SG Secrétariat général",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/points-et-lignes-de-vue-remarquables-en-wallonie/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "harvest:transport:79a27eab-2ce9-4feb-a720-17cbfd6a908e",
+   "title": "Gader",
+   "publisher": "transportdata.be",
+   "url": "https://gader.io",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "curated:ibz-election-candidate-results",
+   "title": "Official candidate preference-vote results",
+   "publisher": "FPS Interior",
+   "url": "https://verkiezingsresultaten.belgium.be/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:geluidsbelastingskaart-industrie-gent-kopie",
+   "title": "Geluidsbelastingskaart Industrie (Lden) Gent (2021)",
+   "publisher": "City of Ghent",
+   "url": "https://data.stad.gent/api/v2/catalog/datasets/geluidsbelastingskaart-industrie-gent-kopie/exports/csv",
+   "problem": "gone"
+  },
+  {
+   "id": "national:geluidsbelastingskaart-industrie-lden-gent-2021-kopie",
+   "title": "Geluidsbelastingskaart Industrie (nacht) Gent (2021)",
+   "publisher": "City of Ghent",
+   "url": "https://data.stad.gent/api/v2/catalog/datasets/geluidsbelastingskaart-industrie-lden-gent-2021-kopie/exports/csv",
+   "problem": "gone"
+  },
+  {
+   "id": "national:geluidsbelastingskaart-industrie-lden-gent-2021-kopie0",
+   "title": "Geluidsbelastingskaart Totaal (Lden) Gent (2021)",
+   "publisher": "City of Ghent",
+   "url": "https://data.stad.gent/api/v2/catalog/datasets/geluidsbelastingskaart-industrie-lden-gent-2021-kopie0/exports/csv",
+   "problem": "gone"
+  },
+  {
+   "id": "national:parkeerplaatsen-voor-personen-met-een-handicap-gent",
+   "title": "Parkeerplaatsen voor personen met een handicap Gent",
+   "publisher": "City of Ghent",
+   "url": "https://data.stad.gent/api/v2/catalog/datasets/parkeerplaatsen-voor-personen-met-een-handicap-gent/exports/csv",
+   "problem": "gone"
+  },
+  {
+   "id": "national:755c76a0-ec9b-47b0-a487-89a68386247f",
+   "title": "Bedrijfseconomische resultaten van de Vlaamse landbouwbedrijven: resultatenrekening volledig bedrijf",
+   "publisher": "Agentschap Landbouw en Visserij",
+   "url": "https://landbouwcijfers.vlaanderen.be/resultatenrekening-volledig-bedrijf",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:c21c0168-7810-4c42-81f6-a8695673da7c",
+   "title": "Aan­deel recht­streek­se steun in de op­brengst en het inkomen",
+   "publisher": "Agentschap Landbouw en Visserij",
+   "url": "https://landbouwcijfers.vlaanderen.be/bedrijfseconomische-resultaten-bedrijfstakken",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:139daf3e-fece-4450-a6ae-495b75127096",
+   "title": "Gebruik van gewasbeschermingsmiddelen in de Vlaamse landbouw: risico (HRI1)",
+   "publisher": "Agentschap Landbouw en Visserij",
+   "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/gewasbescherming-risico-hri1",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:b357acee-b70b-4f21-9b80-4a4bcec43c8e",
+   "title": "Gebruik van kunstmest in de Vlaamse landbouw",
+   "publisher": "Agentschap Landbouw en Visserij",
+   "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/kunstmestgebruik-kalium",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:336aa8e641a997af1a80f46264f322b621c86ff8",
+   "title": "OpenAid.be (Official Aid by the Directorate-general Development Cooperation and Humanitarian Aid)",
+   "publisher": "FPS Foreign Affairs",
+   "url": "https://openaid.be/nl",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:71ee65bc-6f34-44a5-8f30-e391b63692d6",
+   "title": "Deelname van landbouwbedrijven aan ecoregelingen en agromilieu- en klimaatmaatregelen",
+   "publisher": "Agentschap Landbouw en Visserij",
+   "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/deelname-aan-ecoregelingen-en-agromilieu-en-klimaatmaatregelen",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:96ee7559-5f31-4996-8d60-def266b64b20",
+   "title": "Attribution des retards par mois - Toewijzing vertraging per maand - Monthly imputation of delays",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/toewijzingvertraging/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:a2d44e31-14ba-425c-8d0c-e33000ed3b4b",
+   "title": "Attribution des suppressions de trains - Toewijzing afgeschafte treinen per maand - Monthly imputation of train cancellations",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/toewijzing-afgeschafte-treinen/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:50bf3632-7747-43e4-8c48-b87a37b93911",
+   "title": "Données brutes de ponctualité J-1 - Ruwe gegevens van stiptheid D-1 - Raw punctuality data D-1",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/ruwe-gegevens-van-stiptheid-d-1/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:bd44d789-3fd0-4d50-a3f7-907cb0c721a2",
+   "title": "Données Mobipulse - Gevegens Mobipulse - Mobipulse data",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/gegevens-mobipulse/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:65855a12-418f-4c2e-9cc3-d5602848d78a",
+   "title": "Fichiers mensuels des données brutes de ponctualité - Maandelijkse bestanden met ruwe gegevens van stiptheid - Monthly raw punctuality data files",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-gegevens-maandelijksebestanden/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:7b7ecd9b-43d1-4b3e-816b-59566f23c3f5",
+   "title": "Incidents les plus importants en terme d'impact sur la ponctualité - Belangrijkste incidenten en gevolgen voor de stiptheid - Most important incidents in terms of impact on trains punctuality",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/belangrijkste-incidenten/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:31450d6a-0d2a-4a22-9355-11129fc435d1",
+   "title": "Ponctualité à l'arrivée à Bruxelles - Stiptheid bij aankomst in Brussel - Monthly punctuality upon arrival in Brussels",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-bij-aankomst-in-brussels/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:3c4e7f56-cbd7-4c2b-b60f-64f9441f040a",
+   "title": "Ponctualité à l'arrivée à Bruxelles par moment - Stiptheid bij aankomst in Brussels per moment - Monthly punctuality upon arrival in Brussels per moment",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-bij-aankomst-in-brussels-per-moment/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:cbc40b65-537c-4bdf-815b-e426026be1c5",
+   "title": "Ponctualité à l'arrivée à Bruxelles par moment et grande ligne - Stiptheid bij aankomst in Brussels per moment en grote lijnen - Monthly punctuality upon arrival in Brussels per moment and main line",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-bij-aankomst-in-brussels-per-moment-en-grote-lijnen/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:22aa5913-ce33-4467-b79b-99f70634b461",
+   "title": "Ponctualité des relations IC - Stiptheid van IC-relatie - Monthly punctuality of IC relations",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/data_punctualite_trainic/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:b5719e93-b974-482d-a5d3-eefbe3f77298",
+   "title": "Ponctualité des TGV - Stiptheid TGV - Monthly TGV trains punctuality",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-tgv/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:3845f3d0-fd30-4631-9810-f8d28fd4ff75",
+   "title": "Ponctualité des trains ICE - Stiptheid ICE treinen - Monthly ICE trains punctuality",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-ice-treinen/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:9325d8ce-c000-4d60-8ff4-90019bd4baba",
+   "title": "Ponctualité des trains Eurostar - Continental Route - Stiptheid van Eurostar - Continental Route treinen - Monthly Eurostar - Continental Route trains punctuality",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-van-thalys-treinen/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:1508472c-b7af-4a53-bb3a-c50c9c274686",
+   "title": "Ponctualité nationale par mois - Nationale stiptheid per maand - Monthly national punctuality",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/nationale-stiptheid-per-maand/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:efbbac67-2219-4ae4-b419-bcfd990f9a08",
+   "title": "Ponctualité mensuelle par point d'arrêt - Maandelijkse stiptheid per stopplaats - Monthly punctuality by stopping point",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/maandelijkse-stiptheid-per-stopplaats/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:d881c367-2e99-4a8f-b2bc-0c698b320068",
+   "title": "Ponctualité nationale par moment et par mois - Nationale stiptheid per moment en per maand - Monthly national punctuality per moment",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/nationale-stiptheid-per-moment-en-per-maand/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:25b48296-97da-45f0-adb7-26a05d332989",
+   "title": "Ponctualité nationale pondérée par mois - Nationale gepondereerde stiptheid per maand - Monthly national punctuality weighted",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/nationale-gepondereerde-stiptheid-per-maand/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:64ceea35-97ec-40ca-986b-73e4b34e4c78",
+   "title": "Ponctualité par type de train et par moment - Stiptheid per type trein en per moment - Monthly national punctuality per train type and moment",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-per-type-trein-en-per-moment/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:13274c63-8f40-4e28-9c01-e74f91b4650f",
+   "title": "Ponctualité par type de train - Stiptheid per type trein per maand",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/data_punctualite_typedetrain/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:infrabel:studie-railspect-2019",
+   "title": "Studie Railspect 2019",
+   "publisher": "Infrabel",
+   "url": "https://opendata.infrabel.be/explore/dataset/studie-railspect-2019/download/?format=csv",
+   "problem": "gone"
+  },
+  {
+   "id": "harvest:transport:70034b2b-6d85-48b6-b0d5-8cf5d1b2e556",
+   "title": "Trains supprimés par mois - Afgeschafte treinen per maand - Monthly accounts of cancelled trains",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/afgeschafte-treinen-per-maand-vanaf-2020/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:09429e20-bfb3-4f39-a0ef-26dad93f8540",
+   "title": "Ponctualité des relations IC par moment - Stiptheid van IC-relatie per moment - Monthly punctuality of IC relations per moment",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-van-ic-relatie-per-moment/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:22ebb5de-bfc2-499a-bbc3-56de9ef8d367",
+   "title": "Ponctualité des trains de marchandises - Stiptheid van de goederentreinen - Monthly freight trains punctuality",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-van-de-goederentreinen/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:bb3303e2-3808-43c7-a6f4-59a8de045395",
+   "title": "Ponctualité des trains Eurostar - London Route - Stiptheid van Eurostar - London Route treinen - Monthly Eurostar - London Route trains punctuality",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-van-eurostar-treinen/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:4527f4f8-7776-47f7-8b9a-be64473843cf",
+   "title": "Ponctualité nationale tenant compte des trains supprimés - Nationale stiptheid gemeten met afgeschafte treinen - Monthly national punctuality accounting for cancelled trains",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/nationale-stiptheid-met-afgeschafte-treinen/information/",
+   "problem": "not_a_table"
+  }
+ ],
+ "note": "Counts per publisher's main CSV/TSV file per dataset. Only gone links, web pages served as tables and empty files count as problems; files that could not be checked from our servers (hosts refusing cloud access, timeouts, server errors, 401/403, over 100 MB) are not counted against anyone."
+}

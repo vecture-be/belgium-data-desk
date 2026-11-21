@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Belgian open data: Le Forem</title>
+<link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/le-forem.xml"/>
+<link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
+<id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/le-forem.xml</id>
+<updated>2026-11-21T00:00:00Z</updated>
+<author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Offres d'emploi Forem</title><link href="https://www.odwb.be/explore/dataset/offres-d-emploi-forem/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:offres-d-emploi-forem</id><updated>2026-11-21T00:00:00Z</updated><summary>Le Forem: +6,027 / −4,663 distinct rows; datedebutdiffusion now 2024-10-03 to 2026-11-21 (was 2024-10-03 to 2026-11-17); numerooffreforem now 659,408–2,158,835 (was 659,408–2,152,294); niveauxetudesisced2011 now 2–9 (was 1–9)</summary></entry>
+</feed>

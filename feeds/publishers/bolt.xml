@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Belgian open data: Bolt</title>
+<link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/bolt.xml"/>
+<link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
+<id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/bolt.xml</id>
+<updated>2026-11-21T00:00:00Z</updated>
+<author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Namur - Mobilité - Véhicules Bolt</title><link href="https://www.odwb.be/api/explore/v2.1/catalog/datasets/namur-mobilite-vehicules-bolt/exports/csv?use_labels=true#"/><id>urn:bdd:2026-11-21:change::national:https://www.odwb.be/explore/dataset/namur-mobilite-vehicules-bolt/</id><updated>2026-11-21T00:00:00Z</updated><summary>Bolt: +792 / −800 distinct rows; DATE now 2026-11-21 to 2026-11-21 (was 2026-11-17 to 2026-11-17); Chargement (%) now 1–100 (was 5–100)</summary></entry>
+</feed>

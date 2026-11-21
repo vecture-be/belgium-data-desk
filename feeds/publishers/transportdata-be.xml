@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Belgian open data: transportdata.be</title>
+<link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/transportdata-be.xml"/>
+<link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
+<id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/transportdata-be.xml</id>
+<updated>2026-11-21T00:00:00Z</updated>
+<author><name>Belgium Data Desk</name></author>
+<entry><title>⚠ the time coverage shrank: Verkeersborden.Vlaanderen - Borden</title><link href="https://opendata.apps.mow.vlaanderen.be/opendata-geoserver/ows?SERVICE=WFS&amp;VERSION=2.0.0&amp;REQUEST=GetFeature&amp;TYPENAME=awv:Verkeersborden.Vlaanderen_Borden&amp;CRS=EPSG:31370&amp;OUTPUTFORMAT=CSV&amp;COUNT=10"/><id>urn:bdd:2026-11-21:alert:coverage_shrank:harvest:transport:083cb5d5-bff6-475a-98cb-cfce932647ef</id><updated>2026-11-21T00:00:00Z</updated><summary>transportdata.be: +10 / −10 distinct rows; fabricage_jaar now 1950 to 2003 (was 1950 to 2016); datum_plaatsing now 1950-01-01 to 2022-08-11 (was 1950-01-01 to 2025-04-09); locatie_x now 548,014.25–725,157.752 (was 541,852.597–724,595.743); locatie_y now 670,470.131–733,816.336 (was 667,676.995–709,335.733)</summary></entry>
+<entry><title>Changed: Verkeersborden.Vlaanderen - Borden</title><link href="https://opendata.apps.mow.vlaanderen.be/opendata-geoserver/ows?SERVICE=WFS&amp;VERSION=2.0.0&amp;REQUEST=GetFeature&amp;TYPENAME=awv:Verkeersborden.Vlaanderen_Borden&amp;CRS=EPSG:31370&amp;OUTPUTFORMAT=CSV&amp;COUNT=10"/><id>urn:bdd:2026-11-21:change::harvest:transport:083cb5d5-bff6-475a-98cb-cfce932647ef</id><updated>2026-11-21T00:00:00Z</updated><summary>transportdata.be: +10 / −10 distinct rows; fabricage_jaar now 1950 to 2003 (was 1950 to 2016); datum_plaatsing now 1950-01-01 to 2022-08-11 (was 1950-01-01 to 2025-04-09); locatie_x now 548,014.25–725,157.752 (was 541,852.597–724,595.743); locatie_y now 670,470.131–733,816.336 (was 667,676.995–709,335.733)</summary></entry>
+</feed>

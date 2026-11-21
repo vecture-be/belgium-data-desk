@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Belgian open data: BEP</title>
+<link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/bep.xml"/>
+<link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
+<id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/bep.xml</id>
+<updated>2026-11-21T00:00:00Z</updated>
+<author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Calendrier des collectes</title><link href="https://www.odwb.be/explore/dataset/calendrier-des-collectes/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:calendrier-des-collectes</id><updated>2026-11-21T00:00:00Z</updated><summary>BEP: +1,216 / −556 distinct rows; datetournee now 2024-01-02 to 2027-03-19 (was 2024-01-02 to 2027-03-15); datetourneefin now 2024-01-03 to 2027-03-20 (was 2024-01-03 to 2027-03-16)</summary></entry>
+<entry><title>Changed: Entreprises situées sur les parcs d'activité du BEP</title><link href="https://www.odwb.be/explore/dataset/societes-de-nos-parcs-dactivite/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:societes-de-nos-parcs-dactivite</id><updated>2026-11-21T00:00:00Z</updated><summary>BEP: +6 / −3 distinct rows</summary></entry>
+</feed>

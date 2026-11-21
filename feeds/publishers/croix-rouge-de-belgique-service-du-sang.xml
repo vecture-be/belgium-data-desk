@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Belgian open data: Croix-rouge de Belgique - Service du sang</title>
+<link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/croix-rouge-de-belgique-service-du-sang.xml"/>
+<link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
+<id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/croix-rouge-de-belgique-service-du-sang.xml</id>
+<updated>2026-11-21T00:00:00Z</updated>
+<author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Tous les lieux de collecte de sang en Région wallonne et à Bruxelles</title><link href="https://www.odwb.be/explore/dataset/collecte-de-sang-centre-de-prelevement-fixes/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:collecte-de-sang-centre-de-prelevement-fixes</id><updated>2026-11-21T00:00:00Z</updated><summary>Croix-rouge de Belgique - Service du sang: +105 / −113 distinct rows; date_collecte now 2026-11-20 to 2027-01-20 (was 2026-11-16 to 2027-01-16)</summary></entry>
+<entry><title>Changed: Collectes de sang mobiles - Région Wallonne et Bruxelles</title><link href="https://www.odwb.be/explore/dataset/7483-92-119-102-8/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:7483-92-119-102-8</id><updated>2026-11-21T00:00:00Z</updated><summary>Croix-rouge de Belgique - Service du sang: +20 / −32 distinct rows; date_collecte now 2026-11-19 to 2027-01-19 (was 2026-11-16 to 2027-01-16); cp now 1,040–7,972 (was 9–7,972)</summary></entry>
+</feed>

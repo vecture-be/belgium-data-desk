@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Belgian open data: Be WaPP asbl</title>
+<link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/be-wapp-asbl.xml"/>
+<link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
+<id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/be-wapp-asbl.xml</id>
+<updated>2026-11-21T00:00:00Z</updated>
+<author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Poubelle</title><link href="https://www.odwb.be/explore/dataset/poubelle/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:poubelle</id><updated>2026-11-21T00:00:00Z</updated><summary>Be WaPP asbl: +3 / −121 distinct rows; objectid now 26,810–1,357,157 (was 26,810–1,357,957); inss now 25,023–92,137 (was 25,023–92,141)</summary></entry>
+</feed>

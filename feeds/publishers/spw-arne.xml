@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Belgian open data: SPW ARNE</title>
+<link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/spw-arne.xml"/>
+<link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
+<id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/spw-arne.xml</id>
+<updated>2026-11-21T00:00:00Z</updated>
+<author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Qualité de l'eau de distribution - Wallonie</title><link href="https://www.odwb.be/explore/dataset/zones-de-distribution-en-eau-wallonie/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:zones-de-distribution-en-eau-wallonie</id><updated>2026-11-21T00:00:00Z</updated><summary>SPW ARNE: +331 / −331 distinct rows; taux_de_conformite now 0.84–1 (was 0.85–1)</summary></entry>
+<entry><title>Changed: Interventions - Nids de Frelons - Wallonie</title><link href="https://www.odwb.be/explore/dataset/interventions-nids-de-frelons-wallonie/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:interventions-nids-de-frelons-wallonie</id><updated>2026-11-21T00:00:00Z</updated><summary>SPW ARNE: +80 / −54 distinct rows; date now 2025-11-20 to 2026-11-20 (was 2025-11-16 to 2026-11-16); id now 88,861–120,619 (was 88,567–120,157)</summary></entry>
+<entry><title>Changed: Site des zones de prévention des captages de Wallonie approuvées par arrêté ministériel</title><link href="https://www.odwb.be/explore/dataset/site-des-zones-de-prevention-des-captages-de-wallonie-approuvees-par-arrete-mini/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:site-des-zones-de-prevention-des-captages-de-wallonie-approuvees-par-arrete-mini</id><updated>2026-11-21T00:00:00Z</updated><summary>SPW ARNE: +19 / −9 distinct rows; date_de_l_arrete now 1999-03-25 to 2026-10-20 (was 1999-03-25 to 2026-10-09); mb now 1999-06-05 to 2026-11-09 (was 1999-06-05 to 2026-10-27)</summary></entry>
+</feed>

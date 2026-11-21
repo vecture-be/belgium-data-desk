@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Belgian open data: Telraam</title>
+<link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/telraam.xml"/>
+<link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
+<id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/telraam.xml</id>
+<updated>2026-11-21T00:00:00Z</updated>
+<author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Telraam</title><link href="https://www.odwb.be/explore/dataset/telraam/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:telraam</id><updated>2026-11-21T00:00:00Z</updated><summary>Telraam: +3,474 / −3,478 distinct rows; last_data_package now 2026-11-14 to 2026-11-21 (was 2026-11-10 to 2026-11-17); date now 2026-11-21 to 2026-11-21 (was 2026-11-17 to 2026-11-17); segment_id now 27,387–9,000,012,524 (was 27,387–9,000,012,494); uptime now 0–1 (was 0–975)</summary></entry>
+</feed>

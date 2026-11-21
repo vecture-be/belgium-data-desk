@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Belgian open data: iMio</title>
+<link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/imio.xml"/>
+<link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
+<id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/imio.xml</id>
+<updated>2026-11-21T00:00:00Z</updated>
+<author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: iMio - Contacts en Wallonie</title><link href="https://www.odwb.be/explore/dataset/contacts-en-wallonie/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:contacts-en-wallonie</id><updated>2026-11-21T00:00:00Z</updated><summary>iMio: +316 / −163 distinct rows; creation_datetime now 2016-06-29 to 2026-11-20 (was 2016-06-29 to 2026-11-17); modification_datetime now 2017-02-08 to 2026-11-20 (was 2017-02-08 to 2026-11-17)</summary></entry>
+<entry><title>Changed: iMio - Événements en Wallonie</title><link href="https://www.odwb.be/explore/dataset/evenements-en-wallonie/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:evenements-en-wallonie</id><updated>2026-11-21T00:00:00Z</updated><summary>iMio: +301 / −171 distinct rows; creation_datetime now 2021-11-15 to 2026-11-20 (was 2021-11-15 to 2026-11-17); modification_datetime now 2021-12-01 to 2026-11-20 (was 2021-12-01 to 2026-11-17)</summary></entry>
+<entry><title>Changed: iMio - Actualités en Wallonie</title><link href="https://www.odwb.be/explore/dataset/actualites-en-wallonie/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:actualites-en-wallonie</id><updated>2026-11-21T00:00:00Z</updated><summary>iMio: +256 / −133 distinct rows; creation_datetime now 2021-10-19 to 2026-11-21 (was 2021-10-19 to 2026-11-17); modification_datetime now 2021-12-01 to 2026-11-21 (was 2021-12-01 to 2026-11-17)</summary></entry>
+</feed>

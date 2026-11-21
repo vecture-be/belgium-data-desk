@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Belgian open data: Parlement de Wallonie</title>
+<link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/parlement-de-wallonie.xml"/>
+<link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
+<id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/parlement-de-wallonie.xml</id>
+<updated>2026-11-21T00:00:00Z</updated>
+<author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Parlement de Wallonie- Publications detail</title><link href="https://www.odwb.be/explore/dataset/pw_publicationsdetail/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:pw_publicationsdetail</id><updated>2026-11-21T00:00:00Z</updated><summary>Parlement de Wallonie: +113 / −33 distinct rows; pub_datum now 2021-01-01 to 2026-11-20 (was 2021-01-01 to 2026-11-19); event_datetime now 2021-01-01 to 2026-11-20 (was 2021-01-01 to 2026-11-19); pub_id now 33,813–53,562 (was 33,813–53,509)</summary></entry>
+<entry><title>Changed: Parlement de Wallonie - Agenda</title><link href="https://www.odwb.be/explore/dataset/pw_agenda/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:pw_agenda</id><updated>2026-11-21T00:00:00Z</updated><summary>Parlement de Wallonie: +53 / −53 distinct rows</summary></entry>
+</feed>
