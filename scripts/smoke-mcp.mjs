@@ -16,8 +16,8 @@ async function rpc(method,params){
     "x-bdd-test-signature":createHmac("sha256",TEST_TOKEN).update(timestamp+"\n"+body).digest("hex")}:{};
   const r=await fetch(origin+"/mcp",{method:"POST",headers:{"content-type":"application/json",
     accept:"application/json, text/event-stream","mcp-protocol-version":PROTOCOL,...proof},body});
-  const text=await r.text();let body=null;try{body=JSON.parse(text)}catch{}
-  return{status:r.status,body,ms:Date.now()-t,text};
+  const text=await r.text();let responseBody=null;try{responseBody=JSON.parse(text)}catch{}
+  return{status:r.status,body:responseBody,ms:Date.now()-t,text};
 }
 const CALLS=[
   ["search_datasets",{query:"bevolking per gemeente",limit:3}],
