@@ -29,7 +29,7 @@ export function renderCard(c){
   const facts=(c.facts||[]).filter(x=>!inGrid(x.evidence||{})&&!x.evidence?.disagreement&&!x.evidence?.repair).map(x=>'<li>'+esc(x.text)+'</li>').join("");
   // values written in a wrong form that the desk reads the way they were meant (public/data-repair-v1.mjs)
   const rep=(c.repairs?.summary||[]).map(t=>'<li>'+esc(t)+'</li>').join("");
-  return (dis?'<div class="card-disagree"><h4>The publisher\'s metadata and the file disagree</h4><ul class="card-facts">'+dis+'</ul><p class="dk-note">We cannot correct the publisher; where they disagree, the file is what you get.</p></div>':"")+
+  return (dis?'<div class="card-disagree"><h4>Data checks to review</h4><ul class="card-facts">'+dis+'</ul><p class="dk-note">These checks may matter for reuse. Check the reporting period and publisher documentation for your use case.</p></div>':"")+
     (rep?'<div class="card-repaired"><h4>How the desk reads this file</h4><ul class="card-facts">'+rep+'</ul><p class="dk-note">The publisher\'s file is unchanged. Load it in the SQL Lab to get a <code>_repaired</code> view with these readings applied and a <code>coordinate_repair</code> column per row.</p></div>':"")+
     (facts?'<div class="card-measured"><h4>Measured in the file</h4><ul class="card-facts">'+facts+'</ul></div>':"");
 }
@@ -49,11 +49,11 @@ function fillGrid(section,c){
   const t=c.coverage?.time;if(t)set("period",esc(t.from===t.to?t.from:t.from+" to "+t.to)+' <em>column '+esc(t.column)+'</em>');
   const keys=c.coverage?.keys||[];if(keys.length)set("keys",esc([...new Set(keys.map(k=>KEY_LABEL[k.kind]||k.kind))].join(", "))+' <em>checked in the file</em>');
   // the Freshness check reads the catalogue date; when the file shows older data, say so there too
-  const stale=(c.disagreements||[]).find(d=>d.kind==="catalogue_date_newer_than_data"||d.kind==="declared_cadence_not_met"||d.kind==="declared_cadence_overdue");
+  const stale=(c.disagreements||[]).find(d=>d.kind==="declared_cadence_not_met"||d.kind==="declared_cadence_overdue");
   const li=section.querySelector('[data-check="freshness"]');
   if(stale&&li){
     li.className="trust-check warn";const mark=li.querySelector(":scope > .trust-mark");if(mark){mark.textContent="!";mark.setAttribute("aria-label","warn")}
-    const span=li.querySelector(":scope > div > span");if(span)span.textContent=t?.to?"The newest date in the file is "+t.to+" (column '"+t.column+"'), whatever the catalogue date says.":stale.text;
+    const span=li.querySelector(":scope > div > span");if(span)span.textContent=stale.text;
   }
 }
 /** Fills every [data-card-slot] in root with the card of its data-card-slot id. */

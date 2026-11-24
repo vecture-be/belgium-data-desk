@@ -333,9 +333,9 @@ export function cadenceNotMet(code,dataTo,now=new Date().toISOString(),column=""
  *  after which the file stayed byte-for-byte the same no longer counts as a change. */
 export function freshness(record,{fileLastModified=null,dataTo=null,dataColumn="",dataComplete=false,now=new Date().toISOString(),content=null}={}){
   const code=String(record.frequency||"").toUpperCase(),limit=CADENCE_DAYS[code];
-  const updated=day(record.dataProcessedAt||record.updatedAt);
+  const updated=day(record.updatedAt),processed=day(record.dataProcessedAt);
   const headerDate=day(fileLastModified),file=content&&content.lastModifiedUsable===false?null:headerDate;
-  const out={declared:CADENCE_WORDS[code]||null,metadata_updated:updated,file_changed:file};
+  const out={declared:CADENCE_WORDS[code]||null,metadata_updated:updated,file_changed:file,...(processed?{data_processed_at:processed}:{})};
   if(headerDate&&!file)out.file_header_ignored=headerDate;
   if(dataComplete)Object.assign(out,cadenceNotMet(code,dataTo,now,dataColumn));   // a partial read sees only the first (often oldest) rows
   let metaCounts=!!updated;
@@ -345,7 +345,7 @@ export function freshness(record,{fileLastModified=null,dataTo=null,dataColumn="
     if(changed)out.content_change_seen=changed;
     // the catalogue says "updated" on a later day than the first run that saw today's bytes: the file did not change with it
     // (the update may have touched only the description)
-    if(updated&&since<updated){out.metadata_date_not_reflected_in_file=true;metaCounts=false}
+    if(updated&&since&&since<updated){metaCounts=false;if(updated<=day(now))out.metadata_date_not_reflected_in_file=true}
   }
   const candidates=[[metaCounts?updated:null,"catalogue date"],[file,"file date"],[out.content_change_seen,"content change seen"]].filter(c=>c[0]);
   const best=candidates.sort((a,b)=>a[0].localeCompare(b[0])).pop();
@@ -412,23 +412,21 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
   add("The file has "+rowsWord+" and "+profile.column_count+" columns"+(profile.rows_exact?".":" in the part read ("+Math.round((file.bytesRead||0)/1024)+" KiB)."),
     {rows:profile.rows,rows_exact:profile.rows_exact,columns:profile.column_count});
   if(time)add((time.from===time.to?"The data is for "+time.from:"The data runs from "+time.from+" to "+time.to)+" (column '"+time.column+"')"+(profile.rows_exact?".":" in the rows read; later rows may extend it."),time);
-  if(fresh.cadence_not_met)add("It is declared to be updated "+fresh.declared+", but its latest data is for "+time.to+" (column '"+time.column+"'), "+fmtInt(fresh.latest_data_age_days)+" days ago. Either the series stopped or the declared frequency is wrong.",
+  if(fresh.cadence_not_met)add("Declared update frequency: "+fresh.declared+". Latest reporting date in the file: "+time.to+" (column '"+time.column+"'), "+fmtInt(fresh.latest_data_age_days)+" days before the check. Consider the reporting lag for your use case.",
     {disagreement:"declared_cadence_not_met",declared:fresh.declared,latest_data_point:time.to,column:time.column,latest_data_age_days:fresh.latest_data_age_days});
-  if(fresh.status==="overdue"&&fresh.at_least)add("It is declared to be updated "+fresh.declared+", but the file has been byte-for-byte the same since at least "+fresh.last_change+", "+fmtInt(fresh.overdue_days)+" days longer than that cadence allows.",
+  if(fresh.status==="overdue"&&fresh.at_least)add("Declared update frequency: "+fresh.declared+". Data content unchanged in checks since at least "+fresh.last_change+" ("+fmtInt(fresh.overdue_days)+" days beyond the expected interval).",
     {disagreement:"declared_cadence_overdue",declared:fresh.declared,unchanged_since:fresh.last_change,overdue_days:fresh.overdue_days,at_least:true});
-  else if(fresh.status==="overdue")add("It is declared to be updated "+fresh.declared+", but last changed on "+fresh.last_change+", "+fmtInt(fresh.overdue_days)+" days later than that cadence allows.",
+  else if(fresh.last_change_basis==="catalogue date"&&fresh.status!=="unknown")add("Declared update frequency: "+fresh.declared+". The catalogue date alone does not establish when the data changed.",{declared:fresh.declared,catalogue_updated:fresh.metadata_updated});
+  else if(fresh.status==="overdue")add("Declared update frequency: "+fresh.declared+". Latest change evidence: "+fresh.last_change+" ("+fresh.last_change_basis+", "+fmtInt(fresh.overdue_days)+" days beyond the expected interval).",
     {disagreement:"declared_cadence_overdue",declared:fresh.declared,last_change:fresh.last_change,overdue_days:fresh.overdue_days});
-  else if(fresh.status==="current")add("It is declared to be updated "+fresh.declared+" and last changed on "+fresh.last_change+", within that cadence.",{declared:fresh.declared,last_change:fresh.last_change});
-  // what the bytes say about the dates publishers state (whole-file checks only)
-  if(fresh.metadata_date_not_reflected_in_file)add("The catalogue says it was updated on "+fresh.metadata_updated+", but the file is byte-for-byte the same as on "+fresh.content_unchanged_since+", before that date (the update may have touched only the description).",
-    {disagreement:"catalogue_date_not_in_file",metadata_updated:fresh.metadata_updated,content_unchanged_since:fresh.content_unchanged_since});
+  else if(fresh.status==="current")add("Declared update frequency: "+fresh.declared+". Latest change evidence: "+fresh.last_change+" ("+fresh.last_change_basis+"), within that interval.",{declared:fresh.declared,last_change:fresh.last_change});
+  // Catalogue modification and observed content history describe different things.
+  if(fresh.metadata_updated)add("Catalogue last updated: "+fresh.metadata_updated+".",{metadata_updated:fresh.metadata_updated});
+  if(fresh.content_unchanged_since)add("Data content unchanged in checks since at least "+fresh.content_unchanged_since+".",{content_unchanged_since:fresh.content_unchanged_since,checked_at:now.slice(0,10)});
   // Where the publisher's own metadata and the file disagree (whole-file reads only: a partial read can miss later rows).
   // We cannot correct the publisher; we can say plainly which statement the file supports.
   if(profile.rows_exact&&time){
     const yr=v=>{const m=String(v||"").match(/^(\d{4})/);return m?Number(m[1]):null},from=yr(time.from),to=yr(time.to);
-    const upd=yr(record.updatedAt);
-    if(upd&&to&&upd-to>=2&&fresh.status!=="current")add("The catalogue record was updated on "+String(record.updatedAt).slice(0,10)+", but the newest date in the file ('"+time.column+"') is "+time.to+". A recent catalogue date here does not mean recent data.",
-      {disagreement:"catalogue_date_newer_than_data",catalogue_updated:String(record.updatedAt).slice(0,10),newest_data:time.to,column:time.column});
     const dp=record.declaredPeriod,ds=yr(dp?.s||dp?.start),de=yr(dp?.e||dp?.end)||(ds?new Date(now).getUTCFullYear():null);
     if(ds&&from&&to&&(to<ds-1||from>de+1))add("The record declares the period "+(dp.s||dp.start)+" to "+(dp.e||dp.end||"now")+", but the dates in the file ('"+time.column+"') run from "+time.from+" to "+time.to+".",
       {disagreement:"declared_period_not_in_file",declared:{from:dp.s||dp.start,to:dp.e||dp.end||null},file:{from:time.from,to:time.to},column:time.column});

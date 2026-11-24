@@ -7,7 +7,9 @@ import { fileURLToPath } from "node:url";
 import { checkFile, contentHistory, createHostGate, headerCheck, inShard, loadWork, mergeRuns } from "./full-check.mjs";
 import { refusedHosts } from "./change-log.mjs";
 import { createColumnProfiler, profileColumns, setNisReference, buildCard } from "./dataset-card.mjs";
-import { mergeFull } from "./build-cards.mjs";
+import { mergeFull, backfillDocs } from "./build-cards.mjs";
+import { renderCard } from "../public/dataset-card-panel-v3.mjs";
+import { trustSummary } from "../mcp-server.mjs";
 import { encodingFor } from "./tabular-profile.mjs";
 
 const pub=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"../public");
@@ -132,8 +134,9 @@ try{
   assert.equal(card.freshness.metadata_date_not_reflected_in_file,true);assert.equal(card.freshness.file_changed,null);assert.equal(card.freshness.file_header_ignored,"2026-11-14");
   assert.equal(card.freshness.status,"overdue");assert.equal(card.freshness.at_least,true);assert.equal(card.freshness.last_change,"2026-09-01");
   const texts=card.facts.map(f=>f.text).join("\n");
-  assert.match(texts,/catalogue says it was updated on 2026-11-10, but the file is byte-for-byte the same as on 2026-09-01/);
-  assert.match(texts,/byte-for-byte the same since at least 2026-09-01, 29 days longer/);
+  assert.match(texts,/Catalogue last updated: 2026-11-10/);
+  assert.ok(!card.disagreements.some(d=>d.kind==="catalogue_date_not_in_file"));
+  assert.match(texts,/Data content unchanged in checks since at least 2026-09-01 \(29 days beyond/);
   assert.match(texts,/Last-Modified date is the time of each request/);
   // unchanged only since our first sight and nothing else: never "current"
   card=buildCard({id:"r",frequency:"ANNUAL"},prof,{now:"2026-11-14T00:00:00Z",file:{...base,content:{since:"2026-11-07T01:00:00Z",observedSince:"2026-11-07T01:00:00Z"}}});
@@ -142,6 +145,25 @@ try{
   card=buildCard({id:"r",frequency:"MONTHLY",updatedAt:"2026-06-01"},prof,{now:"2026-11-14T00:00:00Z",file:{...base,content:{since:"2026-11-14T01:00:00Z",changedAt:"2026-11-14T01:00:00Z",changedAfter:"2026-11-07T01:00:00Z",observedSince:"2026-10-01T01:00:00Z"}}});
   assert.equal(card.freshness.status,"current");assert.equal(card.freshness.last_change_basis,"content change seen");
   assert.match(card.facts.map(f=>f.text).join("\n"),/content changed between 2026-11-07 and 2026-11-14/);
+}
+
+// A catalogue edit is not a data-quality warning, even for a historical dataset.
+{
+  const csv="year;value\n2018;1\n2019;2\n",prof=profileColumns(csv,{bytesRead:csv.length,totalBytes:csv.length});
+  const card=buildCard({id:"r",updatedAt:"2026-11-23"},prof,{now:"2026-11-24T00:00:00Z",file:{content:{since:"2026-11-16T00:00:00Z",rowOrderUnstable:true}}});
+  assert.deepEqual(card.disagreements,[]);
+  const html=renderCard(card);
+  assert.match(html,/Catalogue last updated: 2026-11-23/);
+  assert.match(html,/Data content unchanged in checks since at least 2026-11-16/);
+  assert.doesNotMatch(html,/card-disagree|byte-for-byte/);
+  const docs=[{id:"r",dg:2}];backfillDocs(docs,new Map([["r",card]]));
+  assert.equal(docs[0].dg,undefined);
+  const trust=trustSummary({u:"2026-11-23"},{},card,card.coverage.time);
+  assert.equal(trust.disagreements,undefined);
+  assert.ok(trust.checked_by_this_service.some(t=>t.includes("unchanged in checks since at least 2026-11-16")));
+  assert.ok(trust.stated_by_publisher_only.includes("Catalogue last updated: 2026-11-23."));
+  const mismatch=buildCard({id:"r",declaredPeriod:{s:"2025",e:"2026"}},prof);
+  assert.ok(mismatch.disagreements.some(d=>d.kind==="declared_period_not_in_file"));
 }
 
 // 6. merging runs: a failure keeps last week's profile; stale profiles expire
