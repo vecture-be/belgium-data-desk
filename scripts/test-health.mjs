@@ -41,7 +41,7 @@ assert.equal(freshness({frequency:"WEEKLY"},{dataTo:"2026-05-31",dataColumn:"dat
 {
   const card=buildCard({id:"w",frequency:"MONTHLY"},{rows:3,rows_exact:true,column_count:2,columns:[{name:"periode",type:"date",from:"2020-01-01",to:"2021-12-31",filled_pct:100,distinct:3}]},{now});
   const t=card.facts.map(x=>x.text).join("\n");
-  assert.match(t,/It is declared to be updated monthly, but its latest data is for 2021-12-31 \(column 'periode'\), 1,786 days ago\. Either the series stopped or the declared frequency is wrong\./);
+  assert.match(t,/Declared update frequency: monthly\. Latest reporting date in the file: 2021-12-31 \(column 'periode'\), 1,786 days before the check\./);
   assert.doesNotMatch(t,/stopped updating|looks like it stopped/);
 }
 
@@ -84,7 +84,7 @@ const alerts=buildAlerts(log,{broken:[{id:"g",title:"G",publisher:"P",url:"ug",p
   {id:"old",problem:"gone",url:"uo"}],cadence_not_met:[{id:"s1",title:"S",publisher:"P",url:"us",declared:"MONTHLY",latest_data_point:"2026-01-31",latest_data_age_days:294},{id:"s0",url:"u0"}]},
   {since,previousCadenceIds:["s0"]});
 assert.deepEqual(alerts.map(a=>a.type+":"+a.id),["emptied:x","became_unreadable:g","cadence_not_met:s1"],"a link broken for weeks and an already-known cadence miss do not alert again");
-assert.equal(alerts[2].detail,"declared monthly, but the latest data is for 2026-01-31 (294 days ago): either the series stopped or the declared frequency is wrong");
+assert.equal(alerts[2].detail,"declared monthly; latest reporting date 2026-01-31 (294 days before the check). Consider the reporting lag");
 assert.deepEqual(buildAlerts(log,{cadence_not_met:[{id:"s9"}]},{since,previousCadenceIds:[]}).filter(a=>a.id==="s9").length,1);
 
 // 6. feeds

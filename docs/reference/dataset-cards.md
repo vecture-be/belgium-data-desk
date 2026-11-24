@@ -17,9 +17,9 @@ A host that blocks or throttles the probe yields no profile and therefore no car
 | --- | --- |
 | `facts[]` | `{text, evidence}`: short sentences built only from the fields below, with the numbers behind them. Quote these. |
 | `freshness.declared` | The update cycle the publisher declares (EU frequency code, in words). |
-| `freshness.last_change` | The latest of the catalogue's update date, the file's `Last-Modified` and a content change seen by the full-file check, each only when it holds up (see "Change dates"). `last_change_basis` says which one it is. |
-| `freshness.content_unchanged_since` / `observed_since` / `content_change_seen` | Whole-file checks: the first run that saw today's bytes, the first run that read the file at all, and the run that saw the bytes change. |
-| `freshness.metadata_date_not_reflected_in_file` | The catalogue's update date is later than the first run that saw today's bytes, so the file did not change with it. |
+| `freshness.last_change` | The latest usable file `Last-Modified` or observed content change, or an unchanged-since lower bound for overdue checks. `last_change_basis` says which one it is. Catalogue modification alone does not establish change. |
+| `freshness.content_unchanged_since` / `observed_since` / `content_change_seen` | Whole-file checks: the first run that observed the current content, the first run that read the file at all, and the run that observed a content change. |
+| `freshness.metadata_date_not_reflected_in_file` | The catalogue modification date falls after the first observation of the current content and on or before the latest check. Informational only; not a disagreement. |
 | `freshness.file_header_ignored` | A `Last-Modified` date left out because the check caught it misleading. |
 | `freshness.status` | `current`, `overdue` (past the cycle, with `overdue_days`) or `unknown` (no cycle declared, irregular, or no date). |
 | `freshness.latest_data_point` | The latest date or year found in the data. |
@@ -34,7 +34,7 @@ A host that blocks or throttles the probe yields no profile and therefore no car
 
 ## Change dates
 
-Publishers state when data changed in three places: the catalogue's update date, and the file's `Last-Modified` and `ETag` headers. All three are often wrong, which is a quality problem in itself. The full-file check compares them with what the bytes do from one week to the next:
+Catalogue modification dates describe the record, not necessarily the data. File `Last-Modified` and `ETag` headers provide separate change evidence. The full-file check compares the headers with observed content from one week to the next:
 
 | Issue | What was seen |
 | --- | --- |
@@ -50,7 +50,7 @@ Publishers state when data changed in three places: the catalogue's update date,
 How a card uses this:
 
 - A `Last-Modified` date with any of the `last_modified` issues is ignored (`file_header_ignored`).
-- A catalogue update date after which the file stayed byte-for-byte the same no longer counts as a change (`metadata_date_not_reflected_in_file`). The update may have touched only the description.
+- A catalogue modification date and unchanged observed content are shown separately; the date alone does not establish a content change (`metadata_date_not_reflected_in_file` is an informational observation, not a disagreement).
 - A content change seen by the check counts as a change, dated to the run that saw it.
 - "Unchanged since the first run that saw it" can show that a dataset is overdue (`at_least: true`), but never that it is current: the real change may be much older.
 
@@ -70,7 +70,7 @@ Numbers are parsed the Belgian way where it is unambiguous (`1.234,5` is one tho
 
 `scripts/health.mjs` and `scripts/change-log.mjs` turn the full-file check into a health report.
 
-**Declared cadence not met** (`freshness.cadence_not_met`, with `latest_data_age_days`) is a contradiction between the metadata and the data, not a verdict. The data does not keep up with the update frequency the publisher declares. Either the series stopped, or the declared frequency is wrong, which is often a portal default; only the publisher knows which. It is raised only when all of these hold:
+**Declared cadence not met** (`freshness.cadence_not_met`, with `latest_data_age_days`) is a potential reporting-lag signal, not a verdict about the publisher. A reporting period may lag a publication schedule for legitimate reasons. It is raised only when all of these hold:
 
 - the whole file was read;
 - the dataset declares a cadence faster than yearly (daily, weekly, every two weeks, monthly, quarterly or continuous);

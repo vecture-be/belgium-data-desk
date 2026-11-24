@@ -67,7 +67,7 @@ export function renderScorecards(sc){
     "From the weekly full-file check of each dataset's main CSV/TSV file ("+sc.generated+"). "+sc.note,"",
     "Totals: "+fmt(t.files)+" files, "+fmt(t.ok)+" readable; problems: "+fmt(t.gone)+" gone, "+fmt(t.not_a_table)+" web page instead of a table, "+fmt(t.empty)+" empty; "+
       "not checked: "+fmt(t.cloud_refused)+" host refuses cloud access, "+fmt(t.access_denied)+" access denied, "+fmt(t.unreachable)+" unreachable this run, "+fmt(t.too_large)+" over 100 MB; "+
-      fmt(t.cadence_not_met)+" do not meet the update cadence they declare (their latest data lies more than three declared cycles back: either the series stopped or the declared frequency is wrong). One-off, yearly and undeclared datasets are never judged.","",
+      fmt(t.cadence_not_met)+" do not meet the update cadence they declare (their latest reporting date lies more than three declared cycles back; check the reporting lag). One-off, yearly and undeclared datasets are never judged.","",
     "| Publisher | Files | Readable | Gone | Web page | Empty | Declared cadence not met | Not checked | Last-Modified sent |",
     "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"];
   for(const p of sc.publishers){

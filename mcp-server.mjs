@@ -175,7 +175,7 @@ const SCOPE_OF_KIND={"map-service":"maps",publication:"publications",research:"r
 const isOpen=doc=>doc.lf==="open"||doc.lf==="open-sharealike";
 const NOT_DECLARED="not declared by the publisher";
 const summary=d=>({id:d.id,title:d.t,publisher:d.p,kind:d.k||"dataset",topic:d.tp,formats:d.f,licence:d.l||NOT_DECLARED,licence_family:d.lf||"unknown",access_tier:d.tier||null,updated:d.u||null,
-  ...(d.ld?{latest_data:d.ld}:{}),...(d.dg?{disagreements:d.dg,disagreements_note:"The publisher's metadata and the file disagree on "+d.dg+(d.dg>1?" points":" point")+"; get_dataset lists them."}:{}),
+  ...(d.ld?{latest_data:d.ld}:{}),...(d.dg?{disagreements:d.dg,disagreements_note:"Data checks to review: "+d.dg+(d.dg>1?" points":" point")+"; get_dataset lists them."}:{}),
   ...(d.y?{covers_years:d.y,...(d.ym?{covers_years_from:"read from the file"}:{})}:{}),...(d.lg?{languages:d.lg}:{}),...(d.ar?{access_rights:d.ar}:{}),
   hand_reviewed:!!d.c,landing_page:d.w||null,snippet:d.s||""});
 /** Search filters on the period a record covers and its language. Records that declare neither are left out when the filter is set. */
@@ -435,7 +435,7 @@ export async function previewDataset(reader,args,previewFile){
   const newest=[...latest].sort((p,q)=>q[1].localeCompare(p[1]))[0];
   const catalogueDate=d.u||null,daysAfter=newest&&catalogueDate?Math.round((Date.parse(newest[1])-Date.parse(catalogueDate))/864e5):null;
   const freshness=newest?{latest_date_in_rows_read:newest[1],column:newest[0],catalogue_updated:catalogueDate,
-    ...(daysAfter>30?{data_newer_than_catalogue_date:true,note:"The file holds dates up to "+newest[1]+" ("+newest[0]+"), later than the catalogue record's date "+catalogueDate+": the data has been refreshed since the record was last edited. Quote the date from the file, not the catalogue date."}:{})}:null;
+    ...(daysAfter>30?{data_newer_than_catalogue_date:true,note:"The file holds dates up to "+newest[1]+" ("+newest[0]+"), later than the catalogue record's date "+catalogueDate+": the dates describe different things and do not establish when the file changed."}:{})}:null;
   // Measures only: identifiers, codes, years and flags have no unit.
   const numeric=parsed.headers.slice(0,MAX_PREVIEW_COLUMNS).filter((h,i)=>/^(integer|number)$/.test(parsed.types[i]||"")&&!/(^|[_\s-])(id|code|nis|refnis|ins|postcode|zip|jaar|year|annee|indicator|flag|nr|nummer|number)([_\s-]|$)/i.test(String(h).trim()));
   const out={...base,file:{format:file.f,url:file.u,size_bytes:got.totalBytes||file.s||null},delimiter:DELIMITER_NAMES[delimiter]||delimiter,encoding,
@@ -472,12 +472,14 @@ export function trustSummary(d,x,card,measuredPeriod){
   if(card?.file){
     const f=card.file;checked.push((f.rows_exact?"Whole file read on ":"First "+Math.round((f.bytes_read||0)/1024)+" KiB read on ")+card.profiled_at+": "+(f.rows_exact?"":"at least ")+Number(f.rows).toLocaleString("en-GB")+(f.rows===1?" row":" rows")+(card.columns?.length?", "+card.columns.length+" columns":"")+".");
     if(measuredPeriod)checked.push("Dates in the file run from "+measuredPeriod.from+" to "+measuredPeriod.to+" (column '"+measuredPeriod.column+"').");
-    const fr=card.freshness||{};if(fr.last_change&&fr.last_change_basis&&!/catalogue/i.test(fr.last_change_basis))checked.push("Content last seen changing on "+fr.last_change+" ("+fr.last_change_basis+").");
+    const fr=card.freshness||{};if(fr.content_unchanged_since&&fr.content_unchanged_since<card.profiled_at)checked.push("Data content unchanged in checks since at least "+fr.content_unchanged_since+".");
+    if(fr.content_change_seen)checked.push("Content change observed on "+fr.content_change_seen+".");
+    else if(fr.last_change_basis==="file date"&&fr.last_change)checked.push("File Last-Modified: "+fr.last_change+".");
     for(const k of (card.coverage?.keys||[]).slice(0,3))checked.push("Column '"+k.column+"' holds "+(KEY_NAMES[k.kind]||String(k.kind).replace(/_/g," ")+" values")+".");
   }
   if(x.cm)checked.push("Column names read from the file (the publisher declares none).");
   if(d.l)stated.push("Licence: "+d.l+(x.lsrc?" (from another record of the same dataset)":"")+".");
-  if(d.u)stated.push("Catalogue record updated "+d.u+(card?.file?.rows_exact?"":"; not checked against the file")+".");
+  if(d.u)stated.push("Catalogue last updated: "+d.u+".");
   if(x.fq)stated.push("Update frequency: "+x.fq.toLowerCase().replace(/_/g," ")+".");
   if(x.tc&&!measuredPeriod)stated.push("Period: "+(x.tc.s||"?")+" to "+(x.tc.e||"now")+" (not checked against a file).");
   if(x.g)stated.push("Geography: "+x.g+".");
@@ -486,7 +488,7 @@ export function trustSummary(d,x,card,measuredPeriod){
   return{checked_by_this_service:checked.length?checked:["Nothing: no file of this record could be read or link-checked (the publisher's host may block automated checks, or it has no file)."],
     stated_by_publisher_only:stated,...(disagreements.length?{disagreements}:{}),
     ...(card?.repairs?.summary?.length?{read_differently_than_published:card.repairs.summary}:{}),
-    note:"Checked facts come from this service's own downloads; stated facts are the publisher's and were not verified. Where they disagree, trust the file over the catalogue."+
+    note:"Checked facts come from this service's own downloads; stated facts are the publisher's and were not verified. Catalogue modification, observed content changes and reporting dates are separate facts; none implies the others."+
       (card?.repairs?" Values the publisher wrote in a wrong form (swapped or metre coordinates, -999 for 'unknown') are read the way they were meant, as listed; the file itself is unchanged.":"")};
 }
 
