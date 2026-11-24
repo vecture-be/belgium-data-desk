@@ -34,6 +34,18 @@ for(const tool of LIVE_TOOLS){
   assert.deepEqual(checkAnswer(out),[],where+": answer contract");
   assert.ok(client.used<=tool.maxRequests,where+": used "+client.used+" upstream requests, budget "+tool.maxRequests);
   for(const c of fx.calls)assert.ok(tool.hosts.includes(new URL(c.url).hostname),where+": fixture calls undeclared host "+new URL(c.url).hostname);
+  // Replay the same recorded example through JSON-RPC, not only the direct tool
+  // call: the dispatcher must supply the shared static-asset reader as context.
+  const req=new Request("https://x.test/mcp",{method:"POST",headers:{"content-type":"application/json"},
+    body:JSON.stringify({jsonrpc:"2.0",id:1,method:"tools/call",params:{name:tool.name,arguments:fx.args}})});
+  const response=await atTime(fx.recordedAt,()=>handleMcp(req,env,{dov:{fetchImpl:replayFetch(fx)}}));
+  assert.equal(response.status,200,where+": MCP HTTP status");
+  const rpc=(await response.json()).result;
+  assert.equal(rpc?.isError,false,where+": MCP replay failed: "+JSON.stringify(rpc?.content));
+  assert.deepEqual(checkAnswer(rpc.structuredContent),[],where+": MCP answer contract");
+  // A successful answer alone can hide a missing municipality context.
+  if(out.place)assert.deepEqual(rpc.structuredContent.place,out.place,where+": MCP place context");
+  if(tool.name==="belgian_statistics")assert.deepEqual(rpc.structuredContent.places,out.places,where+": MCP statistics tables");
   report.push(tool.name+" "+client.used+"/"+tool.maxRequests+" req "+ms.toFixed(1)+" ms");
 }
 
