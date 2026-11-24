@@ -54,7 +54,7 @@ export function buildAlerts(log,scorecards,{since,previousCadenceIds=[]}={}){
     alerts.push({type:"became_unreadable",id:b.id,title:b.title,publisher:b.publisher,url:b.url,detail:b.problem.replace(/_/g," ")+" (readable on "+String(b.was_readable_until).slice(0,10)+")"});
   const before=new Set(previousCadenceIds);
   for(const s of scorecards?.cadence_not_met||[])if(!before.has(s.id))
-    alerts.push({type:"cadence_not_met",id:s.id,title:s.title,publisher:s.publisher,url:s.url,detail:"declared "+(CADENCE_WORDS[String(s.declared||"").toUpperCase()]||String(s.declared||"").toLowerCase())+", but the latest data is for "+s.latest_data_point+" ("+s.latest_data_age_days+" days ago): either the series stopped or the declared frequency is wrong"});
+    alerts.push({type:"cadence_not_met",id:s.id,title:s.title,publisher:s.publisher,url:s.url,detail:"declared "+(CADENCE_WORDS[String(s.declared||"").toUpperCase()]||String(s.declared||"").toLowerCase())+"; latest reporting date "+s.latest_data_point+" ("+s.latest_data_age_days+" days before the check). Consider the reporting lag"});
   return alerts;
 }
 
@@ -113,7 +113,7 @@ export function renderReadme(log,history){
     "",
   ];
   if(log.alerts?.length){
-    lines.push("## Alerts","","Changes that usually mean something broke, files that stopped being readable, and datasets that newly miss the update cadence they declare: their latest data lies more than three declared cycles back, so either the series stopped or the declared frequency is wrong. Only datasets declared to update more often than yearly are judged; one-off, yearly and undeclared ones never are.","",
+    lines.push("## Alerts","","Changes that usually mean something broke, files that stopped being readable, and datasets that newly miss the update cadence they declare: their latest reporting date lies more than three declared cycles back. This is a possible reporting lag, not proof that publication stopped. Only datasets declared to update more often than yearly are judged; one-off, yearly and undeclared ones never are.","",
       "| Alert | Dataset | Publisher | Detail |","| --- | --- | --- | --- |");
     for(const a of log.alerts.slice(0,100))lines.push("| "+(ALERT_WORDS[a.type]||a.type)+" | ["+cell(a.title||a.id)+"]("+a.url+") | "+cell(a.publisher)+" | "+cell(a.detail)+" |");
     lines.push("");

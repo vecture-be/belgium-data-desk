@@ -70,7 +70,7 @@ Numbers are parsed the Belgian way where it is unambiguous (`1.234,5` is one tho
 
 `scripts/health.mjs` and `scripts/change-log.mjs` turn the full-file check into a health report.
 
-**Declared cadence not met** (`freshness.cadence_not_met`, with `latest_data_age_days`) is a contradiction between the metadata and the data, not a verdict. The data does not keep up with the update frequency the publisher declares. Either the series stopped, or the declared frequency is wrong, which is often a portal default; only the publisher knows which. It is raised only when all of these hold:
+**Declared cadence not met** (`freshness.cadence_not_met`, with `latest_data_age_days`) is a potential reporting-lag signal, not a verdict about the publisher. A reporting period may lag a publication schedule for legitimate reasons. It is raised only when all of these hold:
 
 - the whole file was read;
 - the dataset declares a cadence faster than yearly (daily, weekly, every two weeks, monthly, quarterly or continuous);
