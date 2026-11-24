@@ -40,7 +40,7 @@ assert.deepEqual(c2.sector.top[0],["retail",26]);
 
 // 3. freshness against the declared EU frequency code
 const now="2026-11-10T09:00:00Z";
-assert.equal(freshness({frequency:"MONTHLY",updatedAt:"2026-10-20"},{now}).status,"current");
+assert.equal(freshness({frequency:"MONTHLY",updatedAt:"2026-10-20"},{now}).status,"unknown","a catalogue date is not evidence of a content change");
 const late=freshness({frequency:"MONTHLY",updatedAt:"2025-01-01"},{fileLastModified:"Tue, 01 Apr 2025 10:00:00 GMT",now});
 assert.equal(late.status,"overdue");assert.equal(late.last_change,"2025-04-01");assert.equal(late.overdue_days,543);
 assert.equal(freshness({frequency:"IRREG",updatedAt:"2020-01-01"},{now}).status,"unknown","irregular data is never overdue");
@@ -48,7 +48,8 @@ assert.equal(freshness({frequency:"IRREG",updatedAt:"2020-01-01"},{now}).status,
 // 4. the card: facts carry their evidence, no undefined/NaN, schema drift against the previous card
 const rec={id:"national:test-pop",frequency:"ANNUAL",updatedAt:"2024-03-01"};
 const card=buildCard(rec,p1,{now,file:{url:"https://example.be/pop.csv",format:"CSV",bytesRead:csv1.length,totalBytes:csv1.length}});
-assert.equal(card.freshness.status,"overdue");
+assert.equal(card.freshness.status,"unknown");
+assert.equal(card.freshness.last_change,null);
 assert.ok(card.facts.length>=5);for(const f of card.facts)assert.ok(f.text.length<300&&f.evidence,"fact with evidence: "+f.text);
 const text=card.facts.map(f=>f.text).join(" ");
 assert.match(text,/10 rows and 5 columns/);assert.match(text,/from 2019 to 2023/);assert.match(text,/NIS municipality codes \(8 of 10 values read match the 2025 list; 2 are pre-2025 codes/,"few values: counts, not percentages");

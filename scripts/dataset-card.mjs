@@ -338,16 +338,15 @@ export function freshness(record,{fileLastModified=null,dataTo=null,dataColumn="
   const out={declared:CADENCE_WORDS[code]||null,metadata_updated:updated,file_changed:file,...(processed?{data_processed_at:processed}:{})};
   if(headerDate&&!file)out.file_header_ignored=headerDate;
   if(dataComplete)Object.assign(out,cadenceNotMet(code,dataTo,now,dataColumn));   // a partial read sees only the first (often oldest) rows
-  let metaCounts=!!updated;
   if(content?.since){
     const since=day(content.since),changed=day(content.changedAt);
     out.content_unchanged_since=since;out.observed_since=day(content.observedSince)||since;
     if(changed)out.content_change_seen=changed;
     // the catalogue says "updated" on a later day than the first run that saw today's bytes: the file did not change with it
     // (the update may have touched only the description)
-    if(updated&&since&&since<updated){metaCounts=false;if(updated<=day(now))out.metadata_date_not_reflected_in_file=true}
+    if(updated&&since&&since<updated&&updated<=day(now))out.metadata_date_not_reflected_in_file=true;
   }
-  const candidates=[[metaCounts?updated:null,"catalogue date"],[file,"file date"],[out.content_change_seen,"content change seen"]].filter(c=>c[0]);
+  const candidates=[[file,"file date"],[out.content_change_seen,"content change seen"]].filter(c=>c[0]);
   const best=candidates.sort((a,b)=>a[0].localeCompare(b[0])).pop();
   out.last_change=best?.[0]||null;if(best)out.last_change_basis=best[1];
   if(!limit)return{...out,status:"unknown"};
@@ -416,13 +415,12 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
     {disagreement:"declared_cadence_not_met",declared:fresh.declared,latest_data_point:time.to,column:time.column,latest_data_age_days:fresh.latest_data_age_days});
   if(fresh.status==="overdue"&&fresh.at_least)add("Declared update frequency: "+fresh.declared+". Data content unchanged in checks since at least "+fresh.last_change+" ("+fmtInt(fresh.overdue_days)+" days beyond the expected interval).",
     {disagreement:"declared_cadence_overdue",declared:fresh.declared,unchanged_since:fresh.last_change,overdue_days:fresh.overdue_days,at_least:true});
-  else if(fresh.last_change_basis==="catalogue date"&&fresh.status!=="unknown")add("Declared update frequency: "+fresh.declared+". The catalogue date alone does not establish when the data changed.",{declared:fresh.declared,catalogue_updated:fresh.metadata_updated});
   else if(fresh.status==="overdue")add("Declared update frequency: "+fresh.declared+". Latest change evidence: "+fresh.last_change+" ("+fresh.last_change_basis+", "+fmtInt(fresh.overdue_days)+" days beyond the expected interval).",
     {disagreement:"declared_cadence_overdue",declared:fresh.declared,last_change:fresh.last_change,overdue_days:fresh.overdue_days});
   else if(fresh.status==="current")add("Declared update frequency: "+fresh.declared+". Latest change evidence: "+fresh.last_change+" ("+fresh.last_change_basis+"), within that interval.",{declared:fresh.declared,last_change:fresh.last_change});
   // Catalogue modification and observed content history describe different things.
   if(fresh.metadata_updated)add("Catalogue last updated: "+fresh.metadata_updated+".",{metadata_updated:fresh.metadata_updated});
-  if(fresh.content_unchanged_since)add("Data content unchanged in checks since at least "+fresh.content_unchanged_since+".",{content_unchanged_since:fresh.content_unchanged_since,checked_at:now.slice(0,10)});
+  if(fresh.content_unchanged_since&&fresh.content_unchanged_since<day(now)&&!fresh.at_least)add("Data content unchanged in checks since at least "+fresh.content_unchanged_since+".",{content_unchanged_since:fresh.content_unchanged_since,checked_at:day(now)});
   // Where the publisher's own metadata and the file disagree (whole-file reads only: a partial read can miss later rows).
   // We cannot correct the publisher; we can say plainly which statement the file supports.
   if(profile.rows_exact&&time){
@@ -495,6 +493,6 @@ export function buildCard(record,profile,{previous=null,now=new Date().toISOStri
     // how the desk reads values the publisher wrote wrongly (public/data-repair-v1.mjs); the file itself is never changed
     ...(repairs&&(notable||repairs.missing_codes)?{repairs:{...(notable?{coordinates:rc}:{}),...(repairs.missing_codes?{missing_codes:repairs.missing_codes}:{}),summary:repairFacts}}:{}),
     columns:cols.map(({key,...c})=>c).slice(0,40),facts,
-    // the publisher's statements the file contradicts, in one list (also among the facts)
+    // Checks requiring review, in one list (also among the facts)
     disagreements:facts.filter(f=>f.evidence?.disagreement).map(f=>({kind:f.evidence.disagreement,text:f.text}))};
 }

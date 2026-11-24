@@ -17,8 +17,8 @@ A host that blocks or throttles the probe yields no profile and therefore no car
 | --- | --- |
 | `facts[]` | `{text, evidence}`: short sentences built only from the fields below, with the numbers behind them. Quote these. |
 | `freshness.declared` | The update cycle the publisher declares (EU frequency code, in words). |
-| `freshness.last_change` | The latest of the catalogue's update date, the file's `Last-Modified` and a content change seen by the full-file check, each only when it holds up (see "Change dates"). `last_change_basis` says which one it is. |
-| `freshness.content_unchanged_since` / `observed_since` / `content_change_seen` | Whole-file checks: the first run that saw today's bytes, the first run that read the file at all, and the run that saw the bytes change. |
+| `freshness.last_change` | The latest usable file `Last-Modified` or observed content change, or an unchanged-since lower bound for overdue checks. `last_change_basis` says which one it is. Catalogue modification alone does not establish change. |
+| `freshness.content_unchanged_since` / `observed_since` / `content_change_seen` | Whole-file checks: the first run that observed the current content, the first run that read the file at all, and the run that observed a content change. |
 | `freshness.metadata_date_not_reflected_in_file` | The catalogue modification date falls after the first observation of the current content and on or before the latest check. Informational only; not a disagreement. |
 | `freshness.file_header_ignored` | A `Last-Modified` date left out because the check caught it misleading. |
 | `freshness.status` | `current`, `overdue` (past the cycle, with `overdue_days`) or `unknown` (no cycle declared, irregular, or no date). |

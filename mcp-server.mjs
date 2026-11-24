@@ -472,7 +472,7 @@ export function trustSummary(d,x,card,measuredPeriod){
   if(card?.file){
     const f=card.file;checked.push((f.rows_exact?"Whole file read on ":"First "+Math.round((f.bytes_read||0)/1024)+" KiB read on ")+card.profiled_at+": "+(f.rows_exact?"":"at least ")+Number(f.rows).toLocaleString("en-GB")+(f.rows===1?" row":" rows")+(card.columns?.length?", "+card.columns.length+" columns":"")+".");
     if(measuredPeriod)checked.push("Dates in the file run from "+measuredPeriod.from+" to "+measuredPeriod.to+" (column '"+measuredPeriod.column+"').");
-    const fr=card.freshness||{};if(fr.content_unchanged_since)checked.push("Data content unchanged in checks since at least "+fr.content_unchanged_since+".");
+    const fr=card.freshness||{};if(fr.content_unchanged_since&&fr.content_unchanged_since<card.profiled_at)checked.push("Data content unchanged in checks since at least "+fr.content_unchanged_since+".");
     if(fr.content_change_seen)checked.push("Content change observed on "+fr.content_change_seen+".");
     else if(fr.last_change_basis==="file date"&&fr.last_change)checked.push("File Last-Modified: "+fr.last_change+".");
     for(const k of (card.coverage?.keys||[]).slice(0,3))checked.push("Column '"+k.column+"' holds "+(KEY_NAMES[k.kind]||String(k.kind).replace(/_/g," ")+" values")+".");
