@@ -589,7 +589,7 @@ export async function callTool(env,origin,name,args,{previewFile=null,dov=null,m
     if(!dov?.fetchImpl)return asText({error:"Live data access is not available on this server."});
     if(dov.rateLimit&&!(await dov.rateLimit()))return asText({error:"Too many live-data requests right now; try again in a minute."});
     const client=makeDovClient({fetchImpl:dov.fetchImpl,hosts:tool.hosts,maxRequests:tool.maxRequests});
-    return asText(withPrecision(await tool.run(client,args||{assets})));
+    return asText(withPrecision(await tool.run(client,args||{},{assets})));
   }
   reader=assets;
   if(name==="search_datasets")return asText(await searchDatasets(reader,args));
