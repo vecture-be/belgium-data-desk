@@ -4,7 +4,8 @@
 <link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/recupel.xml"/>
 <link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
 <id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/recupel.xml</id>
-<updated>2026-11-21T00:00:00Z</updated>
+<updated>2026-11-28T00:00:00Z</updated>
 <author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Recupel - points de collecte pour électro &amp; lampe</title><link href="https://www.odwb.be/explore/dataset/recupel-points-collecte/download/?format=csv"/><id>urn:bdd:2026-11-28:change::harvest:open-data-wallonie-bruxelles:recupel-points-collecte</id><updated>2026-11-28T00:00:00Z</updated><summary>Recupel: +7 / −7 distinct rows</summary></entry>
 <entry><title>Changed: Recupel - points de collecte pour électro &amp; lampe</title><link href="https://www.odwb.be/explore/dataset/recupel-points-collecte/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:recupel-points-collecte</id><updated>2026-11-21T00:00:00Z</updated><summary>Recupel: +3 / −3 distinct rows; locations_latitude now 49.557–51.468 (was 49.557–51,271); locations_longitude now 2.584–6.258 (was 2.584–5,727)</summary></entry>
 </feed>

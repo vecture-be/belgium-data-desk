@@ -4,7 +4,8 @@
 <link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/ville-d-arlon.xml"/>
 <link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
 <id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/ville-d-arlon.xml</id>
-<updated>2026-11-21T00:00:00Z</updated>
+<updated>2026-11-28T00:00:00Z</updated>
 <author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Stationnement Ville d'Arlon</title><link href="https://www.odwb.be/explore/dataset/shop-and-drive-kiss-and-ride-real-time/download/?format=csv"/><id>urn:bdd:2026-11-28:change::harvest:open-data-wallonie-bruxelles:shop-and-drive-kiss-and-ride-real-time</id><updated>2026-11-28T00:00:00Z</updated><summary>Ville d'Arlon: +126 / −126 distinct rows; jsondatas_status_metadata_timestamp_value now 2023-06-29 to 2026-11-28 (was 2023-06-29 to 2026-11-21)</summary></entry>
 <entry><title>Changed: Stationnement Ville d'Arlon</title><link href="https://www.odwb.be/explore/dataset/shop-and-drive-kiss-and-ride-real-time/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:shop-and-drive-kiss-and-ride-real-time</id><updated>2026-11-21T00:00:00Z</updated><summary>Ville d'Arlon: +124 / −124 distinct rows; jsondatas_status_metadata_timestamp_value now 2023-06-29 to 2026-11-21 (was 2023-06-29 to 2026-11-17)</summary></entry>
 </feed>

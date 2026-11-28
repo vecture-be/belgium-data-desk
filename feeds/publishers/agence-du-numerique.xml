@@ -4,7 +4,8 @@
 <link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/agence-du-numerique.xml"/>
 <link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
 <id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/agence-du-numerique.xml</id>
-<updated>2026-11-21T00:00:00Z</updated>
+<updated>2026-11-28T00:00:00Z</updated>
 <author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Catalogue ODWB</title><link href="https://www.odwb.be/explore/dataset/catalogue-odwb/download/?format=csv"/><id>urn:bdd:2026-11-28:change::harvest:open-data-wallonie-bruxelles:catalogue-odwb</id><updated>2026-11-28T00:00:00Z</updated><summary>Agence du Numérique: +971 / −965 distinct rows; modified now 2018-01-30 to 2026-11-23 (was 2018-01-30 to 2026-11-16); data_processed now 2018-06-11 to 2026-11-23 (was 2018-06-11 to 2026-11-16)</summary></entry>
 <entry><title>Changed: Coordonnées géographiques liées aux codes INS</title><link href="https://www.odwb.be/explore/dataset/geoshape-local-belgium/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:geoshape-local-belgium</id><updated>2026-11-21T00:00:00Z</updated><summary>Agence du Numérique: +56 / −56 distinct rows</summary></entry>
 </feed>

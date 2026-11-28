@@ -4,6 +4,7 @@
 <link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/bep-et-issep.xml"/>
 <link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
 <id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/bep-et-issep.xml</id>
-<updated>1970-01-01T00:00:00Z</updated>
+<updated>2026-11-28T00:00:00Z</updated>
 <author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Qualité de l'air en Province de Namur (capteurs mobiles) - Indice BELAQI estimé - situation récente (30 deniers jours)</title><link href="https://www.odwb.be/explore/dataset/issep_airquality_last30d_camions/download/?format=csv"/><id>urn:bdd:2026-11-28:change::harvest:open-data-wallonie-bruxelles:issep_airquality_last30d_camions</id><updated>2026-11-28T00:00:00Z</updated><summary>BEP et ISSEP: +3,367 / −3,081 distinct rows; premiere_mesure now 2026-10-29 to 2026-11-21 (was 2026-09-22 to 2026-10-19); derniere_mesure now 2026-10-29 to 2026-11-23 (was 2026-09-23 to 2026-10-19); valeur_agregee now 0–168.485 (was 0–199.15); nombre_mesures now 1–3,882 (was 1–4,323)</summary></entry>
 </feed>

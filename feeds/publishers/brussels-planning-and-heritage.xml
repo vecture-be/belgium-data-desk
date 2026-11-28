@@ -4,7 +4,8 @@
 <link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/brussels-planning-and-heritage.xml"/>
 <link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
 <id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/brussels-planning-and-heritage.xml</id>
-<updated>2026-11-21T00:00:00Z</updated>
+<updated>2026-11-28T00:00:00Z</updated>
 <author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Delivered Renolution grants for renovation and energy savings</title><link href="https://api.urban.brussels/primes/open/premiums_by_year.csv"/><id>urn:bdd:2026-11-28:change::national:c8de8ff3-2727-11ef-9473-00090ffe0001</id><updated>2026-11-28T00:00:00Z</updated><summary>Brussels Planning and Heritage: +2 / −2 distinct rows</summary></entry>
 <entry><title>Changed: Delivered Renolution grants for renovation and energy savings</title><link href="https://api.urban.brussels/primes/open/premiums_by_year.csv"/><id>urn:bdd:2026-11-21:change::national:c8de8ff3-2727-11ef-9473-00090ffe0001</id><updated>2026-11-21T00:00:00Z</updated><summary>Brussels Planning and Heritage: +1 / −1 distinct rows</summary></entry>
 </feed>

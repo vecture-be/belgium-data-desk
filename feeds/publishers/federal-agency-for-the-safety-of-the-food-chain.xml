@@ -4,6 +4,9 @@
 <link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/federal-agency-for-the-safety-of-the-food-chain.xml"/>
 <link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
 <id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/federal-agency-for-the-safety-of-the-food-chain.xml</id>
-<updated>1970-01-01T00:00:00Z</updated>
+<updated>2026-11-28T00:00:00Z</updated>
 <author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: List of operators</title><link href="https://www.static.favv.be/bo-documents/inter_actieve_actoren_NL.csv"/><id>urn:bdd:2026-11-28:change::national:favv-afsca-operators</id><updated>2026-11-28T00:00:00Z</updated><summary>Federal Agency for the Safety of the Food Chain: +311,730 / −311,652 distinct rows; OP Uniek Nr Id now 2,000,016,967–9,006,578,694 (was 2,000,016,967–9,006,578,247); LNO Uniek Nr now 3,183,956–1,045,291,695 (was 3,183,956–1,045,026,530)</summary></entry>
+<entry><title>Changed: Smiley List</title><link href="https://www.static.favv.be/bo-documents/inter_lijst_smileys_NL.csv"/><id>urn:bdd:2026-11-28:change::national:afsca-smiley</id><updated>2026-11-28T00:00:00Z</updated><summary>Federal Agency for the Safety of the Food Chain: +3,480 / −3,465 distinct rows</summary></entry>
+<entry><title>Changed: List of FASFC activity codes</title><link href="https://www.static.favv.be/bo-documents/inter_PAP_omschrijving_nl.csv"/><id>urn:bdd:2026-11-28:change::national:fasfc-activity-codes</id><updated>2026-11-28T00:00:00Z</updated><summary>Federal Agency for the Safety of the Food Chain: +394 / −394 distinct rows</summary></entry>
 </feed>

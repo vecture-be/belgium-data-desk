@@ -1,22 +1,22 @@
 {
- "generated": "2026-11-21",
+ "generated": "2026-11-28",
  "totals": {
-  "files": 3382,
-  "ok": 2915,
-  "gone": 40,
+  "files": 3385,
+  "ok": 2917,
+  "gone": 39,
   "not_a_table": 61,
-  "empty": 28,
+  "empty": 27,
   "cloud_refused": 271,
   "access_denied": 5,
-  "unreachable": 18,
-  "too_large": 44,
-  "cadence_not_met": 5
+  "unreachable": 19,
+  "too_large": 46,
+  "cadence_not_met": 6
  },
  "publishers": [
   {
    "publisher": "City of Namur",
    "files": 490,
-   "ok": 472,
+   "ok": 471,
    "problems": {
     "gone": 8,
     "not_a_table": 0,
@@ -25,7 +25,7 @@
    "not_checked": {
     "cloud_refused": 0,
     "access_denied": 0,
-    "unreachable": 1,
+    "unreachable": 2,
     "too_large": 8
    },
    "cadence_not_met": 0,
@@ -65,22 +65,22 @@
    ],
    "refused_hosts": [],
    "readable_pct": 98.1,
-   "judged": 481,
+   "judged": 480,
    "last_modified_sent_pct": 0
   },
   {
    "publisher": "City of Ghent",
-   "files": 321,
-   "ok": 309,
+   "files": 322,
+   "ok": 313,
    "problems": {
-    "gone": 4,
+    "gone": 3,
     "not_a_table": 0,
-    "empty": 5
+    "empty": 4
    },
    "not_checked": {
     "cloud_refused": 0,
     "access_denied": 0,
-    "unreachable": 1,
+    "unreachable": 0,
     "too_large": 2
    },
    "cadence_not_met": 0,
@@ -91,12 +91,6 @@
      "id": "harvest:city-of-ghent:gent-kunst-op-straat",
      "title": "Kunst op straat - Gent",
      "url": "https://data.stad.gent/explore/dataset/gent-kunst-op-straat/download/?format=csv",
-     "problem": "empty"
-    },
-    {
-     "id": "harvest:city-of-ghent:lijst-van-verenigingen-op-stadgentwebsite",
-     "title": "Lijst van verenigingen op stad.gent",
-     "url": "https://data.stad.gent/explore/dataset/lijst-van-verenigingen-op-stadgentwebsite/download/?format=csv",
      "problem": "empty"
     },
     {
@@ -116,11 +110,17 @@
      "title": "Organisaties gepubliceerd op www.stad.gent",
      "url": "https://data.stad.gent/explore/dataset/organisaties/download/?format=csv",
      "problem": "empty"
+    },
+    {
+     "id": "national:geluidsbelastingskaart-industrie-gent-kopie",
+     "title": "Geluidsbelastingskaart Industrie (Lden) Gent (2021)",
+     "url": "https://data.stad.gent/api/v2/catalog/datasets/geluidsbelastingskaart-industrie-gent-kopie/exports/csv",
+     "problem": "gone"
     }
    ],
    "refused_hosts": [],
-   "readable_pct": 97.2,
-   "judged": 318,
+   "readable_pct": 97.8,
+   "judged": 320,
    "last_modified_sent_pct": 0
   },
   {
@@ -264,7 +264,7 @@
   {
    "publisher": "IWEPS WalStat",
    "files": 148,
-   "ok": 148,
+   "ok": 147,
    "problems": {
     "gone": 0,
     "not_a_table": 0,
@@ -273,7 +273,7 @@
    "not_checked": {
     "cloud_refused": 0,
     "access_denied": 0,
-    "unreachable": 0,
+    "unreachable": 1,
     "too_large": 0
    },
    "cadence_not_met": 0,
@@ -282,7 +282,7 @@
    "examples": [],
    "refused_hosts": [],
    "readable_pct": 100,
-   "judged": 148,
+   "judged": 147,
    "last_modified_sent_pct": 0
   },
   {
@@ -374,7 +374,7 @@
   {
    "publisher": "Elia",
    "files": 110,
-   "ok": 87,
+   "ok": 84,
    "problems": {
     "gone": 0,
     "not_a_table": 0,
@@ -383,8 +383,8 @@
    "not_checked": {
     "cloud_refused": 0,
     "access_denied": 0,
-    "unreachable": 6,
-    "too_large": 15
+    "unreachable": 7,
+    "too_large": 17
    },
    "cadence_not_met": 0,
    "with_duplicate_rows": 0,
@@ -404,8 +404,8 @@
     }
    ],
    "refused_hosts": [],
-   "readable_pct": 97.8,
-   "judged": 89,
+   "readable_pct": 97.7,
+   "judged": 86,
    "last_modified_sent_pct": 0
   },
   {
@@ -448,7 +448,7 @@
     "too_large": 0
    },
    "cadence_not_met": 0,
-   "with_duplicate_rows": 2,
+   "with_duplicate_rows": 1,
    "last_modified_sent": 0,
    "examples": [],
    "refused_hosts": [],
@@ -582,7 +582,7 @@
   {
    "publisher": "Departement Werk en Sociale Economie",
    "files": 58,
-   "ok": 56,
+   "ok": 57,
    "problems": {
     "gone": 0,
     "not_a_table": 0,
@@ -591,7 +591,7 @@
    "not_checked": {
     "cloud_refused": 0,
     "access_denied": 0,
-    "unreachable": 1,
+    "unreachable": 0,
     "too_large": 1
    },
    "cadence_not_met": 2,
@@ -617,7 +617,7 @@
    ],
    "refused_hosts": [],
    "readable_pct": 100,
-   "judged": 56,
+   "judged": 57,
    "last_modified_sent_pct": 1.8
   },
   {
@@ -646,8 +646,8 @@
   },
   {
    "publisher": "transportdata.be",
-   "files": 35,
-   "ok": 8,
+   "files": 36,
+   "ok": 9,
    "problems": {
     "gone": 1,
     "not_a_table": 26,
@@ -695,9 +695,9 @@
     }
    ],
    "refused_hosts": [],
-   "readable_pct": 22.9,
-   "judged": 35,
-   "last_modified_sent_pct": 87.5
+   "readable_pct": 25,
+   "judged": 36,
+   "last_modified_sent_pct": 77.8
   },
   {
    "publisher": "NIHDI",
@@ -975,9 +975,9 @@
    "last_modified_sent": 0,
    "examples": [
     {
-     "id": "harvest:open-data-wallonie-bruxelles:communes-et-localites",
+     "id": "national:https://www.odwb.be/explore/dataset/communes-et-localites/",
      "title": "Communes et localités belges",
-     "url": "https://www.odwb.be/explore/dataset/communes-et-localites/download/?format=csv",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/communes-et-localites/exports/csv?use_labels=true#",
      "problem": "gone"
     },
     {
@@ -987,15 +987,15 @@
      "problem": "gone"
     },
     {
-     "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-wallonnes/",
-     "title": "Masses d'eau souterraines wallonnes",
-     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-wallonnes/exports/csv?use_labels=true#",
-     "problem": "gone"
-    },
-    {
      "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-liste/",
      "title": "Masses d'eau souterraines - Liste",
      "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-liste/exports/csv?use_labels=true#",
+     "problem": "gone"
+    },
+    {
+     "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-wallonnes/",
+     "title": "Masses d'eau souterraines wallonnes",
+     "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-wallonnes/exports/csv?use_labels=true#",
      "problem": "gone"
     }
    ],
@@ -1104,16 +1104,24 @@
     "unreachable": 1,
     "too_large": 0
    },
-   "cadence_not_met": 2,
+   "cadence_not_met": 3,
    "with_duplicate_rows": 0,
    "last_modified_sent": 1,
    "examples": [
+    {
+     "id": "national:e051ccfe-b1f2-42f6-aa49-2c61ba0a4be4",
+     "title": "Straatkolken langs de genummerde wegen in beheer van AWV",
+     "url": "https://opendata.apps.mow.vlaanderen.be/opendata-geoserver/awv/wfs?typeName=Straatkolken&SERVICE=WFS&VERSION=2.0.0&REQUEST=getFeature&outputFormat=CSV&Count=10",
+     "problem": "cadence_not_met",
+     "latest_data_point": "2017-01-30",
+     "declared": "DAILY"
+    },
     {
      "id": "national:74376e19-c48a-4d09-b31a-b498ccd5d7a8",
      "title": "Verkeersborden.Vlaanderen_Borden",
      "url": "https://opendata.apps.mow.vlaanderen.be/opendata-geoserver/awv/wfs?typeName=Verkeersborden.Vlaanderen_Borden&SERVICE=WFS&VERSION=2.0.0&REQUEST=getFeature&outputFormat=CSV&Count=10",
      "problem": "cadence_not_met",
-     "latest_data_point": "2003",
+     "latest_data_point": "2008",
      "declared": "DAILY"
     },
     {
@@ -1944,9 +1952,9 @@
      "problem": "not_a_table"
     },
     {
-     "id": "national:139daf3e-fece-4450-a6ae-495b75127096",
-     "title": "Gebruik van gewasbeschermingsmiddelen in de Vlaamse landbouw: risico (HRI1)",
-     "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/gewasbescherming-risico-hri1",
+     "id": "national:71ee65bc-6f34-44a5-8f30-e391b63692d6",
+     "title": "Deelname van landbouwbedrijven aan ecoregelingen en agromilieu- en klimaatmaatregelen",
+     "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/deelname-aan-ecoregelingen-en-agromilieu-en-klimaatmaatregelen",
      "problem": "not_a_table"
     },
     {
@@ -1956,9 +1964,9 @@
      "problem": "not_a_table"
     },
     {
-     "id": "national:71ee65bc-6f34-44a5-8f30-e391b63692d6",
-     "title": "Deelname van landbouwbedrijven aan ecoregelingen en agromilieu- en klimaatmaatregelen",
-     "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/deelname-aan-ecoregelingen-en-agromilieu-en-klimaatmaatregelen",
+     "id": "national:139daf3e-fece-4450-a6ae-495b75127096",
+     "title": "Gebruik van gewasbeschermingsmiddelen in de Vlaamse landbouw: risico (HRI1)",
+     "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/gewasbescherming-risico-hri1",
      "problem": "not_a_table"
     }
    ],
@@ -4455,6 +4463,30 @@
    "last_modified_sent_pct": 100
   },
   {
+   "publisher": "RESA",
+   "files": 1,
+   "ok": 1,
+   "problems": {
+    "gone": 0,
+    "not_a_table": 0,
+    "empty": 0
+   },
+   "not_checked": {
+    "cloud_refused": 0,
+    "access_denied": 0,
+    "unreachable": 0,
+    "too_large": 0
+   },
+   "cadence_not_met": 0,
+   "with_duplicate_rows": 0,
+   "last_modified_sent": 0,
+   "examples": [],
+   "refused_hosts": [],
+   "readable_pct": null,
+   "judged": 1,
+   "last_modified_sent_pct": 0
+  },
+  {
    "publisher": "Royal Belgian Society of Rheumatology",
    "files": 1,
    "ok": 1,
@@ -4845,14 +4877,24 @@
  ],
  "cadence_not_met": [
   {
+   "id": "national:e051ccfe-b1f2-42f6-aa49-2c61ba0a4be4",
+   "title": "Straatkolken langs de genummerde wegen in beheer van AWV",
+   "publisher": "Agentschap Wegen en Verkeer",
+   "url": "https://opendata.apps.mow.vlaanderen.be/opendata-geoserver/awv/wfs?typeName=Straatkolken&SERVICE=WFS&VERSION=2.0.0&REQUEST=getFeature&outputFormat=CSV&Count=10",
+   "declared": "DAILY",
+   "latest_data_point": "2017-01-30",
+   "column": "Opnamedatum",
+   "latest_data_age_days": 3589
+  },
+  {
    "id": "national:74376e19-c48a-4d09-b31a-b498ccd5d7a8",
    "title": "Verkeersborden.Vlaanderen_Borden",
    "publisher": "Agentschap Wegen en Verkeer",
    "url": "https://opendata.apps.mow.vlaanderen.be/opendata-geoserver/awv/wfs?typeName=Verkeersborden.Vlaanderen_Borden&SERVICE=WFS&VERSION=2.0.0&REQUEST=getFeature&outputFormat=CSV&Count=10",
    "declared": "DAILY",
-   "latest_data_point": "2003",
+   "latest_data_point": "2008",
    "column": "fabricage_jaar",
-   "latest_data_age_days": 8361
+   "latest_data_age_days": 6541
   },
   {
    "id": "national:e161b4b9-b951-4694-8561-3ea2d5539f74",
@@ -4862,7 +4904,7 @@
    "declared": "CONT",
    "latest_data_point": "2017",
    "column": "Uitvoer_van_jaar",
-   "latest_data_age_days": 3247
+   "latest_data_age_days": 3254
   },
   {
    "id": "national:https://www.odwb.be/explore/dataset/belaqi-qualite-air-issep/",
@@ -4872,7 +4914,7 @@
    "declared": "CONT",
    "latest_data_point": "2026-10-22",
    "column": "Heure de la mesure AQI",
-   "latest_data_age_days": 30
+   "latest_data_age_days": 37
   },
   {
    "id": "national:https://opendata.wewis.vlaanderen.be/api/v2/catalog/datasets/awi02_dossier_v1",
@@ -4882,7 +4924,7 @@
    "declared": "DAILY",
    "latest_data_point": "2024",
    "column": "JAAR",
-   "latest_data_age_days": 690
+   "latest_data_age_days": 697
   },
   {
    "id": "national:https://opendata.wewis.vlaanderen.be/api/v2/catalog/datasets/az01_product_bedrag_v1",
@@ -4892,7 +4934,7 @@
    "declared": "MONTHLY",
    "latest_data_point": "2021",
    "column": "JAAR",
-   "latest_data_age_days": 1786
+   "latest_data_age_days": 1793
   }
  ],
  "broken": [
@@ -5065,13 +5107,6 @@
    "problem": "empty"
   },
   {
-   "id": "harvest:city-of-ghent:lijst-van-verenigingen-op-stadgentwebsite",
-   "title": "Lijst van verenigingen op stad.gent",
-   "publisher": "City of Ghent",
-   "url": "https://data.stad.gent/explore/dataset/lijst-van-verenigingen-op-stadgentwebsite/download/?format=csv",
-   "problem": "empty"
-  },
-  {
    "id": "harvest:city-of-ghent:taxistandplaatsen-gent",
    "title": "Standplaatsen Taxi's Gent",
    "publisher": "City of Ghent",
@@ -5093,6 +5128,13 @@
    "problem": "empty"
   },
   {
+   "id": "national:52ea177d3f4c8d863597a45384d2f693b5d6cdfe",
+   "title": "Inschrijvingen van voertuigen (maandelijks)",
+   "publisher": "FPS Mobility and Transport",
+   "url": "https://mobilit.belgium.be/nl/documenten/open-data/wegverkeer/inschrijvingen-van-voertuigen",
+   "problem": "not_a_table"
+  },
+  {
    "id": "national:817de870-fbfd-4217-b52c-e1944e88c5bc",
    "title": "Interbestuurlijke Producten en Diensten Catalogus",
    "publisher": "Agentschap Digitaal Vlaanderen",
@@ -5104,13 +5146,6 @@
    "title": "Vlaamse Immaterieel Cultureel erfgoed elementen opgenomen in lijsten",
    "publisher": "Departement Cultuur, Jeugd en Media",
    "url": "https://metadata.vlaanderen.be/srv/dut/catalog.search#/metadata/9f721882-48f9-59fb-b8dd-b994d7edb1e6",
-   "problem": "not_a_table"
-  },
-  {
-   "id": "national:52ea177d3f4c8d863597a45384d2f693b5d6cdfe",
-   "title": "Inschrijvingen van voertuigen (maandelijks)",
-   "publisher": "FPS Mobility and Transport",
-   "url": "https://mobilit.belgium.be/nl/documenten/open-data/wegverkeer/inschrijvingen-van-voertuigen",
    "problem": "not_a_table"
   },
   {
@@ -5289,17 +5324,17 @@
    "problem": "gone"
   },
   {
-   "id": "national:324819c2-0e02-438f-a002-2e359776068b",
-   "title": "Fietstellingen AWV",
-   "publisher": "Agentschap Wegen en Verkeer",
-   "url": "https://opendata.apps.mow.vlaanderen.be/fietstellingen/index.html",
-   "problem": "not_a_table"
-  },
-  {
    "id": "national:e1413037-9b9b-47de-ab89-282fe8003a8d",
    "title": "Bevolkingsvooruitzichten",
    "publisher": "Departement Kanselarij en Buitenlandse Zaken",
    "url": "https://www.statistiekvlaanderen.be/sites/default/files/docs/vooruitzichten_personen_ABB.csv",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "national:324819c2-0e02-438f-a002-2e359776068b",
+   "title": "Fietstellingen AWV",
+   "publisher": "Agentschap Wegen en Verkeer",
+   "url": "https://opendata.apps.mow.vlaanderen.be/fietstellingen/index.html",
    "problem": "not_a_table"
   },
   {
@@ -5380,13 +5415,6 @@
    "problem": "gone"
   },
   {
-   "id": "harvest:open-data-wallonie-bruxelles:communes-et-localites",
-   "title": "Communes et localités belges",
-   "publisher": "Agence du Numérique",
-   "url": "https://www.odwb.be/explore/dataset/communes-et-localites/download/?format=csv",
-   "problem": "gone"
-  },
-  {
    "id": "national:https://www.odwb.be/explore/dataset/autostop-elabore-et-securise-a-chaudfontaine/",
    "title": "Autostop élaboré et sécurisé à Chaudfontaine",
    "publisher": "Municipality of Chaudfontaine",
@@ -5405,6 +5433,13 @@
    "title": "Collecte déchets ménagers spéciaux ou dangereux",
    "publisher": "City of Liège",
    "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/dechets-speciaux-des-menages/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/communes-et-localites/",
+   "title": "Communes et localités belges",
+   "publisher": "Agence du Numérique",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/communes-et-localites/exports/csv?use_labels=true#",
    "problem": "gone"
   },
   {
@@ -5520,17 +5555,17 @@
    "problem": "gone"
   },
   {
-   "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-wallonnes/",
-   "title": "Masses d'eau souterraines wallonnes",
-   "publisher": "Agence du Numérique",
-   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-wallonnes/exports/csv?use_labels=true#",
-   "problem": "gone"
-  },
-  {
    "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-liste/",
    "title": "Masses d'eau souterraines - Liste",
    "publisher": "Agence du Numérique",
    "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-liste/exports/csv?use_labels=true#",
+   "problem": "gone"
+  },
+  {
+   "id": "national:https://www.odwb.be/explore/dataset/masses-d-eau-souterraines-wallonnes/",
+   "title": "Masses d'eau souterraines wallonnes",
+   "publisher": "Agence du Numérique",
+   "url": "https://www.odwb.be/api/explore/v2.1/catalog/datasets/masses-d-eau-souterraines-wallonnes/exports/csv?use_labels=true#",
    "problem": "gone"
   },
   {
@@ -5576,13 +5611,6 @@
    "problem": "gone"
   },
   {
-   "id": "national:parkeerplaatsen-voor-personen-met-een-handicap-gent",
-   "title": "Parkeerplaatsen voor personen met een handicap Gent",
-   "publisher": "City of Ghent",
-   "url": "https://data.stad.gent/api/v2/catalog/datasets/parkeerplaatsen-voor-personen-met-een-handicap-gent/exports/csv",
-   "problem": "gone"
-  },
-  {
    "id": "national:755c76a0-ec9b-47b0-a487-89a68386247f",
    "title": "Bedrijfseconomische resultaten van de Vlaamse landbouwbedrijven: resultatenrekening volledig bedrijf",
    "publisher": "Agentschap Landbouw en Visserij",
@@ -5597,10 +5625,10 @@
    "problem": "not_a_table"
   },
   {
-   "id": "national:139daf3e-fece-4450-a6ae-495b75127096",
-   "title": "Gebruik van gewasbeschermingsmiddelen in de Vlaamse landbouw: risico (HRI1)",
+   "id": "national:71ee65bc-6f34-44a5-8f30-e391b63692d6",
+   "title": "Deelname van landbouwbedrijven aan ecoregelingen en agromilieu- en klimaatmaatregelen",
    "publisher": "Agentschap Landbouw en Visserij",
-   "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/gewasbescherming-risico-hri1",
+   "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/deelname-aan-ecoregelingen-en-agromilieu-en-klimaatmaatregelen",
    "problem": "not_a_table"
   },
   {
@@ -5611,17 +5639,17 @@
    "problem": "not_a_table"
   },
   {
+   "id": "national:139daf3e-fece-4450-a6ae-495b75127096",
+   "title": "Gebruik van gewasbeschermingsmiddelen in de Vlaamse landbouw: risico (HRI1)",
+   "publisher": "Agentschap Landbouw en Visserij",
+   "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/gewasbescherming-risico-hri1",
+   "problem": "not_a_table"
+  },
+  {
    "id": "national:336aa8e641a997af1a80f46264f322b621c86ff8",
    "title": "OpenAid.be (Official Aid by the Directorate-general Development Cooperation and Humanitarian Aid)",
    "publisher": "FPS Foreign Affairs",
    "url": "https://openaid.be/nl",
-   "problem": "not_a_table"
-  },
-  {
-   "id": "national:71ee65bc-6f34-44a5-8f30-e391b63692d6",
-   "title": "Deelname van landbouwbedrijven aan ecoregelingen en agromilieu- en klimaatmaatregelen",
-   "publisher": "Agentschap Landbouw en Visserij",
-   "url": "https://landbouwcijfers.vlaanderen.be/landbouw/totale-landbouw/deelname-aan-ecoregelingen-en-agromilieu-en-klimaatmaatregelen",
    "problem": "not_a_table"
   },
   {
@@ -5702,13 +5730,6 @@
    "problem": "not_a_table"
   },
   {
-   "id": "harvest:transport:3845f3d0-fd30-4631-9810-f8d28fd4ff75",
-   "title": "Ponctualité des trains ICE - Stiptheid ICE treinen - Monthly ICE trains punctuality",
-   "publisher": "transportdata.be",
-   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-ice-treinen/information/",
-   "problem": "not_a_table"
-  },
-  {
    "id": "harvest:transport:9325d8ce-c000-4d60-8ff4-90019bd4baba",
    "title": "Ponctualité des trains Eurostar - Continental Route - Stiptheid van Eurostar - Continental Route treinen - Monthly Eurostar - Continental Route trains punctuality",
    "publisher": "transportdata.be",
@@ -5716,10 +5737,10 @@
    "problem": "not_a_table"
   },
   {
-   "id": "harvest:transport:1508472c-b7af-4a53-bb3a-c50c9c274686",
-   "title": "Ponctualité nationale par mois - Nationale stiptheid per maand - Monthly national punctuality",
+   "id": "harvest:transport:3845f3d0-fd30-4631-9810-f8d28fd4ff75",
+   "title": "Ponctualité des trains ICE - Stiptheid ICE treinen - Monthly ICE trains punctuality",
    "publisher": "transportdata.be",
-   "url": "https://opendata.infrabel.be/explore/dataset/nationale-stiptheid-per-maand/information/",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-ice-treinen/information/",
    "problem": "not_a_table"
   },
   {
@@ -5727,6 +5748,13 @@
    "title": "Ponctualité mensuelle par point d'arrêt - Maandelijkse stiptheid per stopplaats - Monthly punctuality by stopping point",
    "publisher": "transportdata.be",
    "url": "https://opendata.infrabel.be/explore/dataset/maandelijkse-stiptheid-per-stopplaats/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:1508472c-b7af-4a53-bb3a-c50c9c274686",
+   "title": "Ponctualité nationale par mois - Nationale stiptheid per maand - Monthly national punctuality",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/nationale-stiptheid-per-maand/information/",
    "problem": "not_a_table"
   },
   {
@@ -5744,17 +5772,17 @@
    "problem": "not_a_table"
   },
   {
-   "id": "harvest:transport:64ceea35-97ec-40ca-986b-73e4b34e4c78",
-   "title": "Ponctualité par type de train et par moment - Stiptheid per type trein en per moment - Monthly national punctuality per train type and moment",
-   "publisher": "transportdata.be",
-   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-per-type-trein-en-per-moment/information/",
-   "problem": "not_a_table"
-  },
-  {
    "id": "harvest:transport:13274c63-8f40-4e28-9c01-e74f91b4650f",
    "title": "Ponctualité par type de train - Stiptheid per type trein per maand",
    "publisher": "transportdata.be",
    "url": "https://opendata.infrabel.be/explore/dataset/data_punctualite_typedetrain/information/",
+   "problem": "not_a_table"
+  },
+  {
+   "id": "harvest:transport:64ceea35-97ec-40ca-986b-73e4b34e4c78",
+   "title": "Ponctualité par type de train et par moment - Stiptheid per type trein en per moment - Monthly national punctuality per train type and moment",
+   "publisher": "transportdata.be",
+   "url": "https://opendata.infrabel.be/explore/dataset/stiptheid-per-type-trein-en-per-moment/information/",
    "problem": "not_a_table"
   },
   {

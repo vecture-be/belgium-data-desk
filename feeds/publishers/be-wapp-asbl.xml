@@ -4,7 +4,9 @@
 <link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/be-wapp-asbl.xml"/>
 <link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
 <id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/be-wapp-asbl.xml</id>
-<updated>2026-11-21T00:00:00Z</updated>
+<updated>2026-11-28T00:00:00Z</updated>
 <author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Infrastructure</title><link href="https://www.odwb.be/explore/dataset/infrastructure/download/?format=csv"/><id>urn:bdd:2026-11-28:change::harvest:open-data-wallonie-bruxelles:infrastructure</id><updated>2026-11-28T00:00:00Z</updated><summary>Be WaPP asbl: ±0 / −5 distinct rows; commune_ins_str now 51,067–92,094 (was 25,072–92,094)</summary></entry>
+<entry><title>Changed: Poubelle</title><link href="https://www.odwb.be/explore/dataset/poubelle/download/?format=csv"/><id>urn:bdd:2026-11-28:change::harvest:open-data-wallonie-bruxelles:poubelle</id><updated>2026-11-28T00:00:00Z</updated><summary>Be WaPP asbl: +3 / −5 distinct rows</summary></entry>
 <entry><title>Changed: Poubelle</title><link href="https://www.odwb.be/explore/dataset/poubelle/download/?format=csv"/><id>urn:bdd:2026-11-21:change::harvest:open-data-wallonie-bruxelles:poubelle</id><updated>2026-11-21T00:00:00Z</updated><summary>Be WaPP asbl: +3 / −121 distinct rows; objectid now 26,810–1,357,157 (was 26,810–1,357,957); inss now 25,023–92,137 (was 25,023–92,141)</summary></entry>
 </feed>

@@ -1,29 +1,29 @@
 # Publisher scorecards
 
-From the weekly full-file check of each dataset's main CSV/TSV file (2026-11-21). Counts per publisher's main CSV/TSV file per dataset. Only gone links, web pages served as tables and empty files count as problems; files that could not be checked from our servers (hosts refusing cloud access, timeouts, server errors, 401/403, over 100 MB) are not counted against anyone.
+From the weekly full-file check of each dataset's main CSV/TSV file (2026-11-28). Counts per publisher's main CSV/TSV file per dataset. Only gone links, web pages served as tables and empty files count as problems; files that could not be checked from our servers (hosts refusing cloud access, timeouts, server errors, 401/403, over 100 MB) are not counted against anyone.
 
-Totals: 3,382 files, 2,915 readable; problems: 40 gone, 61 web page instead of a table, 28 empty; not checked: 271 host refuses cloud access, 5 access denied, 18 unreachable this run, 44 over 100 MB; 5 do not meet the update cadence they declare (their latest data lies more than three declared cycles back: either the series stopped or the declared frequency is wrong). One-off, yearly and undeclared datasets are never judged.
+Totals: 3,385 files, 2,917 readable; problems: 39 gone, 61 web page instead of a table, 27 empty; not checked: 271 host refuses cloud access, 5 access denied, 19 unreachable this run, 46 over 100 MB; 6 do not meet the update cadence they declare (their latest reporting date lies more than three declared cycles back; check the reporting lag). One-off, yearly and undeclared datasets are never judged.
 
 | Publisher | Files | Readable | Gone | Web page | Empty | Declared cadence not met | Not checked | Last-Modified sent |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| City of Namur | 490 | 98.1 % | 8 | 0 | 1 | 0 | 9 | 0 % |
-| City of Ghent | 321 | 97.2 % | 4 | 0 | 5 | 0 | 3 | 0 % |
+| City of Namur | 490 | 98.1 % | 8 | 0 | 1 | 0 | 10 | 0 % |
+| City of Ghent | 322 | 97.8 % | 3 | 0 | 4 | 0 | 2 | 0 % |
 | Brussels Open Data | 206 | 97.6 % | 0 | 0 | 5 | 0 | 0 | 0 % |
 | City of Liège | 196 | 98 % | 2 | 0 | 2 | 1 | 0 | 0 % |
 | Departement Omgeving | 173 | – | 0 | 0 | 0 | 0 | 171 ¹ | 100 % |
-| IWEPS WalStat | 148 | 100 % | 0 | 0 | 0 | 0 | 0 | 0 % |
+| IWEPS WalStat | 148 | 100 % | 0 | 0 | 0 | 0 | 1 | 0 % |
 | Infrabel | 130 | 99.2 % | 1 | 0 | 0 | 0 | 0 | 0 % |
 | Flanders Environment Agency | 123 | 93.3 % | 6 | 2 | 0 | 0 | 3 | 0.9 % |
-| Elia | 110 | 97.8 % | 0 | 0 | 2 | 0 | 21 | 0 % |
+| Elia | 110 | 97.7 % | 0 | 0 | 2 | 0 | 24 | 0 % |
 | BEP | 95 | 100 % | 0 | 0 | 0 | 0 | 0 | 0 % |
 | Federal Planning Bureau | 84 | 100 % | 0 | 0 | 0 | 0 | 0 | 0 % |
 | SPW ARNE | 84 | 95.2 % | 2 | 0 | 2 | 0 | 1 | 0 % |
 | Catholic University of Louvain | 77 | 100 % | 0 | 0 | 0 | 0 | 50 ¹ | 0 % |
 | Sciensano | 76 | 100 % | 0 | 0 | 0 | 0 | 0 | 92.1 % |
 | Fédération Wallonie-Bruxelles | 63 | 100 % | 0 | 0 | 0 | 0 | 0 | 0 % |
-| Departement Werk en Sociale Economie | 58 | 100 % | 0 | 0 | 0 | 2 | 2 | 1.8 % |
+| Departement Werk en Sociale Economie | 58 | 100 % | 0 | 0 | 0 | 2 | 1 | 1.8 % |
 | Ville de Verviers | 41 | 100 % | 0 | 0 | 0 | 0 | 0 | 0 % |
-| transportdata.be | 35 | 22.9 % | 1 | 26 | 0 | 0 | 0 | 87.5 % |
+| transportdata.be | 36 | 25 % | 1 | 26 | 0 | 0 | 0 | 77.8 % |
 | NIHDI | 33 | 93.9 % | 0 | 0 | 2 | 0 | 0 | 100 % |
 | ORES | 32 | 100 % | 0 | 0 | 0 | 0 | 2 | 0 % |
 | Fluvius | 28 | 85.7 % | 4 | 0 | 0 | 0 | 0 | 0 % |
@@ -36,7 +36,7 @@ Totals: 3,382 files, 2,915 readable; problems: 40 gone, 61 web page instead of a
 | FPS Health | 24 | 100 % | 0 | 0 | 0 | 0 | 0 | 100 % |
 | Ville de Tournai | 23 | 100 % | 0 | 0 | 0 | 0 | 0 | 0 % |
 | Ville de Thuin | 22 | 90.9 % | 0 | 0 | 2 | 0 | 0 | 0 % |
-| Agentschap Wegen en Verkeer | 21 | 95 % | 0 | 1 | 0 | 2 | 1 | 5.3 % |
+| Agentschap Wegen en Verkeer | 21 | 95 % | 0 | 1 | 0 | 3 | 1 | 5.3 % |
 | FPS Finance | 21 | 100 % | 0 | 0 | 0 | 0 | 0 | 100 % |
 | Ville d'Andenne | 19 | 100 % | 0 | 0 | 0 | 0 | 0 | 0 % |
 | CGT - Commissariat Général au Tourisme | 17 | 94.1 % | 0 | 0 | 1 | 0 | 0 | 0 % |
@@ -164,6 +164,7 @@ Totals: 3,382 files, 2,915 readable; problems: 40 gone, 61 web page instead of a
 | Province de Luxembourg | 1 | – | 0 | 0 | 0 | 0 | 0 | 0 % |
 | Recupel | 1 | – | 0 | 0 | 0 | 0 | 0 | 0 % |
 | Région Hauts-de-France | 1 | – | 0 | 0 | 0 | 0 | 0 | 100 % |
+| RESA | 1 | – | 0 | 0 | 0 | 0 | 0 | 0 % |
 | Royal Belgian Society of Rheumatology | 1 | – | 0 | 0 | 0 | 0 | 0 | 100 % |
 | SCS Boehringer Ingelheim Comm. V | 1 | – | 0 | 0 | 0 | 0 | 0 | 100 % |
 | Spi | 1 | – | 0 | 0 | 0 | 0 | 0 | 0 % |

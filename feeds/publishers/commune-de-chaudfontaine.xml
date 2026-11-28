@@ -4,6 +4,7 @@
 <link rel="self" href="https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/commune-de-chaudfontaine.xml"/>
 <link href="https://github.com/vecture-be/belgium-data-desk/tree/data-changes"/>
 <id>https://raw.githubusercontent.com/vecture-be/belgium-data-desk/data-changes/feeds/publishers/commune-de-chaudfontaine.xml</id>
-<updated>1970-01-01T00:00:00Z</updated>
+<updated>2026-11-28T00:00:00Z</updated>
 <author><name>Belgium Data Desk</name></author>
+<entry><title>Changed: Parkings vélos à Chaudfontaine</title><link href="https://www.odwb.be/explore/dataset/box_et_arceaux_velos/download/?format=csv"/><id>urn:bdd:2026-11-28:change::harvest:open-data-wallonie-bruxelles:box_et_arceaux_velos</id><updated>2026-11-28T00:00:00Z</updated><summary>Commune de Chaudfontaine: +18 / −6 distinct rows; nombre_de_places now 1–6 (was 4–6)</summary></entry>
 </feed>
