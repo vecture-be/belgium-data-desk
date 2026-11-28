@@ -35,9 +35,12 @@ jobs:
           node-version: '22'
       - run: node scripts/snapshot.mjs
       - run: node scripts/audit-pdf-distributions.mjs --out pdf-audit.json
+      - run: python3 scripts/statbel-series-pilot.py pdf-audit.json --out statbel-series
       - uses: actions/upload-artifact@v4
         with:
           name: pdf-candidate-audit
-          path: pdf-audit.json
+          path: |
+            pdf-audit.json
+            statbel-series/
           retention-days: 7
           if-no-files-found: error
