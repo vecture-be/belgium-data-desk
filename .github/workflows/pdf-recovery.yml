@@ -1,0 +1,46 @@
+name: PDF recovery pilot
+on:
+  pull_request:
+    paths:
+      - 'scripts/*pdf*'
+      - '.github/workflows/pdf-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: node --test scripts/test-pdf-audit.mjs
+      - run: python -m pip install pdfplumber==0.11.9 reportlab==4.4.9
+      - run: python scripts/test-pdf-extraction.py
+
+  catalogue-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/snapshot.mjs
+      - run: node scripts/audit-pdf-distributions.mjs --out pdf-audit.json
+      - run: python3 scripts/statbel-series-pilot.py pdf-audit.json --out statbel-series
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pdf-candidate-audit
+          path: |
+            pdf-audit.json
+            statbel-series/
+          retention-days: 7
+          if-no-files-found: error
