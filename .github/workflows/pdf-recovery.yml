@@ -34,10 +34,10 @@ jobs:
         with:
           node-version: '22'
       - run: node scripts/snapshot.mjs
-      - run: node scripts/audit-pdf-distributions.mjs
+      - run: node scripts/audit-pdf-distributions.mjs --out pdf-audit.json
       - uses: actions/upload-artifact@v4
         with:
           name: pdf-candidate-audit
-          path: .cache/pdf-audit.json
+          path: pdf-audit.json
           retention-days: 7
           if-no-files-found: error
